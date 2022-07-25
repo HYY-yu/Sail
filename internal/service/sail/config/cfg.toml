@@ -1,0 +1,38 @@
+[jwt]
+expireDuration = "2h"
+secret = "i1ydX9RtHyuJTrw7frcu"
+
+[mysql]
+[mysql.base]
+connMaxLifeTime = "60s"
+maxIdleConn = 30
+maxOpenConn = 60
+addr = "mysql-0.mysql.mysql.svc.cluster.local:3306"
+name = "seckill"
+pass = "root"
+user = "root"
+
+[redis]
+addr = "redis.mysql.svc.cluster.local:6379"
+db = "0"
+maxRetries = 3
+minIdleConns = 60
+pass = "123456"
+poolSize = 120
+
+[log]
+logPath = "./sk-shop-goods.log"
+level = "DEBUG" # DEBUG INFO WARN ERROR
+stdout = true
+jsonFormat = true
+
+[server]
+serverName = "sk_shop_goods"
+host = ":8081"
+pprof = true
+[server.grpc]
+host = ":8082"
+
+[jaeger]
+udpEndpoint = "http://tempo.kube-ops.svc.cluster.local:14268/api/traces"
+stdOut = false

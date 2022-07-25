@@ -1,0 +1,113 @@
+# CI管道
+kind: pipeline
+type: kubernetes
+name: sail
+
+steps:
+  - name: test
+    image: golang:1.16.15
+    environment:
+      GOPROXY: https://goproxy.cn,direct
+    volumes:
+      - name: deps
+        path: /go
+    commands:
+      - go get -d -t ./...
+      - go test -v ./...
+  - name: build
+    image: golang:1.16.15-alpine3.15
+    environment:
+      GOPROXY: https://goproxy.cn,direct
+    volumes:
+      - name: deps
+        path: /go
+    commands:
+      - CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o service ./internal/service/${DRONE_STAGE_NAME}/cmd/main.go
+  - name: publishDocker
+    image: plugins/docker
+    settings:
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
+      build_args:
+        - serviceName=${DRONE_STAGE_NAME}
+      dockerfile: ./deploy/Dockerfile
+      context: .
+      registry: ccr.ccs.tencentyun.com
+      repo:  ccr.ccs.tencentyun.com/hyy-yu/${DRONE_REPO_NAME}
+      purge: true
+      tags:
+        - ${DRONE_TAG}
+    when:
+      ref:
+        - refs/tags/v*
+  - name: publishCharts
+    image: golang:1.16.15
+    environment:
+      GOPROXY: https://goproxy.cn,direct
+      GITHUB_USER:
+        from_secret: GITHUB_USER
+      GITHUB_PASSWORD:
+        from_secret: GITHUB_PASSWROD
+    commands:
+      - cd /tmp
+      - git config --global user.name drone.robot
+      - git config --global user.email 690174435@qq.com
+      - git clone https://$GIT_USERNAME:$GIT_PASSWORD@git.hyy-yu.space/yufeng/${DRONE_STAGE_NAME}.chart.git
+      - cd ${DRONE_STAGE_NAME}.chart
+      - current_version=$(cat Chart.yaml | grep "version" | awk '{ print $2 }' | sed 's/-dev[a-z,0-9]*//')
+      - 'echo "Current chart version: $current_version"'
+      - chart_version=${DRONE_TAG}
+      - echo "Using chart version $chart_version"
+      - 'cat Chart.yaml | sed "s/version.*/version: $chart_version/"  | sed "s/appVersion.*/appVersion: $chart_version/" > /tmp/Chart.yaml.patched'
+      - cp /tmp/Chart.yaml.patched Chart.yaml
+      - git add --all
+      - git commit -m "Automated deployment of chart version $chart_version"
+      - git push origin main
+    when:
+      ref:
+        - refs/tags/v*
+
+volumes:
+  - name: deps
+    temp: {}
+trigger:
+  event:
+    - push
+    - tag
+---
+# CD管道
+kind: pipeline
+type: kubernetes
+name: deploy
+
+clone:
+  disable: true
+
+steps:
+  - name: clone
+    image: alpine/git:v2.32.0
+    commands:
+      # 请修改git地址，以对应不同项目
+      - git clone https://git.hyy-yu.space/yufeng/sail.chart.git .
+  - name: deploy_production
+    image: pelotech/drone-helm3
+    settings:
+      helm_command: upgrade
+      chart: ./
+      # 请修改release，以对应不同项目
+      release: sail-release
+      api_server: https://kubernetes.default.svc.cluster.local
+      namespace: default
+      kube_token:
+        from_secret: KUBE_DRONE_TOKEN
+      kube_service_account: drone-releaser
+      kube_certificate:
+        from_secret: KUBE_DRONE_CERT
+
+trigger:
+  event:
+    - promote
+  target:
+    - production
