@@ -1,0 +1,24 @@
+{
+    "data": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "children": [
+                            {}
+                        ],
+                        "menu_id": 0,
+                        "name": "",
+                        "type": 0
+                    }
+                ],
+                "menu_id": 0,
+                "name": "",
+                "type": 0
+            }
+        ],
+        "platform_id": 0
+    },
+    "errmsg": "",
+    "errno": 0
+}
