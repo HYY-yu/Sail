@@ -1,6 +1,6 @@
-CREATE SCHEMA IF NOT EXISTS `sail`;
+CREATE SCHEMA `sail`;
 
-CREATE TABLE  `sail`.`project_group` (
+CREATE TABLE `sail`.`project_group` (
                                         `id` int PRIMARY KEY AUTO_INCREMENT,
                                         `name` varchar(50) NOT NULL,
                                         `create_time` timestamp NOT NULL,
@@ -28,19 +28,9 @@ CREATE TABLE `sail`.`namespace` (
                                     `delete_time` int NOT NULL DEFAULT 0
 );
 
-CREATE TABLE `sail`.`staff_group` (
-                                      `id` int PRIMARY KEY AUTO_INCREMENT,
-                                      `name` varchar(50) NOT NULL,
-                                      `create_time` timestamp NOT NULL,
-                                      `create_by` int NOT NULL,
-                                      `delete_time` int NOT NULL DEFAULT 0
-);
-
 CREATE TABLE `sail`.`staff` (
                                 `id` int PRIMARY KEY AUTO_INCREMENT,
                                 `name` varchar(30) NOT NULL,
-                                `staff_group_id` int NOT NULL,
-                                `role_type` int NOT NULL COMMENT '权限角色',
                                 `create_time` timestamp NOT NULL,
                                 `create_by` int NOT NULL,
                                 `delete_time` int NOT NULL DEFAULT 0
@@ -48,14 +38,9 @@ CREATE TABLE `sail`.`staff` (
 
 CREATE TABLE `sail`.`staff_group_rel` (
                                           `id` int PRIMARY KEY AUTO_INCREMENT,
-                                          `staff_group_id` int NOT NULL,
-                                          `staff_id` int NOT NULL
-);
-
-CREATE TABLE `sail`.`staff_group_project` (
-                                              `id` int PRIMARY KEY AUTO_INCREMENT,
-                                              `staff_group_id` int NOT NULL,
-                                              `project_id` int NOT NULL
+                                          `project_group_id` int NOT NULL,
+                                          `staff_id` int NOT NULL,
+                                          `role_type` int NOT NULL COMMENT '权限角色'
 );
 
 CREATE TABLE `sail`.`config` (

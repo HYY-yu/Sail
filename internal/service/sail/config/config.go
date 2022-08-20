@@ -34,6 +34,7 @@ type Config struct {
 	JWT struct {
 		Secret         string        `toml:"secret"`
 		ExpireDuration time.Duration `toml:"expireDuration"`
+		Type           string        `toml:"type"`
 	} `toml:"jwt"`
 
 	Log struct {
@@ -47,9 +48,6 @@ type Config struct {
 		ServerName string `toml:"serverName"`
 		Host       string `toml:"host"`
 		Pprof      bool   `toml:"pprof"`
-		Grpc       struct {
-			Host string `toml:"host"`
-		} `toml:"grpc"`
 	} `toml:"server"`
 
 	Jaeger struct {

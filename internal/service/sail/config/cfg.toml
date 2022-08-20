@@ -1,37 +1,37 @@
 [jwt]
 expireDuration = "2h"
 secret = "i1ydX9RtHyuJTrw7frcu"
+#type = "refresh_token"
+type = "black_list"
 
 [mysql]
 [mysql.base]
 connMaxLifeTime = "60s"
 maxIdleConn = 30
 maxOpenConn = 60
-addr = "mysql-0.mysql.mysql.svc.cluster.local:3306"
-name = "seckill"
+addr = "127.0.0.1:3306"
+name = "sail"
 pass = "root"
 user = "root"
 
 [redis]
-addr = "redis.mysql.svc.cluster.local:6379"
+addr = "127.0.0.1:6379"
 db = "0"
 maxRetries = 3
 minIdleConns = 60
-pass = "123456"
+pass = "redis"
 poolSize = 120
 
 [log]
-logPath = "./sk-shop-goods.log"
+logPath = "./services.log"
 level = "DEBUG" # DEBUG INFO WARN ERROR
 stdout = true
 jsonFormat = true
 
 [server]
-serverName = "sk_shop_goods"
-host = ":8081"
+serverName = "sail"
+host = ":8108"
 pprof = true
-[server.grpc]
-host = ":8082"
 
 [jaeger]
 udpEndpoint = "http://tempo.kube-ops.svc.cluster.local:14268/api/traces"

@@ -1,4 +1,4 @@
-package repo
+package model
 
 import (
 	"time"
@@ -192,45 +192,15 @@ var PublishConfigColumns = struct {
 
 // Staff [...]
 type Staff struct {
-	ID           int       `gorm:"primaryKey;column:id;type:int;not null"`
-	Name         string    `gorm:"column:name;type:varchar(30);not null"`
-	StaffGroupID int       `gorm:"column:staff_group_id;type:int;not null"`
-	RoleType     int       `gorm:"column:role_type;type:int;not null"` // 权限角色
-	CreateTime   time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	CreateBy     int       `gorm:"column:create_by;type:int;not null"`
-	DeleteTime   int       `gorm:"column:delete_time;type:int;not null;default:0"`
-}
-
-// StaffColumns get sql column name.获取数据库列名
-var StaffColumns = struct {
-	ID           string
-	Name         string
-	StaffGroupID string
-	RoleType     string
-	CreateTime   string
-	CreateBy     string
-	DeleteTime   string
-}{
-	ID:           "id",
-	Name:         "name",
-	StaffGroupID: "staff_group_id",
-	RoleType:     "role_type",
-	CreateTime:   "create_time",
-	CreateBy:     "create_by",
-	DeleteTime:   "delete_time",
-}
-
-// StaffGroup [...]
-type StaffGroup struct {
 	ID         int       `gorm:"primaryKey;column:id;type:int;not null"`
-	Name       string    `gorm:"column:name;type:varchar(50);not null"`
+	Name       string    `gorm:"column:name;type:varchar(30);not null"`
 	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null"`
 	CreateBy   int       `gorm:"column:create_by;type:int;not null"`
 	DeleteTime int       `gorm:"column:delete_time;type:int;not null;default:0"`
 }
 
-// StaffGroupColumns get sql column name.获取数据库列名
-var StaffGroupColumns = struct {
+// StaffColumns get sql column name.获取数据库列名
+var StaffColumns = struct {
 	ID         string
 	Name       string
 	CreateTime string
@@ -244,38 +214,23 @@ var StaffGroupColumns = struct {
 	DeleteTime: "delete_time",
 }
 
-// StaffGroupProject [...]
-type StaffGroupProject struct {
-	ID           int `gorm:"primaryKey;column:id;type:int;not null"`
-	StaffGroupID int `gorm:"column:staff_group_id;type:int;not null"`
-	ProjectID    int `gorm:"column:project_id;type:int;not null"`
-}
-
-// StaffGroupProjectColumns get sql column name.获取数据库列名
-var StaffGroupProjectColumns = struct {
-	ID           string
-	StaffGroupID string
-	ProjectID    string
-}{
-	ID:           "id",
-	StaffGroupID: "staff_group_id",
-	ProjectID:    "project_id",
-}
-
 // StaffGroupRel [...]
 type StaffGroupRel struct {
-	ID           int `gorm:"primaryKey;column:id;type:int;not null"`
-	StaffGroupID int `gorm:"column:staff_group_id;type:int;not null"`
-	StaffID      int `gorm:"column:staff_id;type:int;not null"`
+	ID             int `gorm:"primaryKey;column:id;type:int;not null"`
+	ProjectGroupID int `gorm:"column:project_group_id;type:int;not null"`
+	StaffID        int `gorm:"column:staff_id;type:int;not null"`
+	RoleType       int `gorm:"column:role_type;type:int;not null"` // 权限角色
 }
 
 // StaffGroupRelColumns get sql column name.获取数据库列名
 var StaffGroupRelColumns = struct {
-	ID           string
-	StaffGroupID string
-	StaffID      string
+	ID             string
+	ProjectGroupID string
+	StaffID        string
+	RoleType       string
 }{
-	ID:           "id",
-	StaffGroupID: "staff_group_id",
-	StaffID:      "staff_id",
+	ID:             "id",
+	ProjectGroupID: "project_group_id",
+	StaffID:        "staff_id",
+	RoleType:       "role_type",
 }
