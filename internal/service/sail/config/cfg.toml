@@ -18,7 +18,7 @@ user = "root"
 addr = "127.0.0.1:6379"
 db = "0"
 maxRetries = 3
-minIdleConns = 60
+minIdleConn = 60
 pass = "redis"
 poolSize = 120
 

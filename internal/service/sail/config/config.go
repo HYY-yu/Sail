@@ -23,12 +23,12 @@ type Config struct {
 	} `toml:"mysql"`
 
 	Redis struct {
-		Addr         string `toml:"addr"`
-		Pass         string `toml:"pass"`
-		Db           int    `toml:"db"`
-		MaxRetries   int    `toml:"maxRetries"`
-		PoolSize     int    `toml:"poolSize"`
-		MinIdleConns int    `toml:"minIdleConns"`
+		Addr        string `toml:"addr"`
+		Pass        string `toml:"pass"`
+		Db          int    `toml:"db"`
+		MaxRetries  int    `toml:"maxRetries"`
+		PoolSize    int    `toml:"poolSize"`
+		MinIdleConn int    `toml:"minIdleConn"`
 	} `toml:"redis"`
 
 	JWT struct {

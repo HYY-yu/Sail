@@ -17,7 +17,7 @@ import (
 // @title                       配置中心
 // @version                     1.0
 // @description                 配置中心接口设计文档
-// @contact.name                fengyu
+// @contact.name                FengYu
 // @contact.url                 https://hyy-yu.space
 // @host                        localhost:8080
 // @securityDefinitions.apikey  ApiKeyAuth
