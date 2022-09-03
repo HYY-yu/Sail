@@ -8,12 +8,13 @@ import (
 type Config struct {
 	ID             int    `gorm:"primaryKey;column:id;type:int;not null"`
 	Name           string `gorm:"column:name;type:varchar(50);not null"`
-	ProjectGroupID int    `gorm:"column:project_group_id;type:int;not null"`
+	ProjectID      int    `gorm:"column:project_id;type:int;not null"`
+	ProjectGroupID int    `gorm:"column:project_group_id;type:int;not null"` // 公共配置只有project_group_id
 	NamespaceID    int    `gorm:"column:namespace_id;type:int;not null"`
 	IsPublic       bool   `gorm:"column:is_public;type:tinyint(1);not null"`
 	IsLinkPublic   bool   `gorm:"column:is_link_public;type:tinyint(1);not null"`
 	IsEncrypt      bool   `gorm:"column:is_encrypt;type:tinyint(1);not null"`
-	ConfigType     int    `gorm:"column:config_type;type:int;not null"`
+	ConfigType     string `gorm:"column:config_type;type:varchar(10);not null"`
 	ConfigKey      string `gorm:"column:config_key;type:varchar(50);not null"`
 }
 
@@ -21,6 +22,7 @@ type Config struct {
 var ConfigColumns = struct {
 	ID             string
 	Name           string
+	ProjectID      string
 	ProjectGroupID string
 	NamespaceID    string
 	IsPublic       string
@@ -31,6 +33,7 @@ var ConfigColumns = struct {
 }{
 	ID:             "id",
 	Name:           "name",
+	ProjectID:      "project_id",
 	ProjectGroupID: "project_group_id",
 	NamespaceID:    "namespace_id",
 	IsPublic:       "is_public",
@@ -168,26 +171,38 @@ var ProjectGroupColumns = struct {
 
 // PublishConfig [...]
 type PublishConfig struct {
-	ID          int       `gorm:"primaryKey;column:id;type:int;not null"`
-	NamespaceID int       `gorm:"column:namespace_id;type:int;not null"`
-	Status      int       `gorm:"column:status;type:int;not null"`
-	CreateTime  time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	UpdateTime  time.Time `gorm:"column:update_time;type:timestamp;not null"`
+	ID               int       `gorm:"primaryKey;column:id;type:int;not null"`
+	ProjectID        int       `gorm:"column:project_id;type:int;not null"`
+	NamespaceID      int       `gorm:"column:namespace_id;type:int;not null"`
+	PublishType      int       `gorm:"column:publish_type;type:int;not null"`         // 发布方式
+	PublishData      string    `gorm:"column:publish_data;type:varchar(20);not null"` // 发布数据
+	PublishConfigIDs string    `gorm:"column:publish_config_ids;type:varchar(100);not null"`
+	Status           int       `gorm:"column:status;type:int;not null"`
+	CreateTime       time.Time `gorm:"column:create_time;type:timestamp;not null"`
+	UpdateTime       time.Time `gorm:"column:update_time;type:timestamp;not null"`
 }
 
 // PublishConfigColumns get sql column name.获取数据库列名
 var PublishConfigColumns = struct {
-	ID          string
-	NamespaceID string
-	Status      string
-	CreateTime  string
-	UpdateTime  string
+	ID               string
+	ProjectID        string
+	NamespaceID      string
+	PublishType      string
+	PublishData      string
+	PublishConfigIDs string
+	Status           string
+	CreateTime       string
+	UpdateTime       string
 }{
-	ID:          "id",
-	NamespaceID: "namespace_id",
-	Status:      "status",
-	CreateTime:  "create_time",
-	UpdateTime:  "update_time",
+	ID:               "id",
+	ProjectID:        "project_id",
+	NamespaceID:      "namespace_id",
+	PublishType:      "publish_type",
+	PublishData:      "publish_data",
+	PublishConfigIDs: "publish_config_ids",
+	Status:           "status",
+	CreateTime:       "create_time",
+	UpdateTime:       "update_time",
 }
 
 // Staff [...]

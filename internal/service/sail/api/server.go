@@ -64,7 +64,7 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 		Db:           cfg.Redis.Db,
 		MaxRetries:   cfg.Redis.MaxRetries,
 		PoolSize:     cfg.Redis.PoolSize,
-		MinIdleConns: cfg.Redis.MinIdleConns,
+		MinIdleConns: cfg.Redis.MinIdleConn,
 	})
 	if err != nil {
 		logger.Fatal("new cache err", zap.Error(err))

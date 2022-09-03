@@ -113,7 +113,12 @@ func (obj *_ConfigMgr) WithName(name string) Option {
 	return optionFunc(func(o *options) { o.query["name"] = name })
 }
 
-// WithProjectGroupID project_group_id获取
+// WithProjectID project_id获取
+func (obj *_ConfigMgr) WithProjectID(projectID int) Option {
+	return optionFunc(func(o *options) { o.query["project_id"] = projectID })
+}
+
+// WithProjectGroupID project_group_id获取 公共配置只有project_group_id
 func (obj *_ConfigMgr) WithProjectGroupID(projectGroupID int) Option {
 	return optionFunc(func(o *options) { o.query["project_group_id"] = projectGroupID })
 }
@@ -139,7 +144,7 @@ func (obj *_ConfigMgr) WithIsEncrypt(isEncrypt bool) Option {
 }
 
 // WithConfigType config_type获取
-func (obj *_ConfigMgr) WithConfigType(configType int) Option {
+func (obj *_ConfigMgr) WithConfigType(configType string) Option {
 	return optionFunc(func(o *options) { o.query["config_type"] = configType })
 }
 
@@ -176,14 +181,28 @@ func (obj *_ConfigMgr) GetBatchFromName(names []string) (results []*model.Config
 	return
 }
 
-// GetFromProjectGroupID 通过project_group_id获取内容
+// GetFromProjectID 通过project_id获取内容
+func (obj *_ConfigMgr) GetFromProjectID(projectID int) (results []*model.Config, err error) {
+	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_id` = ?", projectID).Find(&results).Error
+
+	return
+}
+
+// GetBatchFromProjectID 批量查找
+func (obj *_ConfigMgr) GetBatchFromProjectID(projectIDs []int) (results []*model.Config, err error) {
+	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_id` IN (?)", projectIDs).Find(&results).Error
+
+	return
+}
+
+// GetFromProjectGroupID 通过project_group_id获取内容 公共配置只有project_group_id
 func (obj *_ConfigMgr) GetFromProjectGroupID(projectGroupID int) (results []*model.Config, err error) {
 	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_group_id` = ?", projectGroupID).Find(&results).Error
 
 	return
 }
 
-// GetBatchFromProjectGroupID 批量查找
+// GetBatchFromProjectGroupID 批量查找 公共配置只有project_group_id
 func (obj *_ConfigMgr) GetBatchFromProjectGroupID(projectGroupIDs []int) (results []*model.Config, err error) {
 	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_group_id` IN (?)", projectGroupIDs).Find(&results).Error
 
@@ -247,14 +266,14 @@ func (obj *_ConfigMgr) GetBatchFromIsEncrypt(isEncrypts []bool) (results []*mode
 }
 
 // GetFromConfigType 通过config_type获取内容
-func (obj *_ConfigMgr) GetFromConfigType(configType int) (results []*model.Config, err error) {
+func (obj *_ConfigMgr) GetFromConfigType(configType string) (results []*model.Config, err error) {
 	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`config_type` = ?", configType).Find(&results).Error
 
 	return
 }
 
 // GetBatchFromConfigType 批量查找
-func (obj *_ConfigMgr) GetBatchFromConfigType(configTypes []int) (results []*model.Config, err error) {
+func (obj *_ConfigMgr) GetBatchFromConfigType(configTypes []string) (results []*model.Config, err error) {
 	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`config_type` IN (?)", configTypes).Find(&results).Error
 
 	return
