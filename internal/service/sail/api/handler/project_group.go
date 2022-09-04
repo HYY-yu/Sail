@@ -94,7 +94,7 @@ func (h *ProjectGroupHandler) Edit(c core.Context) {
 // Del
 // @Summary  删除项目组
 // @Tags     项目组管理
-// @Param    group_id  body      true                                "GroupId"
+// @Param    group_id  body      int                                 true  "GroupId"
 // @Success  200       {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/project_group/del    [POST]
 func (h *ProjectGroupHandler) Del(c core.Context) {

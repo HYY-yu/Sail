@@ -1,0 +1,1037 @@
+definitions:
+  model.AddConfig:
+    properties:
+      content:
+        type: string
+      is_encrypt:
+        type: boolean
+      is_link_public:
+        type: boolean
+      is_public:
+        type: boolean
+      name:
+        type: string
+      namespace_id:
+        description: 传-1代表全部
+        type: integer
+      project_id:
+        type: integer
+      public_config_id:
+        type: integer
+      type:
+        type: string
+    type: object
+  model.AddNamespace:
+    properties:
+      name:
+        type: string
+      project_group_id:
+        type: integer
+      real_time:
+        description: 是否灰度
+        type: boolean
+    type: object
+  model.AddProject:
+    properties:
+      key:
+        type: string
+      name:
+        type: string
+      project_group_id:
+        type: integer
+    type: object
+  model.AddProjectGroup:
+    properties:
+      name:
+        type: string
+    type: object
+  model.AddPublish:
+    properties:
+      config_id_arr:
+        items:
+          type: integer
+        type: array
+      namespace_id:
+        type: integer
+      project_id:
+        type: integer
+      publish_data:
+        type: string
+      publish_type:
+        type: integer
+    type: object
+  model.AddStaff:
+    properties:
+      name:
+        description: 员工标识
+        type: string
+    type: object
+  model.ConfigCopy:
+    properties:
+      config_id:
+        type: integer
+      op:
+        description: 1 转为副本 2关联公共配置
+        type: integer
+    type: object
+  model.ConfigHistoryList:
+    properties:
+      config_id:
+        type: integer
+      content:
+        type: string
+      create_by:
+        type: integer
+      create_by_name:
+        type: string
+      create_time:
+        type: integer
+      reversion:
+        type: integer
+    type: object
+  model.ConfigInfo:
+    properties:
+      config_id:
+        type: integer
+      config_key:
+        type: string
+      content:
+        type: string
+      is_copy:
+        type: boolean
+      is_encrypt:
+        type: boolean
+      is_link_public:
+        type: boolean
+      is_public:
+        type: boolean
+      name:
+        type: string
+    type: object
+  model.EditConfig:
+    properties:
+      config_id:
+        type: integer
+      content:
+        type: string
+    type: object
+  model.EditNamespace:
+    properties:
+      name:
+        type: string
+      namespace_id:
+        type: integer
+      real_time:
+        type: boolean
+    type: object
+  model.EditProject:
+    properties:
+      name:
+        type: string
+      project_id:
+        type: integer
+    type: object
+  model.EditProjectGroup:
+    properties:
+      name:
+        type: string
+      project_group_id:
+        type: integer
+    type: object
+  model.EditStaff:
+    properties:
+      name:
+        type: string
+      staff_id:
+        type: integer
+    type: object
+  model.GrantStaff:
+    properties:
+      project_group_id:
+        type: integer
+      role:
+        type: integer
+      staff_id:
+        type: integer
+    type: object
+  model.NamespaceList:
+    properties:
+      create_by:
+        type: integer
+      create_by_name:
+        type: string
+      create_time:
+        type: integer
+      name:
+        type: string
+      namespace_id:
+        type: integer
+      project_group_id:
+        type: integer
+      project_group_name:
+        type: string
+      real_time:
+        description: 是否灰度
+        type: boolean
+    type: object
+  model.ProjectGroupList:
+    properties:
+      create_by:
+        type: integer
+      create_by_name:
+        type: string
+      create_time:
+        type: integer
+      name:
+        type: string
+      project_group_id:
+        type: integer
+    type: object
+  model.ProjectList:
+    properties:
+      create_by:
+        type: integer
+      create_by_name:
+        type: string
+      create_time:
+        type: integer
+      key:
+        type: string
+      name:
+        type: string
+      project_group_id:
+        type: integer
+      project_group_name:
+        type: string
+      project_id:
+        type: integer
+    type: object
+  model.ProjectTree:
+    properties:
+      nodes:
+        items:
+          $ref: '#/definitions/model.TreeNode'
+        type: array
+    type: object
+  model.PublishConfigList:
+    properties:
+      create_by:
+        type: integer
+      create_by_name:
+        type: string
+      create_time:
+        type: integer
+      namespace_id:
+        type: integer
+      namespace_name:
+        type: string
+      publish_configs:
+        items:
+          type: string
+        type: array
+      publish_id:
+        type: integer
+      publish_type:
+        type: integer
+      publish_type_str:
+        type: string
+      status:
+        type: integer
+      status_str:
+        type: string
+    type: object
+  model.RollbackConfig:
+    properties:
+      history_id:
+        type: integer
+    type: object
+  model.RollbackPublish:
+    properties:
+      publish_id:
+        type: integer
+    type: object
+  model.StaffList:
+    properties:
+      create_time:
+        type: integer
+      name:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/model.StaffRole'
+        type: array
+      staff_id:
+        type: integer
+    type: object
+  model.StaffRole:
+    properties:
+      project_group_id:
+        type: integer
+      project_group_name:
+        type: string
+      role:
+        type: integer
+      role_info:
+        type: string
+    type: object
+  model.TreeNode:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/model.TreeNode'
+        type: array
+      id:
+        type: integer
+      name:
+        type: string
+      real_time:
+        description: false 代表可发布
+        type: boolean
+      type:
+        type: integer
+    type: object
+  page.Page:
+    properties:
+      count:
+        type: integer
+      list: {}
+    type: object
+  response.JsonResponse:
+    properties:
+      code:
+        description: 业务码
+        type: integer
+      data: {}
+      message:
+        description: 描述信息
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: FengYu
+    url: https://hyy-yu.space
+  description: 配置中心接口设计文档
+  title: 配置中心
+  version: "1.0"
+paths:
+  /v1/config/add:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddConfig'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加配置
+      tags:
+      - 配置管理
+  /v1/config/copy:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.ConfigCopy'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 副本配置
+      tags:
+      - 配置管理
+  /v1/config/del:
+    post:
+      parameters:
+      - description: ConfigId
+        in: body
+        name: config_id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 删除配置
+      tags:
+      - 配置管理
+  /v1/config/edit:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.EditConfig'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 编辑配置
+      tags:
+      - 配置管理
+  /v1/config/history:
+    get:
+      parameters:
+      - description: 配置ID
+        in: query
+        name: config_id
+        type: integer
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/model.ConfigHistoryList'
+                  type: array
+              type: object
+      summary: 配置历史
+      tags:
+      - 配置管理
+  /v1/config/info:
+    get:
+      parameters:
+      - description: 配置ID
+        in: query
+        name: config_id
+        type: integer
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.ConfigInfo'
+              type: object
+      summary: 配置详情
+      tags:
+      - 配置管理
+  /v1/config/rollback:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.RollbackConfig'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 回滚配置
+      tags:
+      - 配置管理
+  /v1/config/tree:
+    get:
+      parameters:
+      - description: 配置ID
+        in: query
+        name: project_id
+        type: integer
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.ProjectTree'
+              type: object
+      summary: 配置树
+      tags:
+      - 配置管理
+  /v1/namespace/add:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddNamespace'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加命名空间
+      tags:
+      - 命名空间管理
+  /v1/namespace/del:
+    post:
+      parameters:
+      - description: NamespaceId
+        in: body
+        name: namespace_id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 删除命名空间
+      tags:
+      - 命名空间管理
+  /v1/namespace/edit:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.EditNamespace'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 编辑命名空间
+      tags:
+      - 命名空间管理
+  /v1/namespace/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页号
+        in: query
+        name: page_index
+        type: integer
+      - default: 10
+        description: 页长
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序字段
+        in: query
+        name: sort
+        type: string
+      - description: 命名空间ID
+        in: query
+        name: namespace_id
+        type: integer
+      - description: 命名空间名称
+        in: query
+        name: namespace_name
+        type: string
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/page.Page'
+                  - properties:
+                      List:
+                        $ref: '#/definitions/model.NamespaceList'
+                    type: object
+              type: object
+      summary: 命名空间列表
+      tags:
+      - 命名空间管理
+  /v1/project/add:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddProject'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加项目
+      tags:
+      - 项目管理
+  /v1/project/del:
+    post:
+      parameters:
+      - description: ProjectId
+        in: body
+        name: project_id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 删除项目
+      tags:
+      - 项目管理
+  /v1/project/edit:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.EditProject'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 编辑项目
+      tags:
+      - 项目管理
+  /v1/project/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页号
+        in: query
+        name: page_index
+        type: integer
+      - default: 10
+        description: 页长
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序字段
+        in: query
+        name: sort
+        type: string
+      - description: 项目ID
+        in: query
+        name: project_id
+        type: integer
+      - description: 项目名称
+        in: query
+        name: project_name
+        type: string
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/page.Page'
+                  - properties:
+                      List:
+                        $ref: '#/definitions/model.ProjectList'
+                    type: object
+              type: object
+      summary: 项目列表
+      tags:
+      - 项目管理
+  /v1/project_group/add:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddProjectGroup'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加项目组
+      tags:
+      - 项目组管理
+  /v1/project_group/del:
+    post:
+      parameters:
+      - description: GroupId
+        in: body
+        name: group_id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 删除项目组
+      tags:
+      - 项目组管理
+  /v1/project_group/edit:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.EditProjectGroup'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 编辑项目组
+      tags:
+      - 项目组管理
+  /v1/project_group/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页号
+        in: query
+        name: page_index
+        type: integer
+      - default: 10
+        description: 页长
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序字段
+        in: query
+        name: sort
+        type: string
+      - description: 项目组ID
+        in: query
+        name: project_group_id
+        type: integer
+      - description: 项目组名称
+        in: query
+        name: project_group_name
+        type: string
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/page.Page'
+                  - properties:
+                      List:
+                        $ref: '#/definitions/model.ProjectGroupList'
+                    type: object
+              type: object
+      summary: 项目组列表
+      tags:
+      - 项目组管理
+  /v1/publish/add:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddPublish'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加发布
+      tags:
+      - 发布管理
+  /v1/publish/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页号
+        in: query
+        name: page_index
+        type: integer
+      - default: 10
+        description: 页长
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序字段
+        in: query
+        name: sort
+        type: string
+      - description: 项目ID
+        in: query
+        name: project_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/page.Page'
+                  - properties:
+                      List:
+                        $ref: '#/definitions/model.PublishConfigList'
+                    type: object
+              type: object
+      summary: 发布列表
+      tags:
+      - 发布管理
+  /v1/publish/rollback:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.RollbackPublish'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加发布
+      tags:
+      - 发布管理
+  /v1/staff/add:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.AddStaff'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 添加员工
+      tags:
+      - 员工管理
+  /v1/staff/del:
+    post:
+      parameters:
+      - description: StaffId
+        in: body
+        name: staff_id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 删除员工
+      tags:
+      - 员工管理
+  /v1/staff/edit:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.EditStaff'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 编辑员工
+      tags:
+      - 员工管理
+  /v1/staff/grant:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.GrantStaff'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 赋权员工
+      tags:
+      - 员工管理
+  /v1/staff/list:
+    get:
+      parameters:
+      - default: 1
+        description: 页号
+        in: query
+        name: page_index
+        type: integer
+      - default: 10
+        description: 页长
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序字段
+        in: query
+        name: sort
+        type: string
+      - description: 员工ID
+        in: query
+        name: staff_id
+        type: integer
+      - description: 员工名称
+        in: query
+        name: staff_name
+        type: string
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  allOf:
+                  - $ref: '#/definitions/page.Page'
+                  - properties:
+                      List:
+                        $ref: '#/definitions/model.StaffList'
+                    type: object
+              type: object
+      summary: 员工列表
+      tags:
+      - 员工管理
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

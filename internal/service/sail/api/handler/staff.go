@@ -64,7 +64,7 @@ func (h *StaffHandler) Grant(c core.Context) {
 // Del
 // @Summary  删除员工
 // @Tags     员工管理
-// @Param    staff_id  body      true                                "StaffId"
+// @Param    staff_id  body      int                                 true  "StaffId"
 // @Success  200       {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/del    [POST]
 func (h *StaffHandler) Del(c core.Context) {

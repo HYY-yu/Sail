@@ -54,7 +54,7 @@ func (h *NamespaceHandler) Edit(c core.Context) {
 // Del
 // @Summary  删除命名空间
 // @Tags     命名空间管理
-// @Param    namespace_id  body      true                                "NamespaceId"
+// @Param    namespace_id  body      int                                 true  "NamespaceId"
 // @Success  200           {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/namespace/del    [POST]
 func (h *NamespaceHandler) Del(c core.Context) {

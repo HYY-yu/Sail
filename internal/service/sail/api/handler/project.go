@@ -54,7 +54,7 @@ func (h *ProjectHandler) Edit(c core.Context) {
 // Del
 // @Summary  删除项目
 // @Tags     项目管理
-// @Param    project_id  body      true                                "ProjectId"
+// @Param    project_id  body      int                                 true  "ProjectId"
 // @Success  200         {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/project/del    [POST]
 func (h *ProjectHandler) Del(c core.Context) {
