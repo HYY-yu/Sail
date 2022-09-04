@@ -16,20 +16,12 @@ type _ConfigMgr struct {
 }
 
 // ConfigMgr open func
-func ConfigMgr(db *gorm.DB) *_ConfigMgr {
+func ConfigMgr(ctx context.Context, db *gorm.DB) *_ConfigMgr {
 	if db == nil {
 		panic(fmt.Errorf("ConfigMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_ConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_ConfigMgr) WithContext(c context.Context) *_ConfigMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_ConfigMgr) WithSelects(idName string, selects ...string) *_ConfigMgr {
@@ -65,12 +57,14 @@ func (obj *_ConfigMgr) WithOmit(omit ...string) *_ConfigMgr {
 
 func (obj *_ConfigMgr) WithOptions(opts ...Option) *_ConfigMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -103,194 +97,143 @@ func (obj *_ConfigMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.Config{}).Count(count)
 }
 
+func (obj *_ConfigMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.Config{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_ConfigMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_ConfigMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithName name获取
-func (obj *_ConfigMgr) WithName(name string) Option {
-	return optionFunc(func(o *options) { o.query["name"] = name })
+func (obj *_ConfigMgr) WithName(name string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["name"] = queryData{
+			cond: cond[0],
+			data: name,
+		}
+	})
 }
 
 // WithProjectID project_id获取
-func (obj *_ConfigMgr) WithProjectID(projectID int) Option {
-	return optionFunc(func(o *options) { o.query["project_id"] = projectID })
+func (obj *_ConfigMgr) WithProjectID(projectID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["project_id"] = queryData{
+			cond: cond[0],
+			data: projectID,
+		}
+	})
 }
 
 // WithProjectGroupID project_group_id获取 公共配置只有project_group_id
-func (obj *_ConfigMgr) WithProjectGroupID(projectGroupID int) Option {
-	return optionFunc(func(o *options) { o.query["project_group_id"] = projectGroupID })
+func (obj *_ConfigMgr) WithProjectGroupID(projectGroupID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["project_group_id"] = queryData{
+			cond: cond[0],
+			data: projectGroupID,
+		}
+	})
 }
 
 // WithNamespaceID namespace_id获取
-func (obj *_ConfigMgr) WithNamespaceID(namespaceID int) Option {
-	return optionFunc(func(o *options) { o.query["namespace_id"] = namespaceID })
+func (obj *_ConfigMgr) WithNamespaceID(namespaceID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["namespace_id"] = queryData{
+			cond: cond[0],
+			data: namespaceID,
+		}
+	})
 }
 
 // WithIsPublic is_public获取
-func (obj *_ConfigMgr) WithIsPublic(isPublic bool) Option {
-	return optionFunc(func(o *options) { o.query["is_public"] = isPublic })
+func (obj *_ConfigMgr) WithIsPublic(isPublic bool, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["is_public"] = queryData{
+			cond: cond[0],
+			data: isPublic,
+		}
+	})
 }
 
 // WithIsLinkPublic is_link_public获取
-func (obj *_ConfigMgr) WithIsLinkPublic(isLinkPublic bool) Option {
-	return optionFunc(func(o *options) { o.query["is_link_public"] = isLinkPublic })
+func (obj *_ConfigMgr) WithIsLinkPublic(isLinkPublic bool, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["is_link_public"] = queryData{
+			cond: cond[0],
+			data: isLinkPublic,
+		}
+	})
 }
 
 // WithIsEncrypt is_encrypt获取
-func (obj *_ConfigMgr) WithIsEncrypt(isEncrypt bool) Option {
-	return optionFunc(func(o *options) { o.query["is_encrypt"] = isEncrypt })
+func (obj *_ConfigMgr) WithIsEncrypt(isEncrypt bool, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["is_encrypt"] = queryData{
+			cond: cond[0],
+			data: isEncrypt,
+		}
+	})
 }
 
 // WithConfigType config_type获取
-func (obj *_ConfigMgr) WithConfigType(configType string) Option {
-	return optionFunc(func(o *options) { o.query["config_type"] = configType })
+func (obj *_ConfigMgr) WithConfigType(configType string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["config_type"] = queryData{
+			cond: cond[0],
+			data: configType,
+		}
+	})
 }
 
 // WithConfigKey config_key获取
-func (obj *_ConfigMgr) WithConfigKey(configKey string) Option {
-	return optionFunc(func(o *options) { o.query["config_key"] = configKey })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_ConfigMgr) GetFromID(id int) (result model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_ConfigMgr) GetBatchFromID(ids []int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromName 通过name获取内容
-func (obj *_ConfigMgr) GetFromName(name string) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`name` = ?", name).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromName 批量查找
-func (obj *_ConfigMgr) GetBatchFromName(names []string) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`name` IN (?)", names).Find(&results).Error
-
-	return
-}
-
-// GetFromProjectID 通过project_id获取内容
-func (obj *_ConfigMgr) GetFromProjectID(projectID int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_id` = ?", projectID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromProjectID 批量查找
-func (obj *_ConfigMgr) GetBatchFromProjectID(projectIDs []int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_id` IN (?)", projectIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromProjectGroupID 通过project_group_id获取内容 公共配置只有project_group_id
-func (obj *_ConfigMgr) GetFromProjectGroupID(projectGroupID int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_group_id` = ?", projectGroupID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromProjectGroupID 批量查找 公共配置只有project_group_id
-func (obj *_ConfigMgr) GetBatchFromProjectGroupID(projectGroupIDs []int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`project_group_id` IN (?)", projectGroupIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromNamespaceID 通过namespace_id获取内容
-func (obj *_ConfigMgr) GetFromNamespaceID(namespaceID int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`namespace_id` = ?", namespaceID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromNamespaceID 批量查找
-func (obj *_ConfigMgr) GetBatchFromNamespaceID(namespaceIDs []int) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`namespace_id` IN (?)", namespaceIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromIsPublic 通过is_public获取内容
-func (obj *_ConfigMgr) GetFromIsPublic(isPublic bool) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`is_public` = ?", isPublic).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromIsPublic 批量查找
-func (obj *_ConfigMgr) GetBatchFromIsPublic(isPublics []bool) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`is_public` IN (?)", isPublics).Find(&results).Error
-
-	return
-}
-
-// GetFromIsLinkPublic 通过is_link_public获取内容
-func (obj *_ConfigMgr) GetFromIsLinkPublic(isLinkPublic bool) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`is_link_public` = ?", isLinkPublic).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromIsLinkPublic 批量查找
-func (obj *_ConfigMgr) GetBatchFromIsLinkPublic(isLinkPublics []bool) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`is_link_public` IN (?)", isLinkPublics).Find(&results).Error
-
-	return
-}
-
-// GetFromIsEncrypt 通过is_encrypt获取内容
-func (obj *_ConfigMgr) GetFromIsEncrypt(isEncrypt bool) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`is_encrypt` = ?", isEncrypt).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromIsEncrypt 批量查找
-func (obj *_ConfigMgr) GetBatchFromIsEncrypt(isEncrypts []bool) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`is_encrypt` IN (?)", isEncrypts).Find(&results).Error
-
-	return
-}
-
-// GetFromConfigType 通过config_type获取内容
-func (obj *_ConfigMgr) GetFromConfigType(configType string) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`config_type` = ?", configType).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromConfigType 批量查找
-func (obj *_ConfigMgr) GetBatchFromConfigType(configTypes []string) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`config_type` IN (?)", configTypes).Find(&results).Error
-
-	return
-}
-
-// GetFromConfigKey 通过config_key获取内容
-func (obj *_ConfigMgr) GetFromConfigKey(configKey string) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`config_key` = ?", configKey).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromConfigKey 批量查找
-func (obj *_ConfigMgr) GetBatchFromConfigKey(configKeys []string) (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Where("`config_key` IN (?)", configKeys).Find(&results).Error
-
-	return
+func (obj *_ConfigMgr) WithConfigKey(configKey string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["config_key"] = queryData{
+			cond: cond[0],
+			data: configKey,
+		}
+	})
 }
 
 func (obj *_ConfigMgr) CreateConfig(bean *model.Config) (err error) {

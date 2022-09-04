@@ -18,11 +18,11 @@ func NewStaffHandler() *StaffHandler {
 // List
 // @Summary  员工列表
 // @Tags     员工管理
-// @Param    page_index  query     int                                                                 false  "页号"  default(1)
-// @Param    page_size   query     int                                                                 false  "页长"  default(10)
-// @Param    sort        query     string                                                              false  "排序字段"
-// @Param    staff_id    query     int                                                                 false  "员工ID"
-// @Param    staff_name  query     string                                                              false  "员工名称"
+// @Param    page_index  query     int                                                          false  "页号"  default(1)
+// @Param    page_size   query     int                                                          false  "页长"  default(10)
+// @Param    sort        query     string                                                       false  "排序字段"
+// @Param    staff_id    query     int                                                          false  "员工ID"
+// @Param    staff_name  query     string                                                       false  "员工名称"
 // @Success  200         {object}  response.JsonResponse{data=page.Page{List=model.StaffList}}  "data"
 // @Router   /v1/staff/list    [GET]
 func (h *StaffHandler) List(c core.Context) {
@@ -34,7 +34,7 @@ func (h *StaffHandler) List(c core.Context) {
 // Add
 // @Summary  添加员工
 // @Tags     员工管理
-// @Param    params  body      model.AddStaff               true  "data"
+// @Param    params  body      model.AddStaff                      true  "data"
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/add    [POST]
 func (h *StaffHandler) Add(c core.Context) {
@@ -44,7 +44,7 @@ func (h *StaffHandler) Add(c core.Context) {
 // Edit
 // @Summary  编辑员工
 // @Tags     员工管理
-// @Param    params  body      model.EditStaff            true  "data"
+// @Param    params  body      model.EditStaff                     true  "data"
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/edit    [POST]
 func (h *StaffHandler) Edit(c core.Context) {
@@ -54,7 +54,7 @@ func (h *StaffHandler) Edit(c core.Context) {
 // Grant
 // @Summary  赋权员工
 // @Tags     员工管理
-// @Param    params  body      model.GrantStaff            true  "data"
+// @Param    params  body      model.GrantStaff                    true  "data"
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/grant    [POST]
 func (h *StaffHandler) Grant(c core.Context) {

@@ -61,7 +61,12 @@ func (obj *_BaseMgr) newDB() *gorm.DB {
 }
 
 type options struct {
-	query map[string]interface{}
+	query map[string]queryData
+}
+
+type queryData struct {
+	data interface{}
+	cond string
 }
 
 // Option overrides behavior of Connect.
@@ -86,18 +91,6 @@ func CloseRelated() {
 }
 
 // -------- sql where helper ----------
-
-type CheckWhere func(v interface{}) bool
-type DoWhere func(*gorm.DB, interface{}) *gorm.DB
-
-// AddWhere
-// CheckWhere 函数 如果返回true，则表明 DoWhere 的查询条件需要加到sql中去
-func (obj *_BaseMgr) addWhere(v interface{}, c CheckWhere, d DoWhere) *_BaseMgr {
-	if c(v) {
-		obj.DB = d(obj.DB, v)
-	}
-	return obj
-}
 
 func (obj *_BaseMgr) sort(userSort, defaultSort string) *_BaseMgr {
 	if len(userSort) > 0 {

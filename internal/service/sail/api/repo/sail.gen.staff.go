@@ -17,20 +17,12 @@ type _StaffMgr struct {
 }
 
 // StaffMgr open func
-func StaffMgr(db *gorm.DB) *_StaffMgr {
+func StaffMgr(ctx context.Context, db *gorm.DB) *_StaffMgr {
 	if db == nil {
 		panic(fmt.Errorf("StaffMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_StaffMgr{_BaseMgr: &_BaseMgr{DB: db.Table("staff"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_StaffMgr) WithContext(c context.Context) *_StaffMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_StaffMgr) WithSelects(idName string, selects ...string) *_StaffMgr {
@@ -66,12 +58,14 @@ func (obj *_StaffMgr) WithOmit(omit ...string) *_StaffMgr {
 
 func (obj *_StaffMgr) WithOptions(opts ...Option) *_StaffMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -104,99 +98,78 @@ func (obj *_StaffMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Count(count)
 }
 
+func (obj *_StaffMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_StaffMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_StaffMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithName name获取
-func (obj *_StaffMgr) WithName(name string) Option {
-	return optionFunc(func(o *options) { o.query["name"] = name })
+func (obj *_StaffMgr) WithName(name string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["name"] = queryData{
+			cond: cond[0],
+			data: name,
+		}
+	})
 }
 
 // WithCreateTime create_time获取
-func (obj *_StaffMgr) WithCreateTime(createTime time.Time) Option {
-	return optionFunc(func(o *options) { o.query["create_time"] = createTime })
+func (obj *_StaffMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_time"] = queryData{
+			cond: cond[0],
+			data: createTime,
+		}
+	})
 }
 
 // WithCreateBy create_by获取
-func (obj *_StaffMgr) WithCreateBy(createBy int) Option {
-	return optionFunc(func(o *options) { o.query["create_by"] = createBy })
+func (obj *_StaffMgr) WithCreateBy(createBy int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_by"] = queryData{
+			cond: cond[0],
+			data: createBy,
+		}
+	})
 }
 
 // WithDeleteTime delete_time获取
-func (obj *_StaffMgr) WithDeleteTime(deleteTime int) Option {
-	return optionFunc(func(o *options) { o.query["delete_time"] = deleteTime })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_StaffMgr) GetFromID(id int) (result model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_StaffMgr) GetBatchFromID(ids []int) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromName 通过name获取内容
-func (obj *_StaffMgr) GetFromName(name string) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`name` = ?", name).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromName 批量查找
-func (obj *_StaffMgr) GetBatchFromName(names []string) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`name` IN (?)", names).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateTime 通过create_time获取内容
-func (obj *_StaffMgr) GetFromCreateTime(createTime time.Time) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`create_time` = ?", createTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateTime 批量查找
-func (obj *_StaffMgr) GetBatchFromCreateTime(createTimes []time.Time) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`create_time` IN (?)", createTimes).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateBy 通过create_by获取内容
-func (obj *_StaffMgr) GetFromCreateBy(createBy int) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`create_by` = ?", createBy).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateBy 批量查找
-func (obj *_StaffMgr) GetBatchFromCreateBy(createBys []int) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`create_by` IN (?)", createBys).Find(&results).Error
-
-	return
-}
-
-// GetFromDeleteTime 通过delete_time获取内容
-func (obj *_StaffMgr) GetFromDeleteTime(deleteTime int) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`delete_time` = ?", deleteTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromDeleteTime 批量查找
-func (obj *_StaffMgr) GetBatchFromDeleteTime(deleteTimes []int) (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Where("`delete_time` IN (?)", deleteTimes).Find(&results).Error
-
-	return
+func (obj *_StaffMgr) WithDeleteTime(deleteTime int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["delete_time"] = queryData{
+			cond: cond[0],
+			data: deleteTime,
+		}
+	})
 }
 
 func (obj *_StaffMgr) CreateStaff(bean *model.Staff) (err error) {

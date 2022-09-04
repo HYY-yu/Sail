@@ -17,20 +17,12 @@ type _NamespaceMgr struct {
 }
 
 // NamespaceMgr open func
-func NamespaceMgr(db *gorm.DB) *_NamespaceMgr {
+func NamespaceMgr(ctx context.Context, db *gorm.DB) *_NamespaceMgr {
 	if db == nil {
 		panic(fmt.Errorf("NamespaceMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_NamespaceMgr{_BaseMgr: &_BaseMgr{DB: db.Table("namespace"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_NamespaceMgr) WithContext(c context.Context) *_NamespaceMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_NamespaceMgr) WithSelects(idName string, selects ...string) *_NamespaceMgr {
@@ -66,12 +58,14 @@ func (obj *_NamespaceMgr) WithOmit(omit ...string) *_NamespaceMgr {
 
 func (obj *_NamespaceMgr) WithOptions(opts ...Option) *_NamespaceMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -104,137 +98,104 @@ func (obj *_NamespaceMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Count(count)
 }
 
+func (obj *_NamespaceMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_NamespaceMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_NamespaceMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithProjectGroupID project_group_id获取
-func (obj *_NamespaceMgr) WithProjectGroupID(projectGroupID int) Option {
-	return optionFunc(func(o *options) { o.query["project_group_id"] = projectGroupID })
+func (obj *_NamespaceMgr) WithProjectGroupID(projectGroupID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["project_group_id"] = queryData{
+			cond: cond[0],
+			data: projectGroupID,
+		}
+	})
 }
 
 // WithName name获取
-func (obj *_NamespaceMgr) WithName(name string) Option {
-	return optionFunc(func(o *options) { o.query["name"] = name })
+func (obj *_NamespaceMgr) WithName(name string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["name"] = queryData{
+			cond: cond[0],
+			data: name,
+		}
+	})
 }
 
 // WithRealTime real_time获取 是否是实时发布
-func (obj *_NamespaceMgr) WithRealTime(realTime bool) Option {
-	return optionFunc(func(o *options) { o.query["real_time"] = realTime })
+func (obj *_NamespaceMgr) WithRealTime(realTime bool, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["real_time"] = queryData{
+			cond: cond[0],
+			data: realTime,
+		}
+	})
 }
 
 // WithCreateTime create_time获取
-func (obj *_NamespaceMgr) WithCreateTime(createTime time.Time) Option {
-	return optionFunc(func(o *options) { o.query["create_time"] = createTime })
+func (obj *_NamespaceMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_time"] = queryData{
+			cond: cond[0],
+			data: createTime,
+		}
+	})
 }
 
 // WithCreateBy create_by获取
-func (obj *_NamespaceMgr) WithCreateBy(createBy int) Option {
-	return optionFunc(func(o *options) { o.query["create_by"] = createBy })
+func (obj *_NamespaceMgr) WithCreateBy(createBy int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_by"] = queryData{
+			cond: cond[0],
+			data: createBy,
+		}
+	})
 }
 
 // WithDeleteTime delete_time获取
-func (obj *_NamespaceMgr) WithDeleteTime(deleteTime int) Option {
-	return optionFunc(func(o *options) { o.query["delete_time"] = deleteTime })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_NamespaceMgr) GetFromID(id int) (result model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_NamespaceMgr) GetBatchFromID(ids []int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromProjectGroupID 通过project_group_id获取内容
-func (obj *_NamespaceMgr) GetFromProjectGroupID(projectGroupID int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`project_group_id` = ?", projectGroupID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromProjectGroupID 批量查找
-func (obj *_NamespaceMgr) GetBatchFromProjectGroupID(projectGroupIDs []int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`project_group_id` IN (?)", projectGroupIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromName 通过name获取内容
-func (obj *_NamespaceMgr) GetFromName(name string) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`name` = ?", name).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromName 批量查找
-func (obj *_NamespaceMgr) GetBatchFromName(names []string) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`name` IN (?)", names).Find(&results).Error
-
-	return
-}
-
-// GetFromRealTime 通过real_time获取内容 是否是实时发布
-func (obj *_NamespaceMgr) GetFromRealTime(realTime bool) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`real_time` = ?", realTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromRealTime 批量查找 是否是实时发布
-func (obj *_NamespaceMgr) GetBatchFromRealTime(realTimes []bool) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`real_time` IN (?)", realTimes).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateTime 通过create_time获取内容
-func (obj *_NamespaceMgr) GetFromCreateTime(createTime time.Time) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`create_time` = ?", createTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateTime 批量查找
-func (obj *_NamespaceMgr) GetBatchFromCreateTime(createTimes []time.Time) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`create_time` IN (?)", createTimes).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateBy 通过create_by获取内容
-func (obj *_NamespaceMgr) GetFromCreateBy(createBy int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`create_by` = ?", createBy).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateBy 批量查找
-func (obj *_NamespaceMgr) GetBatchFromCreateBy(createBys []int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`create_by` IN (?)", createBys).Find(&results).Error
-
-	return
-}
-
-// GetFromDeleteTime 通过delete_time获取内容
-func (obj *_NamespaceMgr) GetFromDeleteTime(deleteTime int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`delete_time` = ?", deleteTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromDeleteTime 批量查找
-func (obj *_NamespaceMgr) GetBatchFromDeleteTime(deleteTimes []int) (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Where("`delete_time` IN (?)", deleteTimes).Find(&results).Error
-
-	return
+func (obj *_NamespaceMgr) WithDeleteTime(deleteTime int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["delete_time"] = queryData{
+			cond: cond[0],
+			data: deleteTime,
+		}
+	})
 }
 
 func (obj *_NamespaceMgr) CreateNamespace(bean *model.Namespace) (err error) {

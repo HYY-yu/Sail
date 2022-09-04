@@ -7,15 +7,20 @@
 package api
 
 import (
+	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
+	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
 	"github.com/HYY-yu/seckill.pkg/cache"
 	"github.com/HYY-yu/seckill.pkg/db"
-	"go.uber.org/zap"
 )
 
 // Injectors from wire.go:
 
 // initHandlers init Handlers.
-func initHandlers(l *zap.Logger, d db.Repo, c cache.Repo) (*Handlers, error) {
-	handlers := NewHandlers()
+func initHandlers(d db.Repo, c cache.Repo) (*Handlers, error) {
+	projectGroupRepo := repo.NewProjectGroupRepo()
+	projectGroupSvc := svc.NewProjectGroupSvc(d, projectGroupRepo)
+	projectGroupHandler := handler.NewProjectGroupHandler(projectGroupSvc)
+	handlers := NewHandlers(projectGroupHandler)
 	return handlers, nil
 }

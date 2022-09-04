@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/HYY-yu/seckill.pkg/cache"
 	"github.com/HYY-yu/seckill.pkg/core"
@@ -15,14 +14,20 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
 )
 
 type Handlers struct {
+	projectGroupHandler *handler.ProjectGroupHandler
 }
 
-func NewHandlers() *Handlers {
-	return &Handlers{}
+func NewHandlers(
+	projectGroupHandler *handler.ProjectGroupHandler,
+) *Handlers {
+	return &Handlers{
+		projectGroupHandler: projectGroupHandler,
+	}
 }
 
 type Server struct {
@@ -58,18 +63,18 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	}
 	s.DB = dbRepo
 
-	cacheRepo, err := cache.New(cfg.Server.ServerName, &cache.RedisConf{
-		Addr:         cfg.Redis.Addr,
-		Pass:         cfg.Redis.Pass,
-		Db:           cfg.Redis.Db,
-		MaxRetries:   cfg.Redis.MaxRetries,
-		PoolSize:     cfg.Redis.PoolSize,
-		MinIdleConns: cfg.Redis.MinIdleConn,
-	})
-	if err != nil {
-		logger.Fatal("new cache err", zap.Error(err))
-	}
-	s.Cache = cacheRepo
+	//cacheRepo, err := cache.New(cfg.Server.ServerName, &cache.RedisConf{
+	//	Addr:         cfg.Redis.Addr,
+	//	Pass:         cfg.Redis.Pass,
+	//	Db:           cfg.Redis.Db,
+	//	MaxRetries:   cfg.Redis.MaxRetries,
+	//	PoolSize:     cfg.Redis.PoolSize,
+	//	MinIdleConns: cfg.Redis.MinIdleConn,
+	//})
+	//if err != nil {
+	//	logger.Fatal("new cache err", zap.Error(err))
+	//}
+	//s.Cache = cacheRepo
 
 	// Jaeger
 	var tp *trace.TracerProvider
@@ -84,11 +89,10 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	s.Trace = tp
 
 	// Metrics
-	sn := strings.Split(cfg.Server.ServerName, "_")
-	metrics.InitMetrics(strings.Join(sn[:2], "_"))
+	metrics.InitMetrics(cfg.Server.ServerName)
 
 	// Repo Svc Handler
-	c, err := initHandlers(logger, s.DB, s.Cache)
+	c, err := initHandlers(s.DB, s.Cache)
 	if err != nil {
 		panic(err)
 	}

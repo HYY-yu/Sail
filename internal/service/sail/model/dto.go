@@ -4,7 +4,8 @@ type ProjectGroupList struct {
 	ProjectGroupID int    `json:"project_group_id"`
 	Name           string `json:"name"`
 	CreateBy       int    `json:"create_by"`
-	CreateTime     int    `json:"create_time"`
+	CreateByName   string `json:"create_by_name"`
+	CreateTime     int64  `json:"create_time"`
 }
 
 type AddProjectGroup struct {
@@ -23,7 +24,8 @@ type ProjectList struct {
 	Key              string `json:"key"`
 	Name             string `json:"name"`
 	CreateBy         int    `json:"create_by"`
-	CreateTime       int    `json:"create_time"`
+	CreateByName     string `json:"create_by_name"`
+	CreateTime       int64  `json:"create_time"`
 }
 
 type AddProject struct {
@@ -42,10 +44,11 @@ type NamespaceList struct {
 	ProjectGroupID   int    `json:"project_group_id"`
 	ProjectGroupName string `json:"project_group_name"`
 
-	Name       string `json:"name"`
-	RealTime   bool   `json:"real_time"` // 是否灰度
-	CreateBy   int    `json:"create_by"`
-	CreateTime int    `json:"create_time"`
+	Name         string `json:"name"`
+	RealTime     bool   `json:"real_time"` // 是否灰度
+	CreateBy     int    `json:"create_by"`
+	CreateByName string `json:"create_by_name"`
+	CreateTime   int64  `json:"create_time"`
 }
 
 type AddNamespace struct {
@@ -63,7 +66,7 @@ type EditNamespace struct {
 type StaffList struct {
 	StaffID    int    `json:"staff_id"`
 	Name       string `json:"name"`
-	CreateTime int    `json:"create_time"`
+	CreateTime int64  `json:"create_time"`
 
 	Roles []StaffRole `json:"roles"`
 }
@@ -154,10 +157,11 @@ type ConfigCopy struct {
 type ConfigHistoryList struct {
 	ConfigID int `json:"config_id"`
 
-	CreateBy   int    `json:"create_by"`
-	CreateTime int    `json:"create_time"`
-	Reversion  int    `json:"reversion"`
-	Content    string `json:"content"`
+	CreateBy     int    `json:"create_by"`
+	CreateByName string `json:"create_by_name"`
+	CreateTime   int64  `json:"create_time"`
+	Reversion    int    `json:"reversion"`
+	Content      string `json:"content"`
 }
 
 type RollbackConfig struct {
@@ -174,8 +178,9 @@ type PublishConfigList struct {
 
 	PublishConfigs []string `json:"publish_configs"`
 
-	CreateBy   int `json:"create_by"`
-	CreateTime int `json:"create_time"`
+	CreateBy     int    `json:"create_by"`
+	CreateByName string `json:"create_by_name"`
+	CreateTime   int64  `json:"create_time"`
 
 	Status    int    `json:"status"`
 	StatusStr string `json:"status_str"`

@@ -17,20 +17,12 @@ type _PublishConfigMgr struct {
 }
 
 // PublishConfigMgr open func
-func PublishConfigMgr(db *gorm.DB) *_PublishConfigMgr {
+func PublishConfigMgr(ctx context.Context, db *gorm.DB) *_PublishConfigMgr {
 	if db == nil {
 		panic(fmt.Errorf("PublishConfigMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_PublishConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("publish_config"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_PublishConfigMgr) WithContext(c context.Context) *_PublishConfigMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_PublishConfigMgr) WithSelects(idName string, selects ...string) *_PublishConfigMgr {
@@ -66,12 +58,14 @@ func (obj *_PublishConfigMgr) WithOmit(omit ...string) *_PublishConfigMgr {
 
 func (obj *_PublishConfigMgr) WithOptions(opts ...Option) *_PublishConfigMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -104,175 +98,130 @@ func (obj *_PublishConfigMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Count(count)
 }
 
+func (obj *_PublishConfigMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_PublishConfigMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_PublishConfigMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithProjectID project_id获取
-func (obj *_PublishConfigMgr) WithProjectID(projectID int) Option {
-	return optionFunc(func(o *options) { o.query["project_id"] = projectID })
+func (obj *_PublishConfigMgr) WithProjectID(projectID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["project_id"] = queryData{
+			cond: cond[0],
+			data: projectID,
+		}
+	})
 }
 
 // WithNamespaceID namespace_id获取
-func (obj *_PublishConfigMgr) WithNamespaceID(namespaceID int) Option {
-	return optionFunc(func(o *options) { o.query["namespace_id"] = namespaceID })
+func (obj *_PublishConfigMgr) WithNamespaceID(namespaceID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["namespace_id"] = queryData{
+			cond: cond[0],
+			data: namespaceID,
+		}
+	})
 }
 
 // WithPublishType publish_type获取 发布方式
-func (obj *_PublishConfigMgr) WithPublishType(publishType int) Option {
-	return optionFunc(func(o *options) { o.query["publish_type"] = publishType })
+func (obj *_PublishConfigMgr) WithPublishType(publishType int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["publish_type"] = queryData{
+			cond: cond[0],
+			data: publishType,
+		}
+	})
 }
 
 // WithPublishData publish_data获取 发布数据
-func (obj *_PublishConfigMgr) WithPublishData(publishData string) Option {
-	return optionFunc(func(o *options) { o.query["publish_data"] = publishData })
+func (obj *_PublishConfigMgr) WithPublishData(publishData string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["publish_data"] = queryData{
+			cond: cond[0],
+			data: publishData,
+		}
+	})
 }
 
 // WithPublishConfigIDs publish_config_ids获取
-func (obj *_PublishConfigMgr) WithPublishConfigIDs(publishConfigIDs string) Option {
-	return optionFunc(func(o *options) { o.query["publish_config_ids"] = publishConfigIDs })
+func (obj *_PublishConfigMgr) WithPublishConfigIDs(publishConfigIDs string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["publish_config_ids"] = queryData{
+			cond: cond[0],
+			data: publishConfigIDs,
+		}
+	})
 }
 
 // WithStatus status获取
-func (obj *_PublishConfigMgr) WithStatus(status int) Option {
-	return optionFunc(func(o *options) { o.query["status"] = status })
+func (obj *_PublishConfigMgr) WithStatus(status int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["status"] = queryData{
+			cond: cond[0],
+			data: status,
+		}
+	})
 }
 
 // WithCreateTime create_time获取
-func (obj *_PublishConfigMgr) WithCreateTime(createTime time.Time) Option {
-	return optionFunc(func(o *options) { o.query["create_time"] = createTime })
+func (obj *_PublishConfigMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_time"] = queryData{
+			cond: cond[0],
+			data: createTime,
+		}
+	})
 }
 
 // WithUpdateTime update_time获取
-func (obj *_PublishConfigMgr) WithUpdateTime(updateTime time.Time) Option {
-	return optionFunc(func(o *options) { o.query["update_time"] = updateTime })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_PublishConfigMgr) GetFromID(id int) (result model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromID(ids []int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromProjectID 通过project_id获取内容
-func (obj *_PublishConfigMgr) GetFromProjectID(projectID int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`project_id` = ?", projectID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromProjectID 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromProjectID(projectIDs []int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`project_id` IN (?)", projectIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromNamespaceID 通过namespace_id获取内容
-func (obj *_PublishConfigMgr) GetFromNamespaceID(namespaceID int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`namespace_id` = ?", namespaceID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromNamespaceID 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromNamespaceID(namespaceIDs []int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`namespace_id` IN (?)", namespaceIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromPublishType 通过publish_type获取内容 发布方式
-func (obj *_PublishConfigMgr) GetFromPublishType(publishType int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_type` = ?", publishType).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromPublishType 批量查找 发布方式
-func (obj *_PublishConfigMgr) GetBatchFromPublishType(publishTypes []int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_type` IN (?)", publishTypes).Find(&results).Error
-
-	return
-}
-
-// GetFromPublishData 通过publish_data获取内容 发布数据
-func (obj *_PublishConfigMgr) GetFromPublishData(publishData string) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_data` = ?", publishData).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromPublishData 批量查找 发布数据
-func (obj *_PublishConfigMgr) GetBatchFromPublishData(publishDatas []string) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_data` IN (?)", publishDatas).Find(&results).Error
-
-	return
-}
-
-// GetFromPublishConfigIDs 通过publish_config_ids获取内容
-func (obj *_PublishConfigMgr) GetFromPublishConfigIDs(publishConfigIDs string) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_config_ids` = ?", publishConfigIDs).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromPublishConfigIDs 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromPublishConfigIDs(publishConfigIDss []string) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_config_ids` IN (?)", publishConfigIDss).Find(&results).Error
-
-	return
-}
-
-// GetFromStatus 通过status获取内容
-func (obj *_PublishConfigMgr) GetFromStatus(status int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`status` = ?", status).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromStatus 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromStatus(statuss []int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`status` IN (?)", statuss).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateTime 通过create_time获取内容
-func (obj *_PublishConfigMgr) GetFromCreateTime(createTime time.Time) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`create_time` = ?", createTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateTime 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromCreateTime(createTimes []time.Time) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`create_time` IN (?)", createTimes).Find(&results).Error
-
-	return
-}
-
-// GetFromUpdateTime 通过update_time获取内容
-func (obj *_PublishConfigMgr) GetFromUpdateTime(updateTime time.Time) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`update_time` = ?", updateTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromUpdateTime 批量查找
-func (obj *_PublishConfigMgr) GetBatchFromUpdateTime(updateTimes []time.Time) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`update_time` IN (?)", updateTimes).Find(&results).Error
-
-	return
+func (obj *_PublishConfigMgr) WithUpdateTime(updateTime time.Time, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["update_time"] = queryData{
+			cond: cond[0],
+			data: updateTime,
+		}
+	})
 }
 
 func (obj *_PublishConfigMgr) CreatePublishConfig(bean *model.PublishConfig) (err error) {

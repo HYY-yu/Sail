@@ -17,20 +17,12 @@ type _ProjectGroupMgr struct {
 }
 
 // ProjectGroupMgr open func
-func ProjectGroupMgr(db *gorm.DB) *_ProjectGroupMgr {
+func ProjectGroupMgr(ctx context.Context, db *gorm.DB) *_ProjectGroupMgr {
 	if db == nil {
 		panic(fmt.Errorf("ProjectGroupMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_ProjectGroupMgr{_BaseMgr: &_BaseMgr{DB: db.Table("project_group"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_ProjectGroupMgr) WithContext(c context.Context) *_ProjectGroupMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_ProjectGroupMgr) WithSelects(idName string, selects ...string) *_ProjectGroupMgr {
@@ -66,12 +58,14 @@ func (obj *_ProjectGroupMgr) WithOmit(omit ...string) *_ProjectGroupMgr {
 
 func (obj *_ProjectGroupMgr) WithOptions(opts ...Option) *_ProjectGroupMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -104,99 +98,78 @@ func (obj *_ProjectGroupMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Count(count)
 }
 
+func (obj *_ProjectGroupMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_ProjectGroupMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_ProjectGroupMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithName name获取
-func (obj *_ProjectGroupMgr) WithName(name string) Option {
-	return optionFunc(func(o *options) { o.query["name"] = name })
+func (obj *_ProjectGroupMgr) WithName(name string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["name"] = queryData{
+			cond: cond[0],
+			data: name,
+		}
+	})
 }
 
 // WithCreateTime create_time获取
-func (obj *_ProjectGroupMgr) WithCreateTime(createTime time.Time) Option {
-	return optionFunc(func(o *options) { o.query["create_time"] = createTime })
+func (obj *_ProjectGroupMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_time"] = queryData{
+			cond: cond[0],
+			data: createTime,
+		}
+	})
 }
 
 // WithCreateBy create_by获取
-func (obj *_ProjectGroupMgr) WithCreateBy(createBy int) Option {
-	return optionFunc(func(o *options) { o.query["create_by"] = createBy })
+func (obj *_ProjectGroupMgr) WithCreateBy(createBy int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_by"] = queryData{
+			cond: cond[0],
+			data: createBy,
+		}
+	})
 }
 
 // WithDeleteTime delete_time获取
-func (obj *_ProjectGroupMgr) WithDeleteTime(deleteTime int) Option {
-	return optionFunc(func(o *options) { o.query["delete_time"] = deleteTime })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_ProjectGroupMgr) GetFromID(id int) (result model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_ProjectGroupMgr) GetBatchFromID(ids []int) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromName 通过name获取内容
-func (obj *_ProjectGroupMgr) GetFromName(name string) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`name` = ?", name).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromName 批量查找
-func (obj *_ProjectGroupMgr) GetBatchFromName(names []string) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`name` IN (?)", names).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateTime 通过create_time获取内容
-func (obj *_ProjectGroupMgr) GetFromCreateTime(createTime time.Time) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`create_time` = ?", createTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateTime 批量查找
-func (obj *_ProjectGroupMgr) GetBatchFromCreateTime(createTimes []time.Time) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`create_time` IN (?)", createTimes).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateBy 通过create_by获取内容
-func (obj *_ProjectGroupMgr) GetFromCreateBy(createBy int) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`create_by` = ?", createBy).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateBy 批量查找
-func (obj *_ProjectGroupMgr) GetBatchFromCreateBy(createBys []int) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`create_by` IN (?)", createBys).Find(&results).Error
-
-	return
-}
-
-// GetFromDeleteTime 通过delete_time获取内容
-func (obj *_ProjectGroupMgr) GetFromDeleteTime(deleteTime int) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`delete_time` = ?", deleteTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromDeleteTime 批量查找
-func (obj *_ProjectGroupMgr) GetBatchFromDeleteTime(deleteTimes []int) (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Where("`delete_time` IN (?)", deleteTimes).Find(&results).Error
-
-	return
+func (obj *_ProjectGroupMgr) WithDeleteTime(deleteTime int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["delete_time"] = queryData{
+			cond: cond[0],
+			data: deleteTime,
+		}
+	})
 }
 
 func (obj *_ProjectGroupMgr) CreateProjectGroup(bean *model.ProjectGroup) (err error) {

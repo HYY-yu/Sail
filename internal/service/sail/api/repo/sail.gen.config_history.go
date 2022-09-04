@@ -17,20 +17,12 @@ type _ConfigHistoryMgr struct {
 }
 
 // ConfigHistoryMgr open func
-func ConfigHistoryMgr(db *gorm.DB) *_ConfigHistoryMgr {
+func ConfigHistoryMgr(ctx context.Context, db *gorm.DB) *_ConfigHistoryMgr {
 	if db == nil {
 		panic(fmt.Errorf("ConfigHistoryMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_ConfigHistoryMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config_history"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_ConfigHistoryMgr) WithContext(c context.Context) *_ConfigHistoryMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_ConfigHistoryMgr) WithSelects(idName string, selects ...string) *_ConfigHistoryMgr {
@@ -66,12 +58,14 @@ func (obj *_ConfigHistoryMgr) WithOmit(omit ...string) *_ConfigHistoryMgr {
 
 func (obj *_ConfigHistoryMgr) WithOptions(opts ...Option) *_ConfigHistoryMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -104,99 +98,78 @@ func (obj *_ConfigHistoryMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Count(count)
 }
 
+func (obj *_ConfigHistoryMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_ConfigHistoryMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_ConfigHistoryMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithConfigID config_id获取
-func (obj *_ConfigHistoryMgr) WithConfigID(configID int) Option {
-	return optionFunc(func(o *options) { o.query["config_id"] = configID })
+func (obj *_ConfigHistoryMgr) WithConfigID(configID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["config_id"] = queryData{
+			cond: cond[0],
+			data: configID,
+		}
+	})
 }
 
 // WithReversion reversion获取
-func (obj *_ConfigHistoryMgr) WithReversion(reversion int) Option {
-	return optionFunc(func(o *options) { o.query["reversion"] = reversion })
+func (obj *_ConfigHistoryMgr) WithReversion(reversion int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["reversion"] = queryData{
+			cond: cond[0],
+			data: reversion,
+		}
+	})
 }
 
 // WithCreateTime create_time获取
-func (obj *_ConfigHistoryMgr) WithCreateTime(createTime time.Time) Option {
-	return optionFunc(func(o *options) { o.query["create_time"] = createTime })
+func (obj *_ConfigHistoryMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_time"] = queryData{
+			cond: cond[0],
+			data: createTime,
+		}
+	})
 }
 
 // WithCreateBy create_by获取
-func (obj *_ConfigHistoryMgr) WithCreateBy(createBy int) Option {
-	return optionFunc(func(o *options) { o.query["create_by"] = createBy })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_ConfigHistoryMgr) GetFromID(id int) (result model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_ConfigHistoryMgr) GetBatchFromID(ids []int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromConfigID 通过config_id获取内容
-func (obj *_ConfigHistoryMgr) GetFromConfigID(configID int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`config_id` = ?", configID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromConfigID 批量查找
-func (obj *_ConfigHistoryMgr) GetBatchFromConfigID(configIDs []int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`config_id` IN (?)", configIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromReversion 通过reversion获取内容
-func (obj *_ConfigHistoryMgr) GetFromReversion(reversion int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`reversion` = ?", reversion).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromReversion 批量查找
-func (obj *_ConfigHistoryMgr) GetBatchFromReversion(reversions []int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`reversion` IN (?)", reversions).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateTime 通过create_time获取内容
-func (obj *_ConfigHistoryMgr) GetFromCreateTime(createTime time.Time) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`create_time` = ?", createTime).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateTime 批量查找
-func (obj *_ConfigHistoryMgr) GetBatchFromCreateTime(createTimes []time.Time) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`create_time` IN (?)", createTimes).Find(&results).Error
-
-	return
-}
-
-// GetFromCreateBy 通过create_by获取内容
-func (obj *_ConfigHistoryMgr) GetFromCreateBy(createBy int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`create_by` = ?", createBy).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromCreateBy 批量查找
-func (obj *_ConfigHistoryMgr) GetBatchFromCreateBy(createBys []int) (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Where("`create_by` IN (?)", createBys).Find(&results).Error
-
-	return
+func (obj *_ConfigHistoryMgr) WithCreateBy(createBy int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["create_by"] = queryData{
+			cond: cond[0],
+			data: createBy,
+		}
+	})
 }
 
 func (obj *_ConfigHistoryMgr) CreateConfigHistory(bean *model.ConfigHistory) (err error) {

@@ -16,20 +16,12 @@ type _ConfigLinkMgr struct {
 }
 
 // ConfigLinkMgr open func
-func ConfigLinkMgr(db *gorm.DB) *_ConfigLinkMgr {
+func ConfigLinkMgr(ctx context.Context, db *gorm.DB) *_ConfigLinkMgr {
 	if db == nil {
 		panic(fmt.Errorf("ConfigLinkMgr need init by db"))
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	return &_ConfigLinkMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config_link"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
-}
-
-// WithContext set context to db
-func (obj *_ConfigLinkMgr) WithContext(c context.Context) *_ConfigLinkMgr {
-	if c != nil {
-		obj.ctx = c
-	}
-	return obj
 }
 
 func (obj *_ConfigLinkMgr) WithSelects(idName string, selects ...string) *_ConfigLinkMgr {
@@ -65,12 +57,14 @@ func (obj *_ConfigLinkMgr) WithOmit(omit ...string) *_ConfigLinkMgr {
 
 func (obj *_ConfigLinkMgr) WithOptions(opts ...Option) *_ConfigLinkMgr {
 	options := options{
-		query: make(map[string]interface{}, len(opts)),
+		query: make(map[string]queryData, len(opts)),
 	}
 	for _, o := range opts {
 		o.apply(&options)
 	}
-	obj.DB = obj.DB.Where(options.query)
+	for k, v := range options.query {
+		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+	}
 	return obj
 }
 
@@ -103,61 +97,52 @@ func (obj *_ConfigLinkMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Count(count)
 }
 
+func (obj *_ConfigLinkMgr) HasRecord() (bool, error) {
+	var count int64
+	err := obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count != 0, nil
+}
+
 // WithID id获取
-func (obj *_ConfigLinkMgr) WithID(id int) Option {
-	return optionFunc(func(o *options) { o.query["id"] = id })
+func (obj *_ConfigLinkMgr) WithID(id int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["id"] = queryData{
+			cond: cond[0],
+			data: id,
+		}
+	})
 }
 
 // WithConfigID config_id获取
-func (obj *_ConfigLinkMgr) WithConfigID(configID int) Option {
-	return optionFunc(func(o *options) { o.query["config_id"] = configID })
+func (obj *_ConfigLinkMgr) WithConfigID(configID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["config_id"] = queryData{
+			cond: cond[0],
+			data: configID,
+		}
+	})
 }
 
 // WithPublicConfigID public_config_id获取
-func (obj *_ConfigLinkMgr) WithPublicConfigID(publicConfigID int) Option {
-	return optionFunc(func(o *options) { o.query["public_config_id"] = publicConfigID })
-}
-
-// GetFromID 通过id获取内容
-func (obj *_ConfigLinkMgr) GetFromID(id int) (result model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Where("`id` = ?", id).Find(&result).Error
-
-	return
-}
-
-// GetBatchFromID 批量查找
-func (obj *_ConfigLinkMgr) GetBatchFromID(ids []int) (results []*model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Where("`id` IN (?)", ids).Find(&results).Error
-
-	return
-}
-
-// GetFromConfigID 通过config_id获取内容
-func (obj *_ConfigLinkMgr) GetFromConfigID(configID int) (results []*model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Where("`config_id` = ?", configID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromConfigID 批量查找
-func (obj *_ConfigLinkMgr) GetBatchFromConfigID(configIDs []int) (results []*model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Where("`config_id` IN (?)", configIDs).Find(&results).Error
-
-	return
-}
-
-// GetFromPublicConfigID 通过public_config_id获取内容
-func (obj *_ConfigLinkMgr) GetFromPublicConfigID(publicConfigID int) (results []*model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Where("`public_config_id` = ?", publicConfigID).Find(&results).Error
-
-	return
-}
-
-// GetBatchFromPublicConfigID 批量查找
-func (obj *_ConfigLinkMgr) GetBatchFromPublicConfigID(publicConfigIDs []int) (results []*model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Where("`public_config_id` IN (?)", publicConfigIDs).Find(&results).Error
-
-	return
+func (obj *_ConfigLinkMgr) WithPublicConfigID(publicConfigID int, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["public_config_id"] = queryData{
+			cond: cond[0],
+			data: publicConfigID,
+		}
+	})
 }
 
 func (obj *_ConfigLinkMgr) CreateConfigLink(bean *model.ConfigLink) (err error) {
