@@ -11,6 +11,9 @@ func (s *Server) Route(c *Handlers, engine core.Engine) {
 		{
 			projectGroupGroup := v1Group.Group("/project_group")
 			projectGroupGroup.GET("/list", c.projectGroupHandler.List)
+			projectGroupGroup.POST("/add", c.projectGroupHandler.Add)
+			projectGroupGroup.POST("/edit", c.projectGroupHandler.Edit)
+			projectGroupGroup.POST("/del", c.projectGroupHandler.Del)
 		}
 	}
 }

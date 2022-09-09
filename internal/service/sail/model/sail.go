@@ -6,11 +6,11 @@ import (
 
 // Config [...]
 type Config struct {
-	ID             int    `gorm:"primaryKey;column:id;type:int;not null"`
+	ID             int    `gorm:"primaryKey;column:id;type:int(11);not null"`
 	Name           string `gorm:"column:name;type:varchar(50);not null"`
-	ProjectID      int    `gorm:"column:project_id;type:int;not null"`
-	ProjectGroupID int    `gorm:"column:project_group_id;type:int;not null"` // 公共配置只有project_group_id
-	NamespaceID    int    `gorm:"column:namespace_id;type:int;not null"`
+	ProjectID      int    `gorm:"column:project_id;type:int(11);not null"`
+	ProjectGroupID int    `gorm:"column:project_group_id;type:int(11);not null"` // 公共配置只有project_group_id
+	NamespaceID    int    `gorm:"column:namespace_id;type:int(11);not null"`
 	IsPublic       bool   `gorm:"column:is_public;type:tinyint(1);not null"`
 	IsLinkPublic   bool   `gorm:"column:is_link_public;type:tinyint(1);not null"`
 	IsEncrypt      bool   `gorm:"column:is_encrypt;type:tinyint(1);not null"`
@@ -45,11 +45,11 @@ var ConfigColumns = struct {
 
 // ConfigHistory [...]
 type ConfigHistory struct {
-	ID         int       `gorm:"primaryKey;column:id;type:int;not null"`
-	ConfigID   int       `gorm:"column:config_id;type:int;not null"`
-	Reversion  int       `gorm:"column:reversion;type:int;not null"`
-	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	CreateBy   int       `gorm:"column:create_by;type:int;not null"`
+	ID         int       `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ConfigID   int       `gorm:"column:config_id;type:int(11);not null"`
+	Reversion  int       `gorm:"column:reversion;type:int(11);not null"`
+	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	CreateBy   int       `gorm:"column:create_by;type:int(11);not null"`
 }
 
 // ConfigHistoryColumns get sql column name.获取数据库列名
@@ -69,9 +69,9 @@ var ConfigHistoryColumns = struct {
 
 // ConfigLink [...]
 type ConfigLink struct {
-	ID             int `gorm:"primaryKey;column:id;type:int;not null"`
-	ConfigID       int `gorm:"column:config_id;type:int;not null"`
-	PublicConfigID int `gorm:"column:public_config_id;type:int;not null"`
+	ID             int `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ConfigID       int `gorm:"column:config_id;type:int(11);not null"`
+	PublicConfigID int `gorm:"column:public_config_id;type:int(11);not null"`
 }
 
 // ConfigLinkColumns get sql column name.获取数据库列名
@@ -87,13 +87,14 @@ var ConfigLinkColumns = struct {
 
 // Namespace [...]
 type Namespace struct {
-	ID             int       `gorm:"primaryKey;column:id;type:int;not null"`
-	ProjectGroupID int       `gorm:"column:project_group_id;type:int;not null"`
+	ID             int       `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ProjectGroupID int       `gorm:"column:project_group_id;type:int(11);not null"`
 	Name           string    `gorm:"column:name;type:varchar(50);not null"`
 	RealTime       bool      `gorm:"column:real_time;type:tinyint(1);not null"` // 是否是实时发布
-	CreateTime     time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	CreateBy       int       `gorm:"column:create_by;type:int;not null"`
-	DeleteTime     int       `gorm:"column:delete_time;type:int;not null;default:0"`
+	SecretKey      string    `gorm:"column:secret_key;type:varchar(100);not null"`
+	CreateTime     time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	CreateBy       int       `gorm:"column:create_by;type:int(11);not null"`
+	DeleteTime     int       `gorm:"column:delete_time;type:int(11);not null;default:0"`
 }
 
 // NamespaceColumns get sql column name.获取数据库列名
@@ -102,6 +103,7 @@ var NamespaceColumns = struct {
 	ProjectGroupID string
 	Name           string
 	RealTime       string
+	SecretKey      string
 	CreateTime     string
 	CreateBy       string
 	DeleteTime     string
@@ -110,6 +112,7 @@ var NamespaceColumns = struct {
 	ProjectGroupID: "project_group_id",
 	Name:           "name",
 	RealTime:       "real_time",
+	SecretKey:      "secret_key",
 	CreateTime:     "create_time",
 	CreateBy:       "create_by",
 	DeleteTime:     "delete_time",
@@ -117,13 +120,13 @@ var NamespaceColumns = struct {
 
 // Project [...]
 type Project struct {
-	ID             int       `gorm:"primaryKey;column:id;type:int;not null"`
-	ProjectGroupID int       `gorm:"column:project_group_id;type:int;not null"`
+	ID             int       `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ProjectGroupID int       `gorm:"column:project_group_id;type:int(11);not null"`
 	Key            string    `gorm:"column:key;type:varchar(50);not null"`
 	Name           string    `gorm:"column:name;type:varchar(50);not null"`
-	CreateTime     time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	CreateBy       int       `gorm:"column:create_by;type:int;not null"`
-	DeleteTime     int       `gorm:"column:delete_time;type:int;not null;default:0"`
+	CreateTime     time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	CreateBy       int       `gorm:"column:create_by;type:int(11);not null"`
+	DeleteTime     int       `gorm:"column:delete_time;type:int(11);not null;default:0"`
 }
 
 // ProjectColumns get sql column name.获取数据库列名
@@ -147,11 +150,11 @@ var ProjectColumns = struct {
 
 // ProjectGroup [...]
 type ProjectGroup struct {
-	ID         int       `gorm:"primaryKey;column:id;type:int;not null"`
-	Name       string    `gorm:"column:name;type:varchar(50);not null"`
-	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	CreateBy   int       `gorm:"column:create_by;type:int;not null"`
-	DeleteTime int       `gorm:"column:delete_time;type:int;not null;default:0"`
+	ID         int       `gorm:"primaryKey;column:id;type:int(11);not null"`
+	Name       string    `gorm:"unique;column:name;type:varchar(50);not null"`
+	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	CreateBy   int       `gorm:"column:create_by;type:int(11);not null"`
+	DeleteTime int       `gorm:"column:delete_time;type:int(11);not null;default:0"`
 }
 
 // ProjectGroupColumns get sql column name.获取数据库列名
@@ -171,15 +174,15 @@ var ProjectGroupColumns = struct {
 
 // PublishConfig [...]
 type PublishConfig struct {
-	ID               int       `gorm:"primaryKey;column:id;type:int;not null"`
-	ProjectID        int       `gorm:"column:project_id;type:int;not null"`
-	NamespaceID      int       `gorm:"column:namespace_id;type:int;not null"`
-	PublishType      int       `gorm:"column:publish_type;type:int;not null"`         // 发布方式
+	ID               int       `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ProjectID        int       `gorm:"column:project_id;type:int(11);not null"`
+	NamespaceID      int       `gorm:"column:namespace_id;type:int(11);not null"`
+	PublishType      int       `gorm:"column:publish_type;type:int(11);not null"`     // 发布方式
 	PublishData      string    `gorm:"column:publish_data;type:varchar(20);not null"` // 发布数据
 	PublishConfigIDs string    `gorm:"column:publish_config_ids;type:varchar(100);not null"`
-	Status           int       `gorm:"column:status;type:int;not null"`
-	CreateTime       time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	UpdateTime       time.Time `gorm:"column:update_time;type:timestamp;not null"`
+	Status           int       `gorm:"column:status;type:int(11);not null"`
+	CreateTime       time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	UpdateTime       time.Time `gorm:"column:update_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
 }
 
 // PublishConfigColumns get sql column name.获取数据库列名
@@ -207,23 +210,26 @@ var PublishConfigColumns = struct {
 
 // Staff [...]
 type Staff struct {
-	ID         int       `gorm:"primaryKey;column:id;type:int;not null"`
+	ID         int       `gorm:"primaryKey;column:id;type:int(11);not null"`
 	Name       string    `gorm:"column:name;type:varchar(30);not null"`
-	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null"`
-	CreateBy   int       `gorm:"column:create_by;type:int;not null"`
-	DeleteTime int       `gorm:"column:delete_time;type:int;not null;default:0"`
+	Password   string    `gorm:"column:password;type:varchar(100);not null"`
+	CreateTime time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	CreateBy   int       `gorm:"column:create_by;type:int(11);not null"`
+	DeleteTime int       `gorm:"column:delete_time;type:int(11);not null;default:0"`
 }
 
 // StaffColumns get sql column name.获取数据库列名
 var StaffColumns = struct {
 	ID         string
 	Name       string
+	Password   string
 	CreateTime string
 	CreateBy   string
 	DeleteTime string
 }{
 	ID:         "id",
 	Name:       "name",
+	Password:   "password",
 	CreateTime: "create_time",
 	CreateBy:   "create_by",
 	DeleteTime: "delete_time",
@@ -231,10 +237,10 @@ var StaffColumns = struct {
 
 // StaffGroupRel [...]
 type StaffGroupRel struct {
-	ID             int `gorm:"primaryKey;column:id;type:int;not null"`
-	ProjectGroupID int `gorm:"column:project_group_id;type:int;not null"`
-	StaffID        int `gorm:"column:staff_id;type:int;not null"`
-	RoleType       int `gorm:"column:role_type;type:int;not null"` // 权限角色
+	ID             int `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ProjectGroupID int `gorm:"column:project_group_id;type:int(11);not null"`
+	StaffID        int `gorm:"column:staff_id;type:int(11);not null"`
+	RoleType       int `gorm:"column:role_type;type:int(11);not null"` // 权限角色
 }
 
 // StaffGroupRelColumns get sql column name.获取数据库列名

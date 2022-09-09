@@ -133,6 +133,19 @@ func (obj *_StaffMgr) WithName(name string, cond ...string) Option {
 	})
 }
 
+// WithPassword password获取
+func (obj *_StaffMgr) WithPassword(password string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["password"] = queryData{
+			cond: cond[0],
+			data: password,
+		}
+	})
+}
+
 // WithCreateTime create_time获取
 func (obj *_StaffMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
 	return optionFunc(func(o *options) {

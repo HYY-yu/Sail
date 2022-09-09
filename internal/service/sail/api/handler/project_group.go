@@ -88,7 +88,30 @@ func (h *ProjectGroupHandler) Add(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/project_group/edit    [POST]
 func (h *ProjectGroupHandler) Edit(c core.Context) {
+	params := &model.EditProjectGroup{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.projectGroupSvc.Edit(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Del
@@ -98,5 +121,31 @@ func (h *ProjectGroupHandler) Edit(c core.Context) {
 // @Success  200       {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/project_group/del    [POST]
 func (h *ProjectGroupHandler) Del(c core.Context) {
+	type Param struct {
+		GroupId int `json:"group_id"`
+	}
+	params := &Param{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.projectGroupSvc.Delete(c.SvcContext(), params.GroupId)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }

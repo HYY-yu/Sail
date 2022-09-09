@@ -2,12 +2,15 @@ package svc
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/db"
+	"github.com/HYY-yu/seckill.pkg/pkg/mysqlerr_helper"
 	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
 	"github.com/HYY-yu/seckill.pkg/pkg/util"
+	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/util/gconv"
 
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
@@ -80,5 +83,71 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 }
 
 func (s *ProjectGroupSvc) Add(sctx core.SvcContext, param *model.AddProjectGroup) error {
+	ctx := sctx.Context()
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	bean := &model.ProjectGroup{
+		Name:       param.Name,
+		CreateBy:   int(sctx.UserId()),
+		CreateTime: time.Now(),
+	}
+
+	err := mgr.CreateProjectGroup(bean)
+	if err != nil {
+		if mysqlerr_helper.IsMysqlDupEntryError(err) {
+			return response.NewErrorWithStatusOk(
+				response.ParamBindError,
+				"已存在相同的ProjectGroup",
+			)
+		}
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	return nil
+}
+
+func (s *ProjectGroupSvc) Edit(sctx core.SvcContext, param *model.EditProjectGroup) error {
+	ctx := sctx.Context()
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	bean := &model.ProjectGroup{
+		ID: param.ProjectGroupID,
+	}
+
+	updateColumns := make([]string, 0)
+
+	if param.Name != nil && !g.IsEmpty(*param.Name) {
+		bean.Name = *param.Name
+		updateColumns = append(updateColumns, model.ProjectGroupColumns.Name)
+	}
+
+	err := mgr.WithSelects(model.ProjectGroupColumns.ID, updateColumns...).UpdateProjectGroup(bean)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	return nil
+}
+
+func (s *ProjectGroupSvc) Delete(sctx core.SvcContext, projectGroupID int) error {
+	ctx := sctx.Context()
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	bean := &model.ProjectGroup{
+		ID:         projectGroupID,
+		DeleteTime: int(time.Now().Unix()),
+	}
+
+	err := mgr.UpdateProjectGroup(bean)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
 	return nil
 }

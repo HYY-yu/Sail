@@ -111,7 +111,7 @@ type ProjectTree struct {
 
 type TreeNode struct {
 	ID   int    `json:"id"`
-	Type int    `json:"type"`
+	Type int    `json:"type"` // 可能是 Namespace，可能是 Config
 	Name string `json:"name"`
 
 	RealTime bool       `json:"real_time"` // false 代表可发布

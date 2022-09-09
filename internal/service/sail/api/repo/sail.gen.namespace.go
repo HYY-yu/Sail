@@ -159,6 +159,19 @@ func (obj *_NamespaceMgr) WithRealTime(realTime bool, cond ...string) Option {
 	})
 }
 
+// WithSecretKey secret_key获取
+func (obj *_NamespaceMgr) WithSecretKey(secretKey string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["secret_key"] = queryData{
+			cond: cond[0],
+			data: secretKey,
+		}
+	})
+}
+
 // WithCreateTime create_time获取
 func (obj *_NamespaceMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
 	return optionFunc(func(o *options) {

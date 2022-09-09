@@ -29,6 +29,7 @@ func (h *StaffHandler) List(c core.Context) {
 	_ = response.JsonResponse{}
 	_ = page.Page{}
 	_ = model.StaffList{}
+
 }
 
 // Add
