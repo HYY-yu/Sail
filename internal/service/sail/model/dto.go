@@ -102,7 +102,7 @@ type EditStaff struct {
 
 type GrantStaff struct {
 	StaffID        int  `json:"staff_id" v:"required"`
-	Role           Role `json:"role" v:"required|in:1,2,3"`
+	Role           Role `json:"role" v:"required"`
 	ProjectGroupID int  `json:"project_group_id"`
 }
 

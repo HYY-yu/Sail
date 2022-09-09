@@ -213,18 +213,41 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 		).WithErr(err)
 	}
 
-	hasRecord, err = pgMgr.WithOptions(pgMgr.WithID(param.ProjectGroupID)).HasRecord()
-	if err != nil {
-		return response.NewErrorAutoMsg(
-			http.StatusInternalServerError,
-			response.ServerError,
-		).WithErr(err)
+	if param.Role != model.RoleAdmin {
+		hasRecord, err = pgMgr.WithOptions(pgMgr.WithID(param.ProjectGroupID)).HasRecord()
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		if !hasRecord {
+			return response.NewErrorWithStatusOk(
+				response.ServerError,
+				"未找到此项目组",
+			).WithErr(err)
+		}
 	}
-	if !hasRecord {
-		return response.NewErrorWithStatusOk(
-			response.ServerError,
-			"未找到此项目组",
-		).WithErr(err)
+
+	// 如果用户是管理员，他不能被赋予其它任何权限
+	// 如果用户不是管理员，他不能被赋予管理员，除非删除他的其它权限
+	var sgList []model.StaffGroupRel
+	sgMgr.WithOptions(sgMgr.WithStaffID(param.StaffID)).Find(&sgList)
+	if param.Role == model.RoleAdmin {
+		if len(sgList) > 0 {
+			return response.NewErrorWithStatusOk(
+				response.ServerError,
+				"此用户不能被赋权，请删除他的其它权限",
+			).WithErr(err)
+		}
+	}
+	for _, e := range sgList {
+		if model.Role(e.RoleType) == model.RoleAdmin {
+			return response.NewErrorWithStatusOk(
+				response.ServerError,
+				"管理员不能被赋予其它权限，它已经是最高权限",
+			).WithErr(err)
+		}
 	}
 
 	bean := &model.StaffGroupRel{
