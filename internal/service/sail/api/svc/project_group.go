@@ -43,18 +43,19 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 	sort, _ := pr.Sort()
 
 	// Filter
-	Op := make([]repo.Option, 0)
+	op := make([]repo.Option, 0)
 	if v, ok := pr.Filter["project_group_id"]; ok && util.IsNotZero(v) {
-		Op = append(Op, mgr.WithID(gconv.Int(v)))
+		op = append(op, mgr.WithID(gconv.Int(v)))
 	}
 	if v, ok := pr.Filter["project_group_name"]; ok && util.IsNotZero(v) {
-		Op = append(Op, mgr.WithName(
+		op = append(op, mgr.WithName(
 			util.WrapSqlLike(gconv.String(v)),
 			" LIKE ?",
 		))
 	}
+	op = append(op, mgr.WithDeleteTime(0))
 
-	data, err := mgr.WithOptions(Op...).ListProjectGroup(limit, offset, sort)
+	data, err := mgr.WithOptions(op...).ListProjectGroup(limit, offset, sort)
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,

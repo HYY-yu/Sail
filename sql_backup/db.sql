@@ -42,8 +42,7 @@ CREATE TABLE `sail`.`staff`
     `name`        varchar(30)  NOT NULL,
     `password`    varchar(100) NOT NULL,
     `create_time` timestamp    NOT NULL,
-    `create_by`   int          NOT NULL,
-    `delete_time` int          NOT NULL DEFAULT 0
+    `create_by`   int          NOT NULL
 );
 
 CREATE TABLE `sail`.`staff_group_rel`

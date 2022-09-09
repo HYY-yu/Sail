@@ -1,18 +1,25 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
+	"github.com/gogf/gf/v2/frame/g"
 
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
 )
 
 type StaffHandler struct {
+	staffSvc *svc.StaffSvc
 }
 
-func NewStaffHandler() *StaffHandler {
-	return &StaffHandler{}
+func NewStaffHandler(staffSvc *svc.StaffSvc) *StaffHandler {
+	return &StaffHandler{
+		staffSvc: staffSvc,
+	}
 }
 
 // List
@@ -26,10 +33,19 @@ func NewStaffHandler() *StaffHandler {
 // @Success  200         {object}  response.JsonResponse{data=page.Page{List=model.StaffList}}  "data"
 // @Router   /v1/staff/list    [GET]
 func (h *StaffHandler) List(c core.Context) {
-	_ = response.JsonResponse{}
-	_ = page.Page{}
-	_ = model.StaffList{}
+	err := c.RequestContext().Request.ParseForm()
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+	pageRequest := page.NewPageFromRequest(c.RequestContext().Request.Form)
 
+	data, err := h.staffSvc.List(c.SvcContext(), pageRequest)
+	c.AbortWithError(err)
+	c.Payload(data)
 }
 
 // Add
@@ -39,7 +55,30 @@ func (h *StaffHandler) List(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/add    [POST]
 func (h *StaffHandler) Add(c core.Context) {
+	params := &model.AddStaff{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.staffSvc.Add(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Edit
@@ -49,7 +88,30 @@ func (h *StaffHandler) Add(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/edit    [POST]
 func (h *StaffHandler) Edit(c core.Context) {
+	params := &model.EditStaff{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.staffSvc.Edit(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Grant
@@ -59,7 +121,66 @@ func (h *StaffHandler) Edit(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/grant    [POST]
 func (h *StaffHandler) Grant(c core.Context) {
+	params := &model.GrantStaff{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.staffSvc.Grant(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
+}
+
+// DelGrant
+// @Summary  删除授权
+// @Tags     员工管理
+// @Param    staff_group_rel_id  body      int                                 true  "staff_group_rel_id"
+// @Success  200       {object}  response.JsonResponse{data=string}  "data=ok"
+// @Router   /v1/staff/del_grant    [POST]
+func (h *StaffHandler) DelGrant(c core.Context) {
+	type Param struct {
+		StaffGroupRelID int `json:"staff_group_rel_id"`
+	}
+	params := &Param{}
+
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.staffSvc.DelGrant(c.SvcContext(), params.StaffGroupRelID)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Del
@@ -69,5 +190,31 @@ func (h *StaffHandler) Grant(c core.Context) {
 // @Success  200       {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/staff/del    [POST]
 func (h *StaffHandler) Del(c core.Context) {
+	type Param struct {
+		StaffID int `json:"staff_id"`
+	}
+	params := &Param{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.staffSvc.Delete(c.SvcContext(), params.StaffID)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }

@@ -14,4 +14,7 @@ require (
 	gorm.io/gorm v1.23.8
 )
 
-require github.com/swaggo/swag v1.7.9
+require (
+	github.com/swaggo/swag v1.7.9
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+)

@@ -122,7 +122,7 @@ func (h *ProjectGroupHandler) Edit(c core.Context) {
 // @Router   /v1/project_group/del    [POST]
 func (h *ProjectGroupHandler) Del(c core.Context) {
 	type Param struct {
-		GroupId int `json:"group_id"`
+		GroupID int `json:"group_id"`
 	}
 	params := &Param{}
 
@@ -145,7 +145,7 @@ func (h *ProjectGroupHandler) Del(c core.Context) {
 		return
 	}
 
-	err = h.projectGroupSvc.Delete(c.SvcContext(), params.GroupId)
+	err = h.projectGroupSvc.Delete(c.SvcContext(), params.GroupID)
 	c.AbortWithError(err)
 	c.Payload(nil)
 }

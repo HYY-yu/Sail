@@ -84,6 +84,7 @@ func (r Role) String() string {
 }
 
 type StaffRole struct {
+	StaffGroupRelID  int    `json:"staff_group_rel_id"`
 	ProjectGroupID   int    `json:"project_group_id"`
 	ProjectGroupName string `json:"project_group_name"`
 	Role             Role   `json:"role"`
