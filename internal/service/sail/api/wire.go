@@ -22,8 +22,10 @@ func initHandlers(d db.Repo, c cache.Repo) (*Handlers, error) {
 		repo.NewStaffRepo,
 		repo.NewStaffGroupRelRepo,
 		svc.NewStaffSvc,
+		svc.NewLoginSvc,
 		handler.NewProjectGroupHandler,
 		handler.NewStaffHandler,
+		handler.NewLoginHandler,
 		NewHandlers,
 	))
 }

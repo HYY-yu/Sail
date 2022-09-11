@@ -332,6 +332,151 @@ var doc = `{
                 }
             }
         },
+        "/v1/login": {
+            "post": {
+                "tags": [
+                    "WEB"
+                ],
+                "summary": "登陆",
+                "parameters": [
+                    {
+                        "description": "data",
+                        "name": "params",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LoginParams"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data=ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.JsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.LoginResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/login/login_out": {
+            "get": {
+                "tags": [
+                    "WEB"
+                ],
+                "summary": "登出",
+                "responses": {
+                    "200": {
+                        "description": "data=ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.JsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/login/new_pass": {
+            "post": {
+                "tags": [
+                    "WEB"
+                ],
+                "summary": "更改密码",
+                "parameters": [
+                    {
+                        "description": "新密码",
+                        "name": "new_pass",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data=ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.JsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.LoginResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/login/refresh": {
+            "post": {
+                "tags": [
+                    "WEB"
+                ],
+                "summary": "刷新TOKEN",
+                "parameters": [
+                    {
+                        "description": "老的RefreshToken",
+                        "name": "old_refresh_token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data=ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.JsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/model.LoginResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/namespace/add": {
             "post": {
                 "tags": [
@@ -1130,6 +1275,45 @@ var doc = `{
                 }
             }
         },
+        "/v1/staff/del_grant": {
+            "post": {
+                "tags": [
+                    "员工管理"
+                ],
+                "summary": "删除授权",
+                "parameters": [
+                    {
+                        "description": "staff_group_rel_id",
+                        "name": "staff_group_rel_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data=ok",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.JsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/staff/edit": {
             "post": {
                 "tags": [
@@ -1522,6 +1706,31 @@ var doc = `{
                 }
             }
         },
+        "model.LoginParams": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "init_password": {
+                    "type": "boolean"
+                },
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
         "model.NamespaceList": {
             "type": "object",
             "properties": {
@@ -1703,6 +1912,9 @@ var doc = `{
                 },
                 "role_info": {
                     "type": "string"
+                },
+                "staff_group_rel_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -1726,6 +1938,7 @@ var doc = `{
                     "type": "boolean"
                 },
                 "type": {
+                    "description": "可能是 Namespace，可能是 Config",
                     "type": "integer"
                 }
             }

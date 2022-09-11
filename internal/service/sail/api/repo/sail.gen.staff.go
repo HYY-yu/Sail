@@ -146,6 +146,19 @@ func (obj *_StaffMgr) WithPassword(password string, cond ...string) Option {
 	})
 }
 
+// WithRefreshToken refresh_token获取
+func (obj *_StaffMgr) WithRefreshToken(refreshToken string, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["refresh_token"] = queryData{
+			cond: cond[0],
+			data: refreshToken,
+		}
+	})
+}
+
 // WithCreateTime create_time获取
 func (obj *_StaffMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
 	return optionFunc(func(o *options) {
@@ -168,19 +181,6 @@ func (obj *_StaffMgr) WithCreateBy(createBy int, cond ...string) Option {
 		o.query["create_by"] = queryData{
 			cond: cond[0],
 			data: createBy,
-		}
-	})
-}
-
-// WithDeleteTime delete_time获取
-func (obj *_StaffMgr) WithDeleteTime(deleteTime int, cond ...string) Option {
-	return optionFunc(func(o *options) {
-		if len(cond) == 0 {
-			cond = []string{" = ? "}
-		}
-		o.query["delete_time"] = queryData{
-			cond: cond[0],
-			data: deleteTime,
 		}
 	})
 }

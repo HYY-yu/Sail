@@ -32,6 +32,7 @@ func (obj *_StaffMgr) ListStaff(
 ) (result []model.Staff, err error) {
 	err = obj.
 		sort(sort, model.StaffColumns.ID+" desc").
+		WithContext(obj.ctx).
 		Limit(limit).
 		Offset(offset).
 		Find(&result).Error

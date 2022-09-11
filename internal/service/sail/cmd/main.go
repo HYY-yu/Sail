@@ -64,7 +64,9 @@ func main() {
 
 		// 关闭 grpc server
 		func() {
-			s.GrpcServer.GracefulStop()
+			if s.GrpcServer != nil {
+				s.GrpcServer.GracefulStop()
+			}
 		},
 
 		// 关闭 db

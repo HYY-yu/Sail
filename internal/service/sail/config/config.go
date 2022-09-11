@@ -32,9 +32,10 @@ type Config struct {
 	} `toml:"redis"`
 
 	JWT struct {
-		Secret         string        `toml:"secret"`
-		ExpireDuration time.Duration `toml:"expireDuration"`
-		Type           string        `toml:"type"`
+		Secret          string        `toml:"secret"`
+		ExpireDuration  time.Duration `toml:"expireDuration"`
+		Type            string        `toml:"type"`
+		RefreshDuration time.Duration `toml:"refreshDuration"`
 	} `toml:"jwt"`
 
 	Log struct {

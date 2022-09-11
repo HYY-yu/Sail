@@ -60,7 +60,6 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 			" LIKE ?",
 		))
 	}
-	op = append(op, mgr.WithDeleteTime(0))
 
 	data, err := mgr.WithOptions(op...).ListStaff(limit, offset, sort)
 	if err != nil {
@@ -75,9 +74,7 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 	var result = make([]model.StaffList, len(data))
 
 	for i, e := range data {
-		staffGroupRel := make([]model.StaffGroupRel, 0)
-
-		err := sgMgr.WithOptions(sgMgr.WithStaffID(e.ID)).Find(&staffGroupRel).Error
+		staffGroupRel, err := sgMgr.WithOptions(sgMgr.WithStaffID(e.ID)).Gets()
 		if err != nil {
 			return nil, response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -87,13 +84,13 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 		roles := make([]model.StaffRole, len(staffGroupRel))
 
 		for j, sg := range staffGroupRel {
-			projectGroup := model.ProjectGroup{}
-			pgMgr.
+			projectGroup, _ := pgMgr.
 				WithSelects(
 					model.ProjectGroupColumns.ID,
 					model.ProjectGroupColumns.Name,
 				).
-				Find(&projectGroup, sg.ProjectGroupID)
+				WithOptions(pgMgr.WithID(sg.ProjectGroupID)).
+				Get()
 			roles[j] = model.StaffRole{
 				StaffGroupRelID:  sg.ID,
 				ProjectGroupID:   projectGroup.ID,
@@ -231,8 +228,7 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 
 	// 如果用户是管理员，他不能被赋予其它任何权限
 	// 如果用户不是管理员，他不能被赋予管理员，除非删除他的其它权限
-	var sgList []model.StaffGroupRel
-	sgMgr.WithOptions(sgMgr.WithStaffID(param.StaffID)).Find(&sgList)
+	sgList, _ := sgMgr.WithOptions(sgMgr.WithStaffID(param.StaffID)).Gets()
 	if param.Role == model.RoleAdmin {
 		if len(sgList) > 0 {
 			return response.NewErrorWithStatusOk(

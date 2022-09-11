@@ -10,8 +10,8 @@ CREATE TABLE `sail`.`project_group`
 );
 
 create
-unique index project_group_name_uindex
-	on project_group (name);
+    unique index project_group_name_uindex
+    on project_group (name);
 
 CREATE TABLE `sail`.`project`
 (
@@ -38,11 +38,12 @@ CREATE TABLE `sail`.`namespace`
 
 CREATE TABLE `sail`.`staff`
 (
-    `id`          int PRIMARY KEY AUTO_INCREMENT,
-    `name`        varchar(30)  NOT NULL,
-    `password`    varchar(100) NOT NULL,
-    `create_time` timestamp    NOT NULL,
-    `create_by`   int          NOT NULL
+    `id`            int PRIMARY KEY AUTO_INCREMENT,
+    `name`          varchar(30)  NOT NULL,
+    `password`      varchar(100) NOT NULL,
+    `refresh_token` varchar(200) NOT NULL DEFAULT '',
+    `create_time`   timestamp    NOT NULL,
+    `create_by`     int          NOT NULL
 );
 
 CREATE TABLE `sail`.`staff_group_rel`

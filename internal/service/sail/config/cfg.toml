@@ -1,8 +1,8 @@
 [jwt]
-expireDuration = "2h"
+expireDuration = "10s"
 secret = "i1ydX9RtHyuJTrw7frcu"
-#type = "refresh_token"
-type = "black_list"
+type = "refresh_token"
+refreshDuration = "168h"
 
 [mysql]
 [mysql.base]

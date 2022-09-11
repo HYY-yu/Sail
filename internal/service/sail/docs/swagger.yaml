@@ -154,6 +154,22 @@ definitions:
       staff_id:
         type: integer
     type: object
+  model.LoginParams:
+    properties:
+      password:
+        type: string
+      user_name:
+        type: string
+    type: object
+  model.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      init_password:
+        type: boolean
+      refresh_token:
+        type: string
+    type: object
   model.NamespaceList:
     properties:
       create_by:
@@ -273,6 +289,8 @@ definitions:
         type: integer
       role_info:
         type: string
+      staff_group_rel_id:
+        type: integer
     type: object
   model.TreeNode:
     properties:
@@ -288,6 +306,7 @@ definitions:
         description: false 代表可发布
         type: boolean
       type:
+        description: 可能是 Namespace，可能是 Config
         type: integer
     type: object
   page.Page:
@@ -487,6 +506,87 @@ paths:
       summary: 配置树
       tags:
       - 配置管理
+  /v1/login:
+    post:
+      parameters:
+      - description: data
+        in: body
+        name: params
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginParams'
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.LoginResponse'
+              type: object
+      summary: 登陆
+      tags:
+      - WEB
+  /v1/login/login_out:
+    get:
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 登出
+      tags:
+      - WEB
+  /v1/login/new_pass:
+    post:
+      parameters:
+      - description: 新密码
+        in: body
+        name: new_pass
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.LoginResponse'
+              type: object
+      summary: 更改密码
+      tags:
+      - WEB
+  /v1/login/refresh:
+    post:
+      parameters:
+      - description: 老的RefreshToken
+        in: body
+        name: old_refresh_token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/model.LoginResponse'
+              type: object
+      summary: 刷新TOKEN
+      tags:
+      - WEB
   /v1/namespace/add:
     post:
       parameters:
@@ -940,6 +1040,28 @@ paths:
                   type: string
               type: object
       summary: 删除员工
+      tags:
+      - 员工管理
+  /v1/staff/del_grant:
+    post:
+      parameters:
+      - description: staff_group_rel_id
+        in: body
+        name: staff_group_rel_id
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: data=ok
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 删除授权
       tags:
       - 员工管理
   /v1/staff/edit:

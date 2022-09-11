@@ -32,6 +32,7 @@ func (obj *_ProjectGroupMgr) ListProjectGroup(
 ) (result []model.ProjectGroup, err error) {
 	err = obj.
 		sort(sort, model.ProjectGroupColumns.ID+" desc").
+		WithContext(obj.ctx).
 		Limit(limit).
 		Offset(offset).
 		Find(&result).Error

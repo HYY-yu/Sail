@@ -21,15 +21,18 @@ import (
 type Handlers struct {
 	projectGroupHandler *handler.ProjectGroupHandler
 	staffHandler        *handler.StaffHandler
+	loginHandler        *handler.LoginHandler
 }
 
 func NewHandlers(
 	projectGroupHandler *handler.ProjectGroupHandler,
 	staffHandler *handler.StaffHandler,
+	loginHandler *handler.LoginHandler,
 ) *Handlers {
 	return &Handlers{
 		projectGroupHandler: projectGroupHandler,
 		staffHandler:        staffHandler,
+		loginHandler:        loginHandler,
 	}
 }
 
