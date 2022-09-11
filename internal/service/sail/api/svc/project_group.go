@@ -18,18 +18,22 @@ import (
 )
 
 type ProjectGroupSvc struct {
+	BaseSvc
 	DB db.Repo
 
-	PGRepo repo.ProjectGroupRepo
+	PGRepo    repo.ProjectGroupRepo
+	StaffRepo repo.StaffRepo
 }
 
 func NewProjectGroupSvc(
 	db db.Repo,
 	pgRepo repo.ProjectGroupRepo,
+	staffRepo repo.StaffRepo,
 ) *ProjectGroupSvc {
 	svc := &ProjectGroupSvc{
-		DB:     db,
-		PGRepo: pgRepo,
+		DB:        db,
+		PGRepo:    pgRepo,
+		StaffRepo: staffRepo,
 	}
 	return svc
 }
@@ -71,7 +75,8 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 		r := model.ProjectGroupList{
 			ProjectGroupID: e.ID,
 			Name:           e.Name,
-			CreateBy:       e.CreateBy, // TODO GetCreateByName
+			CreateBy:       e.CreateBy,
+			CreateByName:   s.GetCreateByName(ctx, s.DB, s.StaffRepo, e.CreateBy),
 			CreateTime:     e.CreateTime.Unix(),
 		}
 
@@ -86,6 +91,14 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 func (s *ProjectGroupSvc) Add(sctx core.SvcContext, param *model.AddProjectGroup) error {
 	ctx := sctx.Context()
 	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	bean := &model.ProjectGroup{
 		Name:       param.Name,
@@ -113,6 +126,14 @@ func (s *ProjectGroupSvc) Edit(sctx core.SvcContext, param *model.EditProjectGro
 	ctx := sctx.Context()
 	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
 
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
+
 	bean := &model.ProjectGroup{
 		ID: param.ProjectGroupID,
 	}
@@ -137,6 +158,14 @@ func (s *ProjectGroupSvc) Edit(sctx core.SvcContext, param *model.EditProjectGro
 func (s *ProjectGroupSvc) Delete(sctx core.SvcContext, projectGroupID int) error {
 	ctx := sctx.Context()
 	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	bean := &model.ProjectGroup{
 		ID:         projectGroupID,

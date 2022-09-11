@@ -19,9 +19,9 @@ import (
 // initHandlers init Handlers.
 func initHandlers(d db.Repo, c cache.Repo) (*Handlers, error) {
 	projectGroupRepo := repo.NewProjectGroupRepo()
-	projectGroupSvc := svc.NewProjectGroupSvc(d, projectGroupRepo)
-	projectGroupHandler := handler.NewProjectGroupHandler(projectGroupSvc)
 	staffRepo := repo.NewStaffRepo()
+	projectGroupSvc := svc.NewProjectGroupSvc(d, projectGroupRepo, staffRepo)
+	projectGroupHandler := handler.NewProjectGroupHandler(projectGroupSvc)
 	staffGroupRelRepo := repo.NewStaffGroupRelRepo()
 	staffSvc := svc.NewStaffSvc(d, staffRepo, staffGroupRelRepo, projectGroupRepo)
 	staffHandler := handler.NewStaffHandler(staffSvc)

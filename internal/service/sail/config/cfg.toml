@@ -1,5 +1,5 @@
 [jwt]
-expireDuration = "10s"
+expireDuration = "12h"
 secret = "i1ydX9RtHyuJTrw7frcu"
 type = "refresh_token"
 refreshDuration = "168h"

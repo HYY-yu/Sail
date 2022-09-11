@@ -18,6 +18,7 @@ import (
 )
 
 type StaffSvc struct {
+	BaseSvc
 	DB db.Repo
 
 	StaffRepo      repo.StaffRepo
@@ -45,6 +46,14 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
 	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
 	pgMgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return nil, response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	limit, offset := pr.GetLimitAndOffset()
 	pr.AddAllowSortField(model.StaffColumns.CreateTime)
@@ -118,6 +127,14 @@ func (s *StaffSvc) Add(sctx core.SvcContext, param *model.AddStaff) error {
 	ctx := sctx.Context()
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
 
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
+
 	// 默认密码： 123456
 	passwordByte, _ := bcrypt.GenerateFromPassword([]byte("123456"), 0)
 
@@ -140,6 +157,13 @@ func (s *StaffSvc) Add(sctx core.SvcContext, param *model.AddStaff) error {
 func (s *StaffSvc) Edit(sctx core.SvcContext, param *model.EditStaff) error {
 	ctx := sctx.Context()
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	bean := &model.Staff{
 		ID: param.StaffID,
@@ -166,6 +190,13 @@ func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 	ctx := sctx.Context()
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
 	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	bean := &model.Staff{
 		ID: staffID,
@@ -195,6 +226,13 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
 	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
 	pgMgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	hasRecord, err := mgr.WithOptions(mgr.WithID(param.StaffID)).HasRecord()
 	if err != nil {
@@ -265,6 +303,13 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 func (s *StaffSvc) DelGrant(sctx core.SvcContext, staffGroupRelID int) error {
 	ctx := sctx.Context()
 	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	_, role := s.CheckStaffGroup(ctx, 0)
+	if role != model.RoleAdmin {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"只有管理员可以访问此接口",
+		)
+	}
 
 	bean := &model.StaffGroupRel{
 		ID: staffGroupRelID,
@@ -278,4 +323,28 @@ func (s *StaffSvc) DelGrant(sctx core.SvcContext, staffGroupRelID int) error {
 		).WithErr(err)
 	}
 	return nil
+}
+
+func (s *StaffSvc) StaffGroup(sctx core.SvcContext) ([]model.StaffGroup, error) {
+	ctx := sctx.Context()
+	userId := int(sctx.UserId())
+	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+
+	rel, err := sgMgr.WithOptions(sgMgr.WithStaffID(userId)).Gets()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	result := make([]model.StaffGroup, len(rel))
+	for i, e := range rel {
+		b := model.StaffGroup{
+			ProjectGroupID: e.ProjectGroupID,
+			Role:           model.Role(e.RoleType),
+		}
+		result[i] = b
+	}
+	return result, nil
 }

@@ -18,9 +18,9 @@ import (
 func initHandlers(d db.Repo, c cache.Repo) (*Handlers, error) {
 	panic(wire.Build(
 		repo.NewProjectGroupRepo,
-		svc.NewProjectGroupSvc,
 		repo.NewStaffRepo,
 		repo.NewStaffGroupRelRepo,
+		svc.NewProjectGroupSvc,
 		svc.NewStaffSvc,
 		svc.NewLoginSvc,
 		handler.NewProjectGroupHandler,

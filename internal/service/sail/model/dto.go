@@ -106,6 +106,11 @@ type GrantStaff struct {
 	ProjectGroupID int  `json:"project_group_id"`
 }
 
+type StaffGroup struct {
+	ProjectGroupID int  `json:"project_group_id"`
+	Role           Role `json:"role"`
+}
+
 type ProjectTree struct {
 	Nodes []TreeNode `json:"nodes"`
 }

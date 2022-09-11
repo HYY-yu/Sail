@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/HYY-yu/seckill.pkg/core"
@@ -20,6 +21,15 @@ func NewStaffHandler(staffSvc *svc.StaffSvc) *StaffHandler {
 	return &StaffHandler{
 		staffSvc: staffSvc,
 	}
+}
+
+func (h *StaffHandler) MiddlewareStaffGroup(c core.Context) {
+	data, err := h.staffSvc.StaffGroup(c.SvcContext())
+	c.AbortWithError(err)
+
+	ctx := c.RequestContext().Request.Context()
+	ctx = context.WithValue(ctx, model.StaffGroupRelKey, data)
+	c.RequestContext().Request = c.RequestContext().Request.WithContext(ctx)
 }
 
 // List
