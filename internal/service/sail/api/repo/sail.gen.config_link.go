@@ -21,7 +21,7 @@ func ConfigLinkMgr(ctx context.Context, db *gorm.DB) *_ConfigLinkMgr {
 		panic(fmt.Errorf("ConfigLinkMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_ConfigLinkMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config_link"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_ConfigLinkMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config_link").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_ConfigLinkMgr) WithSelects(idName string, selects ...string) *_ConfigLinkMgr {
@@ -44,13 +44,6 @@ func (obj *_ConfigLinkMgr) WithSelects(idName string, selects ...string) *_Confi
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_ConfigLinkMgr) WithOmit(omit ...string) *_ConfigLinkMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -81,25 +74,25 @@ func (obj *_ConfigLinkMgr) Reset() *_ConfigLinkMgr {
 
 // Get 获取
 func (obj *_ConfigLinkMgr) Get() (result model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_ConfigLinkMgr) Gets() (results []*model.ConfigLink, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Find(&results).Error
+func (obj *_ConfigLinkMgr) Gets() (results []model.ConfigLink, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_ConfigLinkMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_ConfigLinkMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -146,19 +139,19 @@ func (obj *_ConfigLinkMgr) WithPublicConfigID(publicConfigID int, cond ...string
 }
 
 func (obj *_ConfigLinkMgr) CreateConfigLink(bean *model.ConfigLink) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_ConfigLinkMgr) UpdateConfigLink(bean *model.ConfigLink) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_ConfigLinkMgr) DeleteConfigLink(bean *model.ConfigLink) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigLink{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

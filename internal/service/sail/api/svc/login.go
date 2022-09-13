@@ -119,7 +119,7 @@ func (s *LoginSvc) LoginOut(sctx core.SvcContext) error {
 	userId := int(sctx.UserId())
 
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	err := mgr.WithOptions(mgr.WithID(userId)).WithContext(ctx).
+	err := mgr.WithOptions(mgr.WithID(userId)).
 		Update(model.StaffColumns.RefreshToken, "").Error
 	if err != nil {
 		return gerror.Wrap(err, "Update")
@@ -139,7 +139,7 @@ func (s *LoginSvc) ChangePassword(sctx core.SvcContext, newPass string) error {
 		).WithErr(err)
 	}
 
-	err = mgr.WithOptions(mgr.WithID(int(sctx.UserId()))).WithContext(ctx).
+	err = mgr.WithOptions(mgr.WithID(int(sctx.UserId()))).
 		Update(model.StaffColumns.Password, string(hp)).Error
 	if err != nil {
 		return response.NewErrorAutoMsg(
@@ -180,7 +180,7 @@ func (l loginSystemRefreshToken) GenerateToken(ctx context.Context, userId int, 
 
 	// refreshToken 存到用户信息中
 	mgr := l.r.Mgr(ctx, l.d.GetDb(ctx))
-	err = mgr.WithOptions(mgr.WithID(userId)).WithContext(ctx).
+	err = mgr.WithOptions(mgr.WithID(userId)).
 		Update(model.StaffColumns.RefreshToken, refreshToken).Error
 	if err != nil {
 		return nil, gerror.Wrap(err, "Update")

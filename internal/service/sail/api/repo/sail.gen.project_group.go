@@ -22,7 +22,7 @@ func ProjectGroupMgr(ctx context.Context, db *gorm.DB) *_ProjectGroupMgr {
 		panic(fmt.Errorf("ProjectGroupMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_ProjectGroupMgr{_BaseMgr: &_BaseMgr{DB: db.Table("project_group"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_ProjectGroupMgr{_BaseMgr: &_BaseMgr{DB: db.Table("project_group").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_ProjectGroupMgr) WithSelects(idName string, selects ...string) *_ProjectGroupMgr {
@@ -45,13 +45,6 @@ func (obj *_ProjectGroupMgr) WithSelects(idName string, selects ...string) *_Pro
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_ProjectGroupMgr) WithOmit(omit ...string) *_ProjectGroupMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -82,25 +75,25 @@ func (obj *_ProjectGroupMgr) Reset() *_ProjectGroupMgr {
 
 // Get 获取
 func (obj *_ProjectGroupMgr) Get() (result model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_ProjectGroupMgr) Gets() (results []*model.ProjectGroup, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Find(&results).Error
+func (obj *_ProjectGroupMgr) Gets() (results []model.ProjectGroup, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_ProjectGroupMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_ProjectGroupMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -173,19 +166,19 @@ func (obj *_ProjectGroupMgr) WithDeleteTime(deleteTime int, cond ...string) Opti
 }
 
 func (obj *_ProjectGroupMgr) CreateProjectGroup(bean *model.ProjectGroup) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_ProjectGroupMgr) UpdateProjectGroup(bean *model.ProjectGroup) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_ProjectGroupMgr) DeleteProjectGroup(bean *model.ProjectGroup) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ProjectGroup{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

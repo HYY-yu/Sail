@@ -22,7 +22,7 @@ func PublishConfigMgr(ctx context.Context, db *gorm.DB) *_PublishConfigMgr {
 		panic(fmt.Errorf("PublishConfigMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_PublishConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("publish_config"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_PublishConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("publish_config").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_PublishConfigMgr) WithSelects(idName string, selects ...string) *_PublishConfigMgr {
@@ -45,13 +45,6 @@ func (obj *_PublishConfigMgr) WithSelects(idName string, selects ...string) *_Pu
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_PublishConfigMgr) WithOmit(omit ...string) *_PublishConfigMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -82,25 +75,25 @@ func (obj *_PublishConfigMgr) Reset() *_PublishConfigMgr {
 
 // Get 获取
 func (obj *_PublishConfigMgr) Get() (result model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_PublishConfigMgr) Gets() (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Find(&results).Error
+func (obj *_PublishConfigMgr) Gets() (results []model.PublishConfig, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_PublishConfigMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_PublishConfigMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -225,19 +218,19 @@ func (obj *_PublishConfigMgr) WithUpdateTime(updateTime time.Time, cond ...strin
 }
 
 func (obj *_PublishConfigMgr) CreatePublishConfig(bean *model.PublishConfig) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_PublishConfigMgr) UpdatePublishConfig(bean *model.PublishConfig) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_PublishConfigMgr) DeletePublishConfig(bean *model.PublishConfig) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

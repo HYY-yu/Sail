@@ -13,6 +13,7 @@ type BaseSvc struct {
 }
 
 func (s *BaseSvc) CheckStaffGroup(ctx context.Context, projectGroupId int) ([]int, model.Role) {
+	//return nil, model.RoleAdmin
 	data := ctx.Value(model.StaffGroupRelKey)
 	sgArr, ok := data.([]model.StaffGroup)
 	if !ok {

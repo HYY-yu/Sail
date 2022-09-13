@@ -22,7 +22,7 @@ func StaffMgr(ctx context.Context, db *gorm.DB) *_StaffMgr {
 		panic(fmt.Errorf("StaffMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_StaffMgr{_BaseMgr: &_BaseMgr{DB: db.Table("staff"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_StaffMgr{_BaseMgr: &_BaseMgr{DB: db.Table("staff").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_StaffMgr) WithSelects(idName string, selects ...string) *_StaffMgr {
@@ -45,13 +45,6 @@ func (obj *_StaffMgr) WithSelects(idName string, selects ...string) *_StaffMgr {
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_StaffMgr) WithOmit(omit ...string) *_StaffMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -82,25 +75,25 @@ func (obj *_StaffMgr) Reset() *_StaffMgr {
 
 // Get 获取
 func (obj *_StaffMgr) Get() (result model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_StaffMgr) Gets() (results []*model.Staff, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Find(&results).Error
+func (obj *_StaffMgr) Gets() (results []model.Staff, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_StaffMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_StaffMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -186,19 +179,19 @@ func (obj *_StaffMgr) WithCreateBy(createBy int, cond ...string) Option {
 }
 
 func (obj *_StaffMgr) CreateStaff(bean *model.Staff) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_StaffMgr) UpdateStaff(bean *model.Staff) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_StaffMgr) DeleteStaff(bean *model.Staff) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Staff{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

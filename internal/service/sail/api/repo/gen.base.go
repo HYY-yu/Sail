@@ -3,7 +3,6 @@ package repo
 
 import (
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -15,14 +14,7 @@ type _BaseMgr struct {
 	*gorm.DB
 	ctx       context.Context
 	cancel    context.CancelFunc
-	timeout   time.Duration
 	isRelated bool
-}
-
-// SetTimeOut set timeout
-func (obj *_BaseMgr) SetTimeOut(timeout time.Duration) {
-	obj.ctx, obj.cancel = context.WithTimeout(obj.ctx, timeout)
-	obj.timeout = timeout
 }
 
 // Cancel cancel context
@@ -58,6 +50,11 @@ func (obj *_BaseMgr) new() {
 // NewDB new gorm.新gorm
 func (obj *_BaseMgr) newDB() *gorm.DB {
 	return obj.DB.Session(&gorm.Session{NewDB: true, Context: obj.ctx})
+}
+
+// 开启语句 PrepareStmt 功能
+func (obj *_BaseMgr) WithPrepareStmt() *gorm.DB {
+	return obj.DB.Session(&gorm.Session{PrepareStmt: true})
 }
 
 type options struct {

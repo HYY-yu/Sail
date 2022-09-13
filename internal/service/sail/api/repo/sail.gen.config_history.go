@@ -22,7 +22,7 @@ func ConfigHistoryMgr(ctx context.Context, db *gorm.DB) *_ConfigHistoryMgr {
 		panic(fmt.Errorf("ConfigHistoryMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_ConfigHistoryMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config_history"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_ConfigHistoryMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config_history").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_ConfigHistoryMgr) WithSelects(idName string, selects ...string) *_ConfigHistoryMgr {
@@ -45,13 +45,6 @@ func (obj *_ConfigHistoryMgr) WithSelects(idName string, selects ...string) *_Co
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_ConfigHistoryMgr) WithOmit(omit ...string) *_ConfigHistoryMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -82,25 +75,25 @@ func (obj *_ConfigHistoryMgr) Reset() *_ConfigHistoryMgr {
 
 // Get 获取
 func (obj *_ConfigHistoryMgr) Get() (result model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_ConfigHistoryMgr) Gets() (results []*model.ConfigHistory, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Find(&results).Error
+func (obj *_ConfigHistoryMgr) Gets() (results []model.ConfigHistory, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_ConfigHistoryMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_ConfigHistoryMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -173,19 +166,19 @@ func (obj *_ConfigHistoryMgr) WithCreateBy(createBy int, cond ...string) Option 
 }
 
 func (obj *_ConfigHistoryMgr) CreateConfigHistory(bean *model.ConfigHistory) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_ConfigHistoryMgr) UpdateConfigHistory(bean *model.ConfigHistory) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_ConfigHistoryMgr) DeleteConfigHistory(bean *model.ConfigHistory) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.ConfigHistory{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

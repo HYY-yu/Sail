@@ -69,6 +69,9 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 			" LIKE ?",
 		))
 	}
+	mgr.UpdateDB(mgr.WithPrepareStmt())
+	sgMgr.UpdateDB(sgMgr.WithPrepareStmt())
+	pgMgr.UpdateDB(pgMgr.WithPrepareStmt())
 
 	data, err := mgr.WithOptions(op...).ListStaff(limit, offset, sort)
 	if err != nil {
@@ -201,6 +204,11 @@ func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 	bean := &model.Staff{
 		ID: staffID,
 	}
+	tx := s.DB.GetDb(ctx).Begin()
+	defer tx.Rollback()
+
+	mgr.UpdateDB(tx)
+	sgMgr.UpdateDB(tx)
 
 	// 删除此员工的对应的 staffGroup
 	err := sgMgr.WithOptions(sgMgr.WithStaffID(staffID)).Delete(&model.StaffGroupRel{}).Error
@@ -218,6 +226,7 @@ func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 			response.ServerError,
 		).WithErr(err)
 	}
+	tx.Commit()
 	return nil
 }
 

@@ -22,7 +22,7 @@ func NamespaceMgr(ctx context.Context, db *gorm.DB) *_NamespaceMgr {
 		panic(fmt.Errorf("NamespaceMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_NamespaceMgr{_BaseMgr: &_BaseMgr{DB: db.Table("namespace"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_NamespaceMgr{_BaseMgr: &_BaseMgr{DB: db.Table("namespace").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_NamespaceMgr) WithSelects(idName string, selects ...string) *_NamespaceMgr {
@@ -45,13 +45,6 @@ func (obj *_NamespaceMgr) WithSelects(idName string, selects ...string) *_Namesp
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_NamespaceMgr) WithOmit(omit ...string) *_NamespaceMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -82,25 +75,25 @@ func (obj *_NamespaceMgr) Reset() *_NamespaceMgr {
 
 // Get 获取
 func (obj *_NamespaceMgr) Get() (result model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_NamespaceMgr) Gets() (results []*model.Namespace, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Find(&results).Error
+func (obj *_NamespaceMgr) Gets() (results []model.Namespace, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_NamespaceMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_NamespaceMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -212,19 +205,19 @@ func (obj *_NamespaceMgr) WithDeleteTime(deleteTime int, cond ...string) Option 
 }
 
 func (obj *_NamespaceMgr) CreateNamespace(bean *model.Namespace) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_NamespaceMgr) UpdateNamespace(bean *model.Namespace) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_NamespaceMgr) DeleteNamespace(bean *model.Namespace) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Namespace{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

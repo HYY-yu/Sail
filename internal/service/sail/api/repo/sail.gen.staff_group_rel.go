@@ -21,7 +21,7 @@ func StaffGroupRelMgr(ctx context.Context, db *gorm.DB) *_StaffGroupRelMgr {
 		panic(fmt.Errorf("StaffGroupRelMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_StaffGroupRelMgr{_BaseMgr: &_BaseMgr{DB: db.Table("staff_group_rel"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_StaffGroupRelMgr{_BaseMgr: &_BaseMgr{DB: db.Table("staff_group_rel").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_StaffGroupRelMgr) WithSelects(idName string, selects ...string) *_StaffGroupRelMgr {
@@ -44,13 +44,6 @@ func (obj *_StaffGroupRelMgr) WithSelects(idName string, selects ...string) *_St
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_StaffGroupRelMgr) WithOmit(omit ...string) *_StaffGroupRelMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -81,25 +74,25 @@ func (obj *_StaffGroupRelMgr) Reset() *_StaffGroupRelMgr {
 
 // Get 获取
 func (obj *_StaffGroupRelMgr) Get() (result model.StaffGroupRel, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.StaffGroupRel{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_StaffGroupRelMgr) Gets() (results []*model.StaffGroupRel, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.StaffGroupRel{}).Find(&results).Error
+func (obj *_StaffGroupRelMgr) Gets() (results []model.StaffGroupRel, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_StaffGroupRelMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.StaffGroupRel{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_StaffGroupRelMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.StaffGroupRel{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -159,19 +152,19 @@ func (obj *_StaffGroupRelMgr) WithRoleType(roleType int, cond ...string) Option 
 }
 
 func (obj *_StaffGroupRelMgr) CreateStaffGroupRel(bean *model.StaffGroupRel) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.StaffGroupRel{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_StaffGroupRelMgr) UpdateStaffGroupRel(bean *model.StaffGroupRel) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_StaffGroupRelMgr) DeleteStaffGroupRel(bean *model.StaffGroupRel) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.StaffGroupRel{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }

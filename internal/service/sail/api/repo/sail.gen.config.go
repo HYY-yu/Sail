@@ -21,7 +21,7 @@ func ConfigMgr(ctx context.Context, db *gorm.DB) *_ConfigMgr {
 		panic(fmt.Errorf("ConfigMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_ConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config"), isRelated: globalIsRelated, ctx: ctx, cancel: cancel, timeout: -1}}
+	return &_ConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("config").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
 func (obj *_ConfigMgr) WithSelects(idName string, selects ...string) *_ConfigMgr {
@@ -44,13 +44,6 @@ func (obj *_ConfigMgr) WithSelects(idName string, selects ...string) *_ConfigMgr
 			}
 		}
 		obj.DB = obj.DB.Select(newSelects)
-	}
-	return obj
-}
-
-func (obj *_ConfigMgr) WithOmit(omit ...string) *_ConfigMgr {
-	if len(omit) > 0 {
-		obj.DB = obj.DB.Omit(omit...)
 	}
 	return obj
 }
@@ -81,25 +74,25 @@ func (obj *_ConfigMgr) Reset() *_ConfigMgr {
 
 // Get 获取
 func (obj *_ConfigMgr) Get() (result model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Find(&result).Error
+	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_ConfigMgr) Gets() (results []*model.Config, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Find(&results).Error
+func (obj *_ConfigMgr) Gets() (results []model.Config, err error) {
+	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 func (obj *_ConfigMgr) Count(count *int64) (tx *gorm.DB) {
-	return obj.DB.WithContext(obj.ctx).Model(model.Config{}).Count(count)
+	return obj.DB.Count(count)
 }
 
 func (obj *_ConfigMgr) HasRecord() (bool, error) {
 	var count int64
-	err := obj.DB.WithContext(obj.ctx).Model(model.Config{}).Count(&count).Error
+	err := obj.DB.Count(&count).Error
 	if err != nil {
 		return false, err
 	}
@@ -237,19 +230,19 @@ func (obj *_ConfigMgr) WithConfigKey(configKey string, cond ...string) Option {
 }
 
 func (obj *_ConfigMgr) CreateConfig(bean *model.Config) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Create(bean).Error
+	err = obj.DB.Create(bean).Error
 
 	return
 }
 
 func (obj *_ConfigMgr) UpdateConfig(bean *model.Config) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(bean).Updates(bean).Error
+	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
 func (obj *_ConfigMgr) DeleteConfig(bean *model.Config) (err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.Config{}).Delete(bean).Error
+	err = obj.DB.Delete(bean).Error
 
 	return
 }
