@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -57,7 +56,11 @@ func (obj *_PublishConfigMgr) WithOptions(opts ...Option) *_PublishConfigMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -101,7 +104,7 @@ func (obj *_PublishConfigMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_PublishConfigMgr) WithID(id int, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -114,7 +117,7 @@ func (obj *_PublishConfigMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithProjectID project_id获取
-func (obj *_PublishConfigMgr) WithProjectID(projectID int, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithProjectID(projectID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -127,7 +130,7 @@ func (obj *_PublishConfigMgr) WithProjectID(projectID int, cond ...string) Optio
 }
 
 // WithNamespaceID namespace_id获取
-func (obj *_PublishConfigMgr) WithNamespaceID(namespaceID int, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithNamespaceID(namespaceID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -140,7 +143,7 @@ func (obj *_PublishConfigMgr) WithNamespaceID(namespaceID int, cond ...string) O
 }
 
 // WithPublishType publish_type获取 发布方式
-func (obj *_PublishConfigMgr) WithPublishType(publishType int, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithPublishType(publishType interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -153,7 +156,7 @@ func (obj *_PublishConfigMgr) WithPublishType(publishType int, cond ...string) O
 }
 
 // WithPublishData publish_data获取 发布数据
-func (obj *_PublishConfigMgr) WithPublishData(publishData string, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithPublishData(publishData interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -166,7 +169,7 @@ func (obj *_PublishConfigMgr) WithPublishData(publishData string, cond ...string
 }
 
 // WithPublishConfigIDs publish_config_ids获取
-func (obj *_PublishConfigMgr) WithPublishConfigIDs(publishConfigIDs string, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithPublishConfigIDs(publishConfigIDs interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -179,7 +182,7 @@ func (obj *_PublishConfigMgr) WithPublishConfigIDs(publishConfigIDs string, cond
 }
 
 // WithStatus status获取
-func (obj *_PublishConfigMgr) WithStatus(status int, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithStatus(status interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -192,7 +195,7 @@ func (obj *_PublishConfigMgr) WithStatus(status int, cond ...string) Option {
 }
 
 // WithCreateTime create_time获取
-func (obj *_PublishConfigMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -205,7 +208,7 @@ func (obj *_PublishConfigMgr) WithCreateTime(createTime time.Time, cond ...strin
 }
 
 // WithUpdateTime update_time获取
-func (obj *_PublishConfigMgr) WithUpdateTime(updateTime time.Time, cond ...string) Option {
+func (obj *_PublishConfigMgr) WithUpdateTime(updateTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

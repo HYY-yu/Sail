@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -57,7 +56,11 @@ func (obj *_ProjectGroupMgr) WithOptions(opts ...Option) *_ProjectGroupMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -101,7 +104,7 @@ func (obj *_ProjectGroupMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_ProjectGroupMgr) WithID(id int, cond ...string) Option {
+func (obj *_ProjectGroupMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -114,7 +117,7 @@ func (obj *_ProjectGroupMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithName name获取
-func (obj *_ProjectGroupMgr) WithName(name string, cond ...string) Option {
+func (obj *_ProjectGroupMgr) WithName(name interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -127,7 +130,7 @@ func (obj *_ProjectGroupMgr) WithName(name string, cond ...string) Option {
 }
 
 // WithCreateTime create_time获取
-func (obj *_ProjectGroupMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+func (obj *_ProjectGroupMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -140,7 +143,7 @@ func (obj *_ProjectGroupMgr) WithCreateTime(createTime time.Time, cond ...string
 }
 
 // WithCreateBy create_by获取
-func (obj *_ProjectGroupMgr) WithCreateBy(createBy int, cond ...string) Option {
+func (obj *_ProjectGroupMgr) WithCreateBy(createBy interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -153,7 +156,7 @@ func (obj *_ProjectGroupMgr) WithCreateBy(createBy int, cond ...string) Option {
 }
 
 // WithDeleteTime delete_time获取
-func (obj *_ProjectGroupMgr) WithDeleteTime(deleteTime int, cond ...string) Option {
+func (obj *_ProjectGroupMgr) WithDeleteTime(deleteTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

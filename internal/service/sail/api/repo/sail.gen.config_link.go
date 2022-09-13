@@ -56,7 +56,11 @@ func (obj *_ConfigLinkMgr) WithOptions(opts ...Option) *_ConfigLinkMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -100,7 +104,7 @@ func (obj *_ConfigLinkMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_ConfigLinkMgr) WithID(id int, cond ...string) Option {
+func (obj *_ConfigLinkMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -113,7 +117,7 @@ func (obj *_ConfigLinkMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithConfigID config_id获取
-func (obj *_ConfigLinkMgr) WithConfigID(configID int, cond ...string) Option {
+func (obj *_ConfigLinkMgr) WithConfigID(configID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -126,7 +130,7 @@ func (obj *_ConfigLinkMgr) WithConfigID(configID int, cond ...string) Option {
 }
 
 // WithPublicConfigID public_config_id获取
-func (obj *_ConfigLinkMgr) WithPublicConfigID(publicConfigID int, cond ...string) Option {
+func (obj *_ConfigLinkMgr) WithPublicConfigID(publicConfigID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

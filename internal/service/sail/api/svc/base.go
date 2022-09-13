@@ -21,7 +21,7 @@ func (s *BaseSvc) CheckStaffGroup(ctx context.Context, projectGroupId int) ([]in
 	}
 
 	pgArr := make([]int, len(sgArr))
-	var resultRole model.Role
+	var resultRole model.Role = 99
 	for i, e := range sgArr {
 		pgArr[i] = e.ProjectGroupID
 

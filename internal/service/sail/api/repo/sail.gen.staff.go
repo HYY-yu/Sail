@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -57,7 +56,11 @@ func (obj *_StaffMgr) WithOptions(opts ...Option) *_StaffMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -101,7 +104,7 @@ func (obj *_StaffMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_StaffMgr) WithID(id int, cond ...string) Option {
+func (obj *_StaffMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -114,7 +117,7 @@ func (obj *_StaffMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithName name获取
-func (obj *_StaffMgr) WithName(name string, cond ...string) Option {
+func (obj *_StaffMgr) WithName(name interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -127,7 +130,7 @@ func (obj *_StaffMgr) WithName(name string, cond ...string) Option {
 }
 
 // WithPassword password获取
-func (obj *_StaffMgr) WithPassword(password string, cond ...string) Option {
+func (obj *_StaffMgr) WithPassword(password interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -140,7 +143,7 @@ func (obj *_StaffMgr) WithPassword(password string, cond ...string) Option {
 }
 
 // WithRefreshToken refresh_token获取
-func (obj *_StaffMgr) WithRefreshToken(refreshToken string, cond ...string) Option {
+func (obj *_StaffMgr) WithRefreshToken(refreshToken interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -153,7 +156,7 @@ func (obj *_StaffMgr) WithRefreshToken(refreshToken string, cond ...string) Opti
 }
 
 // WithCreateTime create_time获取
-func (obj *_StaffMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+func (obj *_StaffMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -166,7 +169,7 @@ func (obj *_StaffMgr) WithCreateTime(createTime time.Time, cond ...string) Optio
 }
 
 // WithCreateBy create_by获取
-func (obj *_StaffMgr) WithCreateBy(createBy int, cond ...string) Option {
+func (obj *_StaffMgr) WithCreateBy(createBy interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

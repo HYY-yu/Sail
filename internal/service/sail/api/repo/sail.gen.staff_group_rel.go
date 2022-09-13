@@ -56,7 +56,11 @@ func (obj *_StaffGroupRelMgr) WithOptions(opts ...Option) *_StaffGroupRelMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -100,7 +104,7 @@ func (obj *_StaffGroupRelMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_StaffGroupRelMgr) WithID(id int, cond ...string) Option {
+func (obj *_StaffGroupRelMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -113,7 +117,7 @@ func (obj *_StaffGroupRelMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithProjectGroupID project_group_id获取
-func (obj *_StaffGroupRelMgr) WithProjectGroupID(projectGroupID int, cond ...string) Option {
+func (obj *_StaffGroupRelMgr) WithProjectGroupID(projectGroupID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -126,7 +130,7 @@ func (obj *_StaffGroupRelMgr) WithProjectGroupID(projectGroupID int, cond ...str
 }
 
 // WithStaffID staff_id获取
-func (obj *_StaffGroupRelMgr) WithStaffID(staffID int, cond ...string) Option {
+func (obj *_StaffGroupRelMgr) WithStaffID(staffID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -139,7 +143,7 @@ func (obj *_StaffGroupRelMgr) WithStaffID(staffID int, cond ...string) Option {
 }
 
 // WithRoleType role_type获取 权限角色
-func (obj *_StaffGroupRelMgr) WithRoleType(roleType int, cond ...string) Option {
+func (obj *_StaffGroupRelMgr) WithRoleType(roleType interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

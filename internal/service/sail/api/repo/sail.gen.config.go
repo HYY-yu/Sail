@@ -56,7 +56,11 @@ func (obj *_ConfigMgr) WithOptions(opts ...Option) *_ConfigMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -100,7 +104,7 @@ func (obj *_ConfigMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_ConfigMgr) WithID(id int, cond ...string) Option {
+func (obj *_ConfigMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -113,7 +117,7 @@ func (obj *_ConfigMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithName name获取
-func (obj *_ConfigMgr) WithName(name string, cond ...string) Option {
+func (obj *_ConfigMgr) WithName(name interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -126,7 +130,7 @@ func (obj *_ConfigMgr) WithName(name string, cond ...string) Option {
 }
 
 // WithProjectID project_id获取
-func (obj *_ConfigMgr) WithProjectID(projectID int, cond ...string) Option {
+func (obj *_ConfigMgr) WithProjectID(projectID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -139,7 +143,7 @@ func (obj *_ConfigMgr) WithProjectID(projectID int, cond ...string) Option {
 }
 
 // WithProjectGroupID project_group_id获取 公共配置只有project_group_id
-func (obj *_ConfigMgr) WithProjectGroupID(projectGroupID int, cond ...string) Option {
+func (obj *_ConfigMgr) WithProjectGroupID(projectGroupID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -152,7 +156,7 @@ func (obj *_ConfigMgr) WithProjectGroupID(projectGroupID int, cond ...string) Op
 }
 
 // WithNamespaceID namespace_id获取
-func (obj *_ConfigMgr) WithNamespaceID(namespaceID int, cond ...string) Option {
+func (obj *_ConfigMgr) WithNamespaceID(namespaceID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -165,7 +169,7 @@ func (obj *_ConfigMgr) WithNamespaceID(namespaceID int, cond ...string) Option {
 }
 
 // WithIsPublic is_public获取
-func (obj *_ConfigMgr) WithIsPublic(isPublic bool, cond ...string) Option {
+func (obj *_ConfigMgr) WithIsPublic(isPublic interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -178,7 +182,7 @@ func (obj *_ConfigMgr) WithIsPublic(isPublic bool, cond ...string) Option {
 }
 
 // WithIsLinkPublic is_link_public获取
-func (obj *_ConfigMgr) WithIsLinkPublic(isLinkPublic bool, cond ...string) Option {
+func (obj *_ConfigMgr) WithIsLinkPublic(isLinkPublic interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -191,7 +195,7 @@ func (obj *_ConfigMgr) WithIsLinkPublic(isLinkPublic bool, cond ...string) Optio
 }
 
 // WithIsEncrypt is_encrypt获取
-func (obj *_ConfigMgr) WithIsEncrypt(isEncrypt bool, cond ...string) Option {
+func (obj *_ConfigMgr) WithIsEncrypt(isEncrypt interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -204,7 +208,7 @@ func (obj *_ConfigMgr) WithIsEncrypt(isEncrypt bool, cond ...string) Option {
 }
 
 // WithConfigType config_type获取
-func (obj *_ConfigMgr) WithConfigType(configType string, cond ...string) Option {
+func (obj *_ConfigMgr) WithConfigType(configType interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -217,7 +221,7 @@ func (obj *_ConfigMgr) WithConfigType(configType string, cond ...string) Option 
 }
 
 // WithConfigKey config_key获取
-func (obj *_ConfigMgr) WithConfigKey(configKey string, cond ...string) Option {
+func (obj *_ConfigMgr) WithConfigKey(configKey interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

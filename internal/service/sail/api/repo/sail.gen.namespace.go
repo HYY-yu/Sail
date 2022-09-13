@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -57,7 +56,11 @@ func (obj *_NamespaceMgr) WithOptions(opts ...Option) *_NamespaceMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -101,7 +104,7 @@ func (obj *_NamespaceMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_NamespaceMgr) WithID(id int, cond ...string) Option {
+func (obj *_NamespaceMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -114,7 +117,7 @@ func (obj *_NamespaceMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithProjectGroupID project_group_id获取
-func (obj *_NamespaceMgr) WithProjectGroupID(projectGroupID int, cond ...string) Option {
+func (obj *_NamespaceMgr) WithProjectGroupID(projectGroupID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -127,7 +130,7 @@ func (obj *_NamespaceMgr) WithProjectGroupID(projectGroupID int, cond ...string)
 }
 
 // WithName name获取
-func (obj *_NamespaceMgr) WithName(name string, cond ...string) Option {
+func (obj *_NamespaceMgr) WithName(name interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -140,7 +143,7 @@ func (obj *_NamespaceMgr) WithName(name string, cond ...string) Option {
 }
 
 // WithRealTime real_time获取 是否是实时发布
-func (obj *_NamespaceMgr) WithRealTime(realTime bool, cond ...string) Option {
+func (obj *_NamespaceMgr) WithRealTime(realTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -153,7 +156,7 @@ func (obj *_NamespaceMgr) WithRealTime(realTime bool, cond ...string) Option {
 }
 
 // WithSecretKey secret_key获取
-func (obj *_NamespaceMgr) WithSecretKey(secretKey string, cond ...string) Option {
+func (obj *_NamespaceMgr) WithSecretKey(secretKey interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -166,7 +169,7 @@ func (obj *_NamespaceMgr) WithSecretKey(secretKey string, cond ...string) Option
 }
 
 // WithCreateTime create_time获取
-func (obj *_NamespaceMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+func (obj *_NamespaceMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -179,7 +182,7 @@ func (obj *_NamespaceMgr) WithCreateTime(createTime time.Time, cond ...string) O
 }
 
 // WithCreateBy create_by获取
-func (obj *_NamespaceMgr) WithCreateBy(createBy int, cond ...string) Option {
+func (obj *_NamespaceMgr) WithCreateBy(createBy interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -192,7 +195,7 @@ func (obj *_NamespaceMgr) WithCreateBy(createBy int, cond ...string) Option {
 }
 
 // WithDeleteTime delete_time获取
-func (obj *_NamespaceMgr) WithDeleteTime(deleteTime int, cond ...string) Option {
+func (obj *_NamespaceMgr) WithDeleteTime(deleteTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}

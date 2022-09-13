@@ -3,7 +3,6 @@ package repo
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 
@@ -57,7 +56,11 @@ func (obj *_ConfigHistoryMgr) WithOptions(opts ...Option) *_ConfigHistoryMgr {
 		o.apply(&options)
 	}
 	for k, v := range options.query {
-		obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		if v.data == nil {
+			obj.DB = obj.DB.Where(k + " " + v.cond)
+		} else {
+			obj.DB = obj.DB.Where(k+" "+v.cond, v.data)
+		}
 	}
 	return obj
 }
@@ -101,7 +104,7 @@ func (obj *_ConfigHistoryMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_ConfigHistoryMgr) WithID(id int, cond ...string) Option {
+func (obj *_ConfigHistoryMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -114,7 +117,7 @@ func (obj *_ConfigHistoryMgr) WithID(id int, cond ...string) Option {
 }
 
 // WithConfigID config_id获取
-func (obj *_ConfigHistoryMgr) WithConfigID(configID int, cond ...string) Option {
+func (obj *_ConfigHistoryMgr) WithConfigID(configID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -127,7 +130,7 @@ func (obj *_ConfigHistoryMgr) WithConfigID(configID int, cond ...string) Option 
 }
 
 // WithReversion reversion获取
-func (obj *_ConfigHistoryMgr) WithReversion(reversion int, cond ...string) Option {
+func (obj *_ConfigHistoryMgr) WithReversion(reversion interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -140,7 +143,7 @@ func (obj *_ConfigHistoryMgr) WithReversion(reversion int, cond ...string) Optio
 }
 
 // WithCreateTime create_time获取
-func (obj *_ConfigHistoryMgr) WithCreateTime(createTime time.Time, cond ...string) Option {
+func (obj *_ConfigHistoryMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -153,7 +156,7 @@ func (obj *_ConfigHistoryMgr) WithCreateTime(createTime time.Time, cond ...strin
 }
 
 // WithCreateBy create_by获取
-func (obj *_ConfigHistoryMgr) WithCreateBy(createBy int, cond ...string) Option {
+func (obj *_ConfigHistoryMgr) WithCreateBy(createBy interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
