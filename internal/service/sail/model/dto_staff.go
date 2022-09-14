@@ -29,12 +29,12 @@ type StaffRole struct {
 }
 
 type AddStaff struct {
-	Name string `json:"name" v:"required|regex:^[a-zA-Z][a-zA-Z1-9]{1,9}"` // 员工标识
+	Name string `json:"name" v:"required|regex:^[a-zA-Z][\\w]{2,9}"` // 员工标识
 }
 
 type EditStaff struct {
 	StaffID int     `json:"staff_id" v:"required"`
-	Name    *string `json:"name" v:"regex:^[a-zA-Z][a-zA-Z1-9]{1,9}"`
+	Name    *string `json:"name" v:"regex:^[a-zA-Z][\\w]{2,9}"`
 }
 
 type GrantStaff struct {

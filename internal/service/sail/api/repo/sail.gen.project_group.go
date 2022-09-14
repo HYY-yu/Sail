@@ -90,6 +90,13 @@ func (obj *_ProjectGroupMgr) Gets() (results []model.ProjectGroup, err error) {
 	return
 }
 
+// Take 必须获取结果（单条）
+func (obj *_ProjectGroupMgr) Catch() (results model.ProjectGroup, err error) {
+	err = obj.DB.Take(&results).Error
+
+	return
+}
+
 func (obj *_ProjectGroupMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.Count(count)
 }

@@ -90,6 +90,13 @@ func (obj *_ConfigLinkMgr) Gets() (results []model.ConfigLink, err error) {
 	return
 }
 
+// Take 必须获取结果（单条）
+func (obj *_ConfigLinkMgr) Catch() (results model.ConfigLink, err error) {
+	err = obj.DB.Take(&results).Error
+
+	return
+}
+
 func (obj *_ConfigLinkMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.Count(count)
 }

@@ -6,6 +6,8 @@ type ProjectGroupList struct {
 	CreateBy       int    `json:"create_by"`
 	CreateByName   string `json:"create_by_name"`
 	CreateTime     int64  `json:"create_time"`
+
+	Managed bool `json:"managed"`
 }
 
 type AddProjectGroup struct {

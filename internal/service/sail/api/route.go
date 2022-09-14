@@ -18,10 +18,29 @@ func (s *Server) Route(c *Handlers, engine core.Engine) {
 		}
 
 		{
+			g := v1Group.Group("/project")
+			g.Use(core.WrapAuthHandler(s.HTTPMiddles.Jwt))
+			g.Use(c.staffHandler.MiddlewareStaffGroup)
+			g.GET("/list", c.projectHandler.List)
+			g.POST("/add", c.projectHandler.Add)
+			g.POST("/edit", c.projectHandler.Edit)
+			g.POST("/del", c.projectHandler.Del)
+		}
+
+		{
+			g := v1Group.Group("/namespace")
+			g.Use(core.WrapAuthHandler(s.HTTPMiddles.Jwt))
+			g.Use(c.staffHandler.MiddlewareStaffGroup)
+			g.GET("/list", c.namespaceHandler.List)
+			g.POST("/add", c.namespaceHandler.Add)
+			g.POST("/edit", c.namespaceHandler.Edit)
+			g.POST("/del", c.namespaceHandler.Del)
+		}
+
+		{
 			g := v1Group.Group("/staff")
 			g.Use(core.WrapAuthHandler(s.HTTPMiddles.Jwt))
 			g.Use(c.staffHandler.MiddlewareStaffGroup)
-
 			g.GET("/list", c.staffHandler.List)
 			g.POST("/add", c.staffHandler.Add)
 			g.POST("/edit", c.staffHandler.Edit)

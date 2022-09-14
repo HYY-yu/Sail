@@ -72,12 +72,15 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 	var result = make([]model.ProjectGroupList, len(data))
 
 	for i, e := range data {
+		_, mr := s.CheckStaffGroup(ctx, e.ID)
+
 		r := model.ProjectGroupList{
 			ProjectGroupID: e.ID,
 			Name:           e.Name,
 			CreateBy:       e.CreateBy,
 			CreateByName:   s.GetCreateByName(ctx, s.DB, s.StaffRepo, e.CreateBy),
 			CreateTime:     e.CreateTime.Unix(),
+			Managed:        mr <= model.RoleOwner,
 		}
 
 		result[i] = r
@@ -147,6 +150,12 @@ func (s *ProjectGroupSvc) Edit(sctx core.SvcContext, param *model.EditProjectGro
 
 	err := mgr.WithSelects(model.ProjectGroupColumns.ID, updateColumns...).UpdateProjectGroup(bean)
 	if err != nil {
+		if mysqlerr_helper.IsMysqlDupEntryError(err) {
+			return response.NewErrorWithStatusOk(
+				response.ParamBindError,
+				"已存在相同的ProjectGroup",
+			)
+		}
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,

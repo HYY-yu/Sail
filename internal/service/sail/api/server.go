@@ -22,17 +22,23 @@ type Handlers struct {
 	projectGroupHandler *handler.ProjectGroupHandler
 	staffHandler        *handler.StaffHandler
 	loginHandler        *handler.LoginHandler
+	projectHandler      *handler.ProjectHandler
+	namespaceHandler    *handler.NamespaceHandler
 }
 
 func NewHandlers(
 	projectGroupHandler *handler.ProjectGroupHandler,
 	staffHandler *handler.StaffHandler,
 	loginHandler *handler.LoginHandler,
+	projectHandler *handler.ProjectHandler,
+	namespaceHandler *handler.NamespaceHandler,
 ) *Handlers {
 	return &Handlers{
 		projectGroupHandler: projectGroupHandler,
 		staffHandler:        staffHandler,
 		loginHandler:        loginHandler,
+		projectHandler:      projectHandler,
+		namespaceHandler:    namespaceHandler,
 	}
 }
 

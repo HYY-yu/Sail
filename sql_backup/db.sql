@@ -24,6 +24,10 @@ CREATE TABLE `sail`.`project`
     `delete_time`      int         NOT NULL DEFAULT 0
 );
 
+create
+    unique index project_key_uindex
+    on project (`key`);
+
 CREATE TABLE `sail`.`namespace`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
@@ -35,6 +39,10 @@ CREATE TABLE `sail`.`namespace`
     `create_by`        int          NOT NULL,
     `delete_time`      int          NOT NULL DEFAULT 0
 );
+
+create
+    unique index namespace_pid_name_uindex
+    on namespace (`project_group_id`, `name`);
 
 CREATE TABLE `sail`.`staff`
 (

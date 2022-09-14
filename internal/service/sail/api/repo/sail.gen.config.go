@@ -90,6 +90,13 @@ func (obj *_ConfigMgr) Gets() (results []model.Config, err error) {
 	return
 }
 
+// Take 必须获取结果（单条）
+func (obj *_ConfigMgr) Catch() (results model.Config, err error) {
+	err = obj.DB.Take(&results).Error
+
+	return
+}
+
 func (obj *_ConfigMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.Count(count)
 }

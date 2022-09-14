@@ -90,6 +90,13 @@ func (obj *_StaffMgr) Gets() (results []model.Staff, err error) {
 	return
 }
 
+// Take 必须获取结果（单条）
+func (obj *_StaffMgr) Catch() (results model.Staff, err error) {
+	err = obj.DB.Take(&results).Error
+
+	return
+}
+
 func (obj *_StaffMgr) Count(count *int64) (tx *gorm.DB) {
 	return obj.DB.Count(count)
 }
