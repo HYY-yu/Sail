@@ -1,11 +1,13 @@
 package svc
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/db"
+	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
 	"github.com/HYY-yu/seckill.pkg/pkg/mysqlerr_helper"
 	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
@@ -113,7 +115,11 @@ func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Pag
 func (s *ProjectSvc) Add(sctx core.SvcContext, param *model.AddProject) error {
 	ctx := sctx.Context()
 	userId := sctx.UserId()
+	tx := s.DB.GetDb(ctx).Begin()
+	defer tx.Rollback()
+
 	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr.Tx(tx)
 
 	_, role := s.CheckStaffGroup(ctx, param.ProjectGroupID)
 	if role > model.RoleOwner {
@@ -125,12 +131,23 @@ func (s *ProjectSvc) Add(sctx core.SvcContext, param *model.AddProject) error {
 
 	bean := &model.Project{
 		ProjectGroupID: param.ProjectGroupID,
-		Key:            param.Key,
 		Name:           param.Name,
 		CreateTime:     time.Now(),
 		CreateBy:       int(userId),
 	}
 	err := mgr.CreateProject(bean)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	// key
+	k := fmt.Sprintf("%d-%d", bean.ID, bean.ProjectGroupID)
+	bean.Key = encrypt.MD5(k)
+
+	err = mgr.WithOptions(mgr.WithID(bean.ID)).Update(model.ProjectColumns.Key, bean.Key).Error
 	if err != nil {
 		if mysqlerr_helper.IsMysqlDupEntryError(err) {
 			return response.NewErrorWithStatusOk(
@@ -143,6 +160,7 @@ func (s *ProjectSvc) Add(sctx core.SvcContext, param *model.AddProject) error {
 			response.ServerError,
 		).WithErr(err)
 	}
+	tx.Commit()
 	return nil
 }
 
@@ -174,10 +192,6 @@ func (s *ProjectSvc) Edit(sctx core.SvcContext, param *model.EditProject) error 
 	if param.Name != nil && !g.IsEmpty(*param.Name) && *param.Name != project.Name {
 		bean.Name = *param.Name
 		updateColumns = append(updateColumns, model.ProjectColumns.Name)
-	}
-	if param.Key != nil && !g.IsEmpty(*param.Key) && *param.Key != project.Key {
-		bean.Key = *param.Key
-		updateColumns = append(updateColumns, model.ProjectColumns.Key)
 	}
 
 	err = mgr.WithSelects(model.ProjectGroupColumns.ID, updateColumns...).UpdateProject(bean)

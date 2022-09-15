@@ -17,6 +17,7 @@ type ConfigInfo struct {
 	ConfigID     int    `json:"config_id"`
 	ConfigKey    string `json:"config_key"`
 	Name         string `json:"name"`
+	Type         string `json:"type"`
 	Content      string `json:"content"`
 	IsPublic     bool   `json:"is_public"`
 	IsLinkPublic bool   `json:"is_link_public"`
@@ -26,18 +27,26 @@ type ConfigInfo struct {
 }
 
 type AddConfig struct {
-	Name         string `json:"name"`
-	ProjectID    int    `json:"project_id"`
-	NamespaceID  int    `json:"namespace_id"` // 传-1代表全部
+	Name         string `json:"name" v:"required|regex:^[a-zA-Z][\\w_\\-.]{1,9}"`
+	ProjectID    int    `json:"project_id" v:"required"`
+	NamespaceID  int    `json:"namespace_id" v:"required"` // 传-1代表全部
 	IsPublic     bool   `json:"is_public"`
 	IsLinkPublic bool   `json:"is_link_public"`
 
 	IsEncrypt bool   `json:"is_encrypt"`
-	Type      string `json:"type"`
+	Type      string `json:"type" v:"required"`
 	Content   string `json:"content"`
 
 	PublicConfigID int `json:"public_config_id"`
 }
+
+const (
+	ConfigTypeCustom = "custom"
+	ConfigTypeToml   = "toml"
+	ConfigTypeYaml   = "yaml"
+	ConfigTypeJson   = "json"
+	ConfigTypeIni    = "ini"
+)
 
 type EditConfig struct {
 	ConfigID int    `json:"config_id"`

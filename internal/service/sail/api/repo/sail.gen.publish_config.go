@@ -65,9 +65,15 @@ func (obj *_PublishConfigMgr) WithOptions(opts ...Option) *_PublishConfigMgr {
 	return obj
 }
 
-// GetTableName get sql table name.获取数据库名字
+// GetTableName get sql table name.获取表名字
 func (obj *_PublishConfigMgr) GetTableName() string {
 	return "publish_config"
+}
+
+// Tx 开启事务会话
+func (obj *_PublishConfigMgr) Tx(db *gorm.DB) *_PublishConfigMgr {
+	obj.UpdateDB(db.Table(obj.GetTableName()).WithContext(obj.ctx))
+	return obj
 }
 
 // Reset 重置gorm会话

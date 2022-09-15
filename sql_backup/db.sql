@@ -72,8 +72,7 @@ CREATE TABLE `sail`.`config`
     `is_public`        bool        NOT NULL,
     `is_link_public`   bool        NOT NULL,
     `is_encrypt`       bool        NOT NULL,
-    `config_type`      varchar(10) NOT NULL,
-    `config_key`       varchar(50) NOT NULL
+    `config_type`      varchar(10) NOT NULL
 );
 
 CREATE TABLE `sail`.`config_link`

@@ -207,8 +207,8 @@ func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 	tx := s.DB.GetDb(ctx).Begin()
 	defer tx.Rollback()
 
-	mgr.UpdateDB(tx)
-	sgMgr.UpdateDB(tx)
+	mgr.Tx(tx)
+	sgMgr.Tx(tx)
 
 	// 删除此员工的对应的 staffGroup
 	err := sgMgr.WithOptions(sgMgr.WithStaffID(staffID)).Delete(&model.StaffGroupRel{}).Error

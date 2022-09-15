@@ -65,9 +65,15 @@ func (obj *_NamespaceMgr) WithOptions(opts ...Option) *_NamespaceMgr {
 	return obj
 }
 
-// GetTableName get sql table name.获取数据库名字
+// GetTableName get sql table name.获取表名字
 func (obj *_NamespaceMgr) GetTableName() string {
 	return "namespace"
+}
+
+// Tx 开启事务会话
+func (obj *_NamespaceMgr) Tx(db *gorm.DB) *_NamespaceMgr {
+	obj.UpdateDB(db.Table(obj.GetTableName()).WithContext(obj.ctx))
+	return obj
 }
 
 // Reset 重置gorm会话

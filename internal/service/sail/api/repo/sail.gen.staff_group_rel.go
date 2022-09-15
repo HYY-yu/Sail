@@ -65,9 +65,15 @@ func (obj *_StaffGroupRelMgr) WithOptions(opts ...Option) *_StaffGroupRelMgr {
 	return obj
 }
 
-// GetTableName get sql table name.获取数据库名字
+// GetTableName get sql table name.获取表名字
 func (obj *_StaffGroupRelMgr) GetTableName() string {
 	return "staff_group_rel"
+}
+
+// Tx 开启事务会话
+func (obj *_StaffGroupRelMgr) Tx(db *gorm.DB) *_StaffGroupRelMgr {
+	obj.UpdateDB(db.Table(obj.GetTableName()).WithContext(obj.ctx))
+	return obj
 }
 
 // Reset 重置gorm会话

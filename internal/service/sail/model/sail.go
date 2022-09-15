@@ -15,7 +15,6 @@ type Config struct {
 	IsLinkPublic   bool   `gorm:"column:is_link_public;type:tinyint(1);not null"`
 	IsEncrypt      bool   `gorm:"column:is_encrypt;type:tinyint(1);not null"`
 	ConfigType     string `gorm:"column:config_type;type:varchar(10);not null"`
-	ConfigKey      string `gorm:"column:config_key;type:varchar(50);not null"`
 }
 
 // ConfigColumns get sql column name.获取数据库列名
@@ -29,7 +28,6 @@ var ConfigColumns = struct {
 	IsLinkPublic   string
 	IsEncrypt      string
 	ConfigType     string
-	ConfigKey      string
 }{
 	ID:             "id",
 	Name:           "name",
@@ -40,7 +38,6 @@ var ConfigColumns = struct {
 	IsLinkPublic:   "is_link_public",
 	IsEncrypt:      "is_encrypt",
 	ConfigType:     "config_type",
-	ConfigKey:      "config_key",
 }
 
 // ConfigHistory [...]
@@ -122,7 +119,7 @@ var NamespaceColumns = struct {
 type Project struct {
 	ID             int       `gorm:"primaryKey;column:id;type:int(11);not null"`
 	ProjectGroupID int       `gorm:"column:project_group_id;type:int(11);not null"`
-	Key            string    `gorm:"column:key;type:varchar(50);not null"`
+	Key            string    `gorm:"column:key;type:varchar(100);not null"`
 	Name           string    `gorm:"column:name;type:varchar(50);not null"`
 	CreateTime     time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
 	CreateBy       int       `gorm:"column:create_by;type:int(11);not null"`

@@ -65,9 +65,15 @@ func (obj *_ProjectGroupMgr) WithOptions(opts ...Option) *_ProjectGroupMgr {
 	return obj
 }
 
-// GetTableName get sql table name.获取数据库名字
+// GetTableName get sql table name.获取表名字
 func (obj *_ProjectGroupMgr) GetTableName() string {
 	return "project_group"
+}
+
+// Tx 开启事务会话
+func (obj *_ProjectGroupMgr) Tx(db *gorm.DB) *_ProjectGroupMgr {
+	obj.UpdateDB(db.Table(obj.GetTableName()).WithContext(obj.ctx))
+	return obj
 }
 
 // Reset 重置gorm会话

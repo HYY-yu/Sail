@@ -65,9 +65,15 @@ func (obj *_ConfigHistoryMgr) WithOptions(opts ...Option) *_ConfigHistoryMgr {
 	return obj
 }
 
-// GetTableName get sql table name.获取数据库名字
+// GetTableName get sql table name.获取表名字
 func (obj *_ConfigHistoryMgr) GetTableName() string {
 	return "config_history"
+}
+
+// Tx 开启事务会话
+func (obj *_ConfigHistoryMgr) Tx(db *gorm.DB) *_ConfigHistoryMgr {
+	obj.UpdateDB(db.Table(obj.GetTableName()).WithContext(obj.ctx))
+	return obj
 }
 
 // Reset 重置gorm会话

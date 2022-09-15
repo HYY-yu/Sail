@@ -65,9 +65,15 @@ func (obj *_ConfigMgr) WithOptions(opts ...Option) *_ConfigMgr {
 	return obj
 }
 
-// GetTableName get sql table name.获取数据库名字
+// GetTableName get sql table name.获取表名字
 func (obj *_ConfigMgr) GetTableName() string {
 	return "config"
+}
+
+// Tx 开启事务会话
+func (obj *_ConfigMgr) Tx(db *gorm.DB) *_ConfigMgr {
+	obj.UpdateDB(db.Table(obj.GetTableName()).WithContext(obj.ctx))
+	return obj
 }
 
 // Reset 重置gorm会话
@@ -223,19 +229,6 @@ func (obj *_ConfigMgr) WithConfigType(configType interface{}, cond ...string) Op
 		o.query["config_type"] = queryData{
 			cond: cond[0],
 			data: configType,
-		}
-	})
-}
-
-// WithConfigKey config_key获取
-func (obj *_ConfigMgr) WithConfigKey(configKey interface{}, cond ...string) Option {
-	return optionFunc(func(o *options) {
-		if len(cond) == 0 {
-			cond = []string{" = ? "}
-		}
-		o.query["config_key"] = queryData{
-			cond: cond[0],
-			data: configKey,
 		}
 	})
 }

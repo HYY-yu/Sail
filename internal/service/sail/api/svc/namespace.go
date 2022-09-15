@@ -7,11 +7,11 @@ import (
 
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/db"
+	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
 	"github.com/HYY-yu/seckill.pkg/pkg/mysqlerr_helper"
 	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
 	"github.com/HYY-yu/seckill.pkg/pkg/util"
-	"github.com/gogf/gf/v2/crypto/gmd5"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/util/gconv"
 
@@ -139,7 +139,7 @@ func (s *NamespaceSvc) Add(sctx core.SvcContext, param *model.AddNamespace) erro
 	if param.Secret {
 		// 生成 secret_key
 		jsonBean, _ := json.Marshal(bean)
-		bean.SecretKey = gmd5.MustEncrypt(jsonBean)
+		bean.SecretKey = encrypt.SHA1WithEncoding(string(jsonBean), encrypt.NewBase32Human())
 	}
 
 	err := mgr.CreateNamespace(bean)

@@ -15,7 +15,6 @@ type ProjectList struct {
 
 type AddProject struct {
 	Name           string `json:"name" v:"required|length:3,10"`
-	Key            string `json:"key" v:"required|regex:^[a-zA-Z][\\w-_.]{1,9}"`
 	ProjectGroupID int    `json:"project_group_id" v:"required"`
 }
 
@@ -23,5 +22,4 @@ type EditProject struct {
 	ProjectId int `json:"project_id" v:"required"`
 
 	Name *string `json:"name" v:"length:3,10"`
-	Key  *string `json:"key" v:"regex:^[a-zA-Z][\\w-_.]{1,9}"`
 }
