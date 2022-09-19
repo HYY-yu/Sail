@@ -6,11 +6,13 @@ import (
 
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
+	"github.com/HYY-yu/sail/internal/service/sail/storage"
 )
 
 type ConfigSvc struct {
 	BaseSvc
-	DB db.Repo
+	DB    db.Repo
+	Store storage.Repo
 
 	ConfigRepo        repo.ConfigRepo
 	ConfigHistoryRepo repo.ConfigHistoryRepo
@@ -19,6 +21,7 @@ type ConfigSvc struct {
 
 func NewConfigSvc(
 	db db.Repo,
+	store storage.Repo,
 	cr repo.ConfigRepo,
 	ch repo.ConfigHistoryRepo,
 	cl repo.ConfigLinkRepo,
@@ -28,6 +31,7 @@ func NewConfigSvc(
 		ConfigRepo:        cr,
 		ConfigHistoryRepo: ch,
 		ConfigLinkRepo:    cl,
+		Store:             store,
 	}
 	return svc
 }

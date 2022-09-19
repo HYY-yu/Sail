@@ -6,7 +6,7 @@ refreshDuration = "168h"
 
 [mysql]
 [mysql.base]
-connMaxLifeTime = "60s"
+connMaxLifeTime = "3m"
 maxIdleConn = 30
 maxOpenConn = 60
 addr = "127.0.0.1:3306"
@@ -22,6 +22,14 @@ minIdleConn = 60
 pass = "redis"
 poolSize = 120
 
+[etcd]
+endpoints = ["127.0.0.1:2379", "127.0.0.1:12379", "127.0.0.1:22379"]
+username = ""
+password = ""
+dialTimeout = "10s"
+dialKeepAlive = "1m"
+dialKeepAliveTimeout = "5s"
+
 [log]
 logPath = "./services.log"
 level = "DEBUG" # DEBUG INFO WARN ERROR
@@ -34,5 +42,5 @@ host = ":8108"
 pprof = true
 
 [jaeger]
-udpEndpoint = "http://tempo.kube-ops.svc.cluster.local:14268/api/traces"
+udpEndpoint = "http://127.0.0.1:14268/api/traces"
 stdOut = false

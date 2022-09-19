@@ -31,6 +31,15 @@ type Config struct {
 		MinIdleConn int    `toml:"minIdleConn"`
 	} `toml:"redis"`
 
+	ETCD struct {
+		Endpoints            []string      `toml:"endpoints"`
+		Username             string        `toml:"username"`
+		Password             string        `toml:"password"`
+		DialTimeout          time.Duration `toml:"dialTimeout"`
+		DialKeepAlive        time.Duration `toml:"dialKeepAlive"`
+		DialKeepAliveTimeout time.Duration `toml:"dialKeepAliveTimeout"`
+	}
+
 	JWT struct {
 		Secret          string        `toml:"secret"`
 		ExpireDuration  time.Duration `toml:"expireDuration"`

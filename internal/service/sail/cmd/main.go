@@ -73,7 +73,16 @@ func main() {
 		func() {
 			if s.DB != nil {
 				if err := s.DB.DbClose(); err != nil {
-					l.Error("dbw close err", zap.Error(err))
+					l.Error("db close err", zap.Error(err))
+				}
+			}
+		},
+
+		// 关闭 Storage
+		func() {
+			if s.Storage != nil {
+				if err := s.Storage.Close(); err != nil {
+					l.Error("storage close err", zap.Error(err))
 				}
 			}
 		},

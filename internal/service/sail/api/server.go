@@ -16,6 +16,7 @@ import (
 
 	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
+	"github.com/HYY-yu/sail/internal/service/sail/storage"
 )
 
 type Handlers struct {
@@ -48,6 +49,7 @@ type Server struct {
 	GrpcServer  *grpc.Server
 	DB          db.Repo
 	Cache       cache.Repo
+	Storage     storage.Repo
 	Trace       *trace.TracerProvider
 	HTTPMiddles middleware.Middleware
 }
@@ -74,6 +76,19 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 		logger.Fatal("new db err", zap.Error(err))
 	}
 	s.DB = dbRepo
+
+	etcdRepo, err := storage.New(&storage.ETCDConfig{
+		Endpoints:            cfg.ETCD.Endpoints,
+		Username:             cfg.ETCD.Username,
+		Password:             cfg.ETCD.Password,
+		DialTimeout:          cfg.ETCD.DialTimeout,
+		DialKeepAlive:        cfg.ETCD.DialKeepAlive,
+		DialKeepAliveTimeout: cfg.ETCD.DialKeepAliveTimeout,
+	})
+	if err != nil {
+		logger.Fatal("new etcd err", zap.Error(err))
+	}
+	s.Storage = etcdRepo
 
 	//cacheRepo, err := cache.New(cfg.Server.ServerName, &cache.RedisConf{
 	//	Addr:         cfg.Redis.Addr,
