@@ -6,6 +6,7 @@ import (
 
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/db"
+	"github.com/HYY-yu/seckill.pkg/pkg/mysqlerr_helper"
 	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
 	"github.com/HYY-yu/seckill.pkg/pkg/util"
@@ -43,9 +44,9 @@ func NewStaffSvc(
 
 func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page, error) {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	pgMgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
+	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb())
+	pgMgr := s.PGRepo.Mgr(ctx, s.DB.GetDb())
 
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
@@ -128,7 +129,7 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 
 func (s *StaffSvc) Add(sctx core.SvcContext, param *model.AddStaff) error {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
 
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
@@ -149,6 +150,12 @@ func (s *StaffSvc) Add(sctx core.SvcContext, param *model.AddStaff) error {
 	}
 	err := mgr.CreateStaff(bean)
 	if err != nil {
+		if mysqlerr_helper.IsMysqlDupEntryError(err) {
+			return response.NewErrorWithStatusOk(
+				response.ParamBindError,
+				"已经存在相同的Name，请保证Key唯一",
+			)
+		}
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,
@@ -159,7 +166,7 @@ func (s *StaffSvc) Add(sctx core.SvcContext, param *model.AddStaff) error {
 
 func (s *StaffSvc) Edit(sctx core.SvcContext, param *model.EditStaff) error {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
 		return response.NewErrorWithStatusOk(
@@ -181,6 +188,12 @@ func (s *StaffSvc) Edit(sctx core.SvcContext, param *model.EditStaff) error {
 
 	err := mgr.WithSelects(model.ProjectGroupColumns.ID, updateColumns...).UpdateStaff(bean)
 	if err != nil {
+		if mysqlerr_helper.IsMysqlDupEntryError(err) {
+			return response.NewErrorWithStatusOk(
+				response.ParamBindError,
+				"已经存在相同的Name，请保证Key唯一",
+			)
+		}
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,
@@ -191,8 +204,8 @@ func (s *StaffSvc) Edit(sctx core.SvcContext, param *model.EditStaff) error {
 
 func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
+	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb())
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
 		return response.NewErrorWithStatusOk(
@@ -204,7 +217,7 @@ func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 	bean := &model.Staff{
 		ID: staffID,
 	}
-	tx := s.DB.GetDb(ctx).Begin()
+	tx := s.DB.GetDb().Begin()
 	defer tx.Rollback()
 
 	mgr.Tx(tx)
@@ -232,9 +245,9 @@ func (s *StaffSvc) Delete(sctx core.SvcContext, staffID int) error {
 
 func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	pgMgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
+	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb())
+	pgMgr := s.PGRepo.Mgr(ctx, s.DB.GetDb())
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
 		return response.NewErrorWithStatusOk(
@@ -311,7 +324,7 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 
 func (s *StaffSvc) DelGrant(sctx core.SvcContext, staffGroupRelID int) error {
 	ctx := sctx.Context()
-	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb())
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
 		return response.NewErrorWithStatusOk(
@@ -337,7 +350,7 @@ func (s *StaffSvc) DelGrant(sctx core.SvcContext, staffGroupRelID int) error {
 func (s *StaffSvc) StaffGroup(sctx core.SvcContext) ([]model.StaffGroup, error) {
 	ctx := sctx.Context()
 	userId := int(sctx.UserId())
-	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	sgMgr := s.StaffGroupRepo.Mgr(ctx, s.DB.GetDb())
 
 	rel, err := sgMgr.WithOptions(sgMgr.WithStaffID(userId)).Gets()
 	if err != nil {

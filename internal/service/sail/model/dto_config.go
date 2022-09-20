@@ -1,16 +1,21 @@
 package model
 
+import (
+	"errors"
+)
+
 type ProjectTree struct {
-	Nodes []TreeNode `json:"nodes"`
+	NamespaceID int    `json:"namespace_id"`
+	Name        string `json:"name"`
+	RealTime    bool   `json:"real_time"` // 是否需发布
+
+	Nodes []ConfigNode `json:"nodes"`
 }
 
-type TreeNode struct {
-	ID   int    `json:"id"`
-	Type int    `json:"type"` // 可能是 Namespace，可能是 Config
-	Name string `json:"name"`
-
-	RealTime bool       `json:"real_time"` // false 代表可发布
-	Children []TreeNode `json:"children"`
+type ConfigNode struct {
+	ConfigID int    `json:"config_id"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
 }
 
 type ConfigInfo struct {
@@ -21,24 +26,27 @@ type ConfigInfo struct {
 	Content      string `json:"content"`
 	IsPublic     bool   `json:"is_public"`
 	IsLinkPublic bool   `json:"is_link_public"`
-
-	IsCopy    bool `json:"is_copy"`
-	IsEncrypt bool `json:"is_encrypt"`
+	IsEncrypt    bool   `json:"is_encrypt"`
 }
 
 type AddConfig struct {
-	Name         string `json:"name" v:"required|regex:^[a-zA-Z][\\w_\\-.]{1,9}"`
-	ProjectID    int    `json:"project_id" v:"required"`
-	NamespaceID  int    `json:"namespace_id" v:"required"` // 传-1代表全部
-	IsPublic     bool   `json:"is_public"`
-	IsLinkPublic bool   `json:"is_link_public"`
+	Name           string `json:"name" v:"required|regex:^[a-zA-Z][\\w_\\-.]{1,9}"`
+	ProjectGroupID int    `json:"project_group_id" v:"required"`
+	ProjectID      int    `json:"project_id" ` // 公共配置可以不传projectID
+	NamespaceID    int    `json:"namespace_id" v:"required"`
+	IsPublic       bool   `json:"is_public"`
+	IsLinkPublic   bool   `json:"is_link_public"`
 
-	IsEncrypt bool   `json:"is_encrypt"`
-	Type      string `json:"type" v:"required"`
-	Content   string `json:"content"`
+	IsEncrypt bool       `json:"is_encrypt"`
+	Type      ConfigType `json:"type" v:"required"`
+	Content   string     `json:"content" v:"required"`
 
 	PublicConfigID int `json:"public_config_id"`
 }
+
+var ErrNotEncryptNamespace = errors.New("ErrNotEncryptNamespace")
+
+type ConfigType string
 
 const (
 	ConfigTypeCustom = "custom"
@@ -47,6 +55,15 @@ const (
 	ConfigTypeJson   = "json"
 	ConfigTypeIni    = "ini"
 )
+
+func (c ConfigType) Valid() bool {
+	for _, e := range []ConfigType{ConfigTypeCustom, ConfigTypeToml, ConfigTypeYaml, ConfigTypeJson, ConfigTypeIni} {
+		if e == c {
+			return true
+		}
+	}
+	return false
+}
 
 type EditConfig struct {
 	ConfigID int    `json:"config_id"`

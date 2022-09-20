@@ -45,8 +45,8 @@ func NewProjectSvc(
 
 func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page, error) {
 	ctx := sctx.Context()
-	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	pgMgr := s.ProjectGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
+	pgMgr := s.ProjectGroupRepo.Mgr(ctx, s.DB.GetDb())
 
 	projectGroupArr, role := s.CheckStaffGroup(ctx, 0)
 	if len(projectGroupArr) == 0 && role != model.RoleAdmin {
@@ -115,10 +115,10 @@ func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Pag
 func (s *ProjectSvc) Add(sctx core.SvcContext, param *model.AddProject) error {
 	ctx := sctx.Context()
 	userId := sctx.UserId()
-	tx := s.DB.GetDb(ctx).Begin()
+	tx := s.DB.GetDb().Begin()
 	defer tx.Rollback()
 
-	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 	mgr.Tx(tx)
 
 	_, role := s.CheckStaffGroup(ctx, param.ProjectGroupID)
@@ -166,7 +166,7 @@ func (s *ProjectSvc) Add(sctx core.SvcContext, param *model.AddProject) error {
 
 func (s *ProjectSvc) Edit(sctx core.SvcContext, param *model.EditProject) error {
 	ctx := sctx.Context()
-	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 
 	project, err := mgr.WithOptions(mgr.WithID(param.ProjectId)).Catch()
 	if err != nil {
@@ -212,7 +212,7 @@ func (s *ProjectSvc) Edit(sctx core.SvcContext, param *model.EditProject) error 
 
 func (s *ProjectSvc) Delete(sctx core.SvcContext, projectID int) error {
 	ctx := sctx.Context()
-	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 	project, err := mgr.WithOptions(mgr.WithID(projectID)).Catch()
 	if err != nil {
 		return response.NewErrorAutoMsg(

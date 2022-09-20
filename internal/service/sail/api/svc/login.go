@@ -51,7 +51,7 @@ func NewLoginSvc(
 
 func (s *LoginSvc) Login(sctx core.SvcContext, param *model.LoginParams) (*model.LoginResponse, error) {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
 
 	// 查询此用户
 	user, err := mgr.WithOptions(mgr.WithName(param.UserName)).Get()
@@ -118,7 +118,7 @@ func (s *LoginSvc) LoginOut(sctx core.SvcContext) error {
 	ctx := sctx.Context()
 	userId := int(sctx.UserId())
 
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
 	err := mgr.WithOptions(mgr.WithID(userId)).
 		Update(model.StaffColumns.RefreshToken, "").Error
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *LoginSvc) LoginOut(sctx core.SvcContext) error {
 
 func (s *LoginSvc) ChangePassword(sctx core.SvcContext, newPass string) error {
 	ctx := sctx.Context()
-	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
 
 	hp, err := bcrypt.GenerateFromPassword([]byte(newPass), 0)
 	if err != nil {
@@ -179,7 +179,7 @@ func (l loginSystemRefreshToken) GenerateToken(ctx context.Context, userId int, 
 	}
 
 	// refreshToken 存到用户信息中
-	mgr := l.r.Mgr(ctx, l.d.GetDb(ctx))
+	mgr := l.r.Mgr(ctx, l.d.GetDb())
 	err = mgr.WithOptions(mgr.WithID(userId)).
 		Update(model.StaffColumns.RefreshToken, refreshToken).Error
 	if err != nil {
@@ -210,7 +210,7 @@ func (l loginSystemRefreshToken) RefreshToken(ctx context.Context, oldToken stri
 	userId, userName := int(cliaims.UserID), cliaims.UserName
 
 	// 检查数据库
-	mgr := l.r.Mgr(ctx, l.d.GetDb(ctx))
+	mgr := l.r.Mgr(ctx, l.d.GetDb())
 	staff, _ := mgr.WithOptions(mgr.WithID(userId)).WithSelects(model.StaffColumns.ID, model.StaffColumns.RefreshToken).
 		Get()
 	if staff.RefreshToken != oldToken {

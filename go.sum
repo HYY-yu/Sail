@@ -61,6 +61,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/HYY-yu/seckill.pkg v1.3.2 h1:nhH23nqmXG1PeuKnXj4ZHaEUmHAJ/wIoHjxlURdqlYI=
 github.com/HYY-yu/seckill.pkg v1.3.2/go.mod h1:LLXPtCdIUbvCqi2n5i5EOcnmKwDfku2pKiAR890tLrk=
+github.com/HYY-yu/seckill.pkg v1.3.3 h1:CeCpC4lZYPZlH6nGU6csVJ3gaTL+4QwLDt8uK1B+YBc=
+github.com/HYY-yu/seckill.pkg v1.3.3/go.mod h1:LLXPtCdIUbvCqi2n5i5EOcnmKwDfku2pKiAR890tLrk=
 github.com/KyleBanks/depth v1.2.1 h1:5h8fQADFrWtarTdtDudMmGsC7GPbOAu6RVB3ffsVFHc=
 github.com/KyleBanks/depth v1.2.1/go.mod h1:jzSb9d0L43HxTQfT+oSA1EEp2q+ne2uh6XgeJcm8brE=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=

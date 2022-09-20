@@ -54,6 +54,10 @@ CREATE TABLE `sail`.`staff`
     `create_by`     int          NOT NULL
 );
 
+create
+    unique index staff_name_uindex
+    on staff (`name`);
+
 CREATE TABLE `sail`.`staff_group_rel`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
@@ -75,12 +79,21 @@ CREATE TABLE `sail`.`config`
     `config_type`      varchar(10) NOT NULL
 );
 
+create
+    unique index config_big_key_uindex
+    on config (`project_group_id`, `project_id`, `namespace_id`, `name`, `config_type`);
+
 CREATE TABLE `sail`.`config_link`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `config_id`        int NOT NULL,
     `public_config_id` int NOT NULL
 );
+
+create
+    unique index config_link_config_id_uindex
+    on config_link (`config_id`, `public_config_id`);
+
 
 CREATE TABLE `sail`.`config_history`
 (

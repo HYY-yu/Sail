@@ -45,8 +45,8 @@ func NewNamespaceSvc(
 
 func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page, error) {
 	ctx := sctx.Context()
-	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb(ctx))
-	pgMgr := s.ProjectGroupRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
+	pgMgr := s.ProjectGroupRepo.Mgr(ctx, s.DB.GetDb())
 
 	projectGroupIdInter, ok := pr.Filter["project_group_id"]
 	if !ok {
@@ -119,7 +119,7 @@ func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.P
 func (s *NamespaceSvc) Add(sctx core.SvcContext, param *model.AddNamespace) error {
 	ctx := sctx.Context()
 	userId := sctx.UserId()
-	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
 	_, role := s.CheckStaffGroup(ctx, param.ProjectGroupID)
 	if role > model.RoleOwner {
@@ -160,7 +160,7 @@ func (s *NamespaceSvc) Add(sctx core.SvcContext, param *model.AddNamespace) erro
 
 func (s *NamespaceSvc) Edit(sctx core.SvcContext, param *model.EditNamespace) error {
 	ctx := sctx.Context()
-	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
 	namespace, err := mgr.WithOptions(mgr.WithID(param.NamespaceId)).Catch()
 	if err != nil {
@@ -210,7 +210,7 @@ func (s *NamespaceSvc) Edit(sctx core.SvcContext, param *model.EditNamespace) er
 
 func (s *NamespaceSvc) Delete(sctx core.SvcContext, namespaceID int) error {
 	ctx := sctx.Context()
-	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
 	namespace, err := mgr.WithOptions(mgr.WithID(namespaceID)).Catch()
 	if err != nil {

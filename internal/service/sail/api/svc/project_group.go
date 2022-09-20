@@ -40,7 +40,7 @@ func NewProjectGroupSvc(
 
 func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page, error) {
 	ctx := sctx.Context()
-	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb())
 
 	limit, offset := pr.GetLimitAndOffset()
 	pr.AddAllowSortField(model.ProjectGroupColumns.CreateTime)
@@ -93,7 +93,7 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 
 func (s *ProjectGroupSvc) Add(sctx core.SvcContext, param *model.AddProjectGroup) error {
 	ctx := sctx.Context()
-	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb())
 
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
@@ -127,7 +127,7 @@ func (s *ProjectGroupSvc) Add(sctx core.SvcContext, param *model.AddProjectGroup
 
 func (s *ProjectGroupSvc) Edit(sctx core.SvcContext, param *model.EditProjectGroup) error {
 	ctx := sctx.Context()
-	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb())
 
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
@@ -166,7 +166,7 @@ func (s *ProjectGroupSvc) Edit(sctx core.SvcContext, param *model.EditProjectGro
 
 func (s *ProjectGroupSvc) Delete(sctx core.SvcContext, projectGroupID int) error {
 	ctx := sctx.Context()
-	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb(ctx))
+	mgr := s.PGRepo.Mgr(ctx, s.DB.GetDb())
 
 	_, role := s.CheckStaffGroup(ctx, 0)
 	if role != model.RoleAdmin {
