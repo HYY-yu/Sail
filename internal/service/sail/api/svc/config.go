@@ -53,6 +53,83 @@ func NewConfigSvc(
 	return svc
 }
 
+func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int) ([]model.ProjectTree, error) {
+	ctx := sctx.Context()
+	namespaceMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
+	namespaceMgr.UpdateDB(namespaceMgr.WithPrepareStmt())
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+	mgr.UpdateDB(mgr.WithPrepareStmt())
+
+	_, role := s.CheckStaffGroup(ctx, projectGroupID)
+	if role > model.RoleManager {
+		return nil, response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+
+	namespaceList, err := namespaceMgr.WithOptions(namespaceMgr.WithProjectGroupID(projectGroupID)).Gets()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	configList, err := mgr.WithOptions(mgr.WithProjectID(projectID)).WithSelects(
+		model.ConfigColumns.ID,
+		model.ConfigColumns.Name,
+		model.ConfigColumns.NamespaceID,
+		model.ConfigColumns.ConfigType,
+	).
+		Gets()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	configNamespaceMap := make(map[int][]model.ConfigNode)
+	for _, e := range configList {
+		configNamespaceMap[e.NamespaceID] = append(configNamespaceMap[e.NamespaceID], model.ConfigNode{
+			ConfigID: e.ID,
+			Name:     e.Name,
+			Type:     e.ConfigType,
+		})
+	}
+
+	tree := make([]model.ProjectTree, len(namespaceList))
+	for i, e := range namespaceList {
+		b := model.ProjectTree{
+			NamespaceID: e.ID,
+			Name:        e.Name,
+			RealTime:    e.RealTime,
+		}
+
+		b.Nodes = configNamespaceMap[e.ID]
+		tree[i] = b
+	}
+	return tree, nil
+}
+
+func (s *ConfigSvc) Info(sctx core.SvcContext, configID int, projectGroupID int) (*model.ConfigInfo, error) {
+	ctx := sctx.Context()
+	namespaceMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	_, role := s.CheckStaffGroup(ctx, projectGroupID)
+	if role > model.RoleManager {
+		return nil, response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+
+	// 如果是owner，则自动解密
+
+}
+
 func (s *ConfigSvc) Add(sctx core.SvcContext, param *model.AddConfig) error {
 	ctx := sctx.Context()
 	userId := sctx.UserId()
@@ -70,6 +147,17 @@ func (s *ConfigSvc) Add(sctx core.SvcContext, param *model.AddConfig) error {
 			"请传正确的Type",
 		)
 	}
+
+	// 只有RoleOwner可以加密\创建公共配置
+	if param.IsEncrypt || param.IsPublic {
+		if role > model.RoleOwner {
+			return response.NewErrorWithStatusOk(
+				response.AuthorizationError,
+				"没有权限访问此接口",
+			)
+		}
+	}
+
 	tx := s.DB.GetDb().Begin()
 	defer tx.Rollback()
 
@@ -169,6 +257,7 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 	if err != nil {
 		return 0, 0, gerror.Wrap(err, "addConfig")
 	}
+
 	if param.IsEncrypt {
 		encryptContent, err := s.EncryptConfigContent(param.Content, namespace.SecretKey)
 		if err != nil {

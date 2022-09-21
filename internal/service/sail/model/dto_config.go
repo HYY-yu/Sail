@@ -66,8 +66,9 @@ func (c ConfigType) Valid() bool {
 }
 
 type EditConfig struct {
-	ConfigID int    `json:"config_id"`
-	Content  string `json:"content"`
+	ConfigID       int    `json:"config_id"`
+	IsPublicConfig bool   `json:"is_public_config"`
+	Content        string `json:"content"`
 }
 
 type ConfigCopy struct {

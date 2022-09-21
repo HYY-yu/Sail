@@ -81,7 +81,7 @@ CREATE TABLE `sail`.`config`
 
 create
     unique index config_big_key_uindex
-    on config (`project_group_id`, `project_id`, `namespace_id`, `name`, `config_type`);
+    on config (`project_id`, `namespace_id`, `project_group_id`, `name`, `config_type`);
 
 CREATE TABLE `sail`.`config_link`
 (
