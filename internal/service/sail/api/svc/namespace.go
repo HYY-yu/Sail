@@ -104,6 +104,7 @@ func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.P
 			ProjectGroupID:   e.ProjectGroupID,
 			ProjectGroupName: pg.Name,
 			Name:             e.Name,
+			SecretKey:        e.SecretKey,
 			RealTime:         e.RealTime,
 			CreateBy:         e.CreateBy,
 			CreateByName:     s.GetCreateByName(ctx, s.DB, s.StaffRepo, e.CreateBy),

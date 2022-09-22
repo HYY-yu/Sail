@@ -38,6 +38,15 @@ func (s *Server) Route(c *Handlers, engine core.Engine) {
 		}
 
 		{
+			g := v1Group.Group("/config")
+			g.Use(core.WrapAuthHandler(s.HTTPMiddles.Jwt))
+			g.Use(c.staffHandler.MiddlewareStaffGroup)
+			g.GET("/tree", c.configHandler.Tree)
+			g.GET("/info", c.configHandler.Info)
+			g.POST("/add", c.configHandler.Add)
+		}
+
+		{
 			g := v1Group.Group("/staff")
 			g.Use(core.WrapAuthHandler(s.HTTPMiddles.Jwt))
 			g.Use(c.staffHandler.MiddlewareStaffGroup)

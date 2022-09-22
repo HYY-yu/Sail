@@ -1,30 +1,64 @@
 package handler
 
 import (
+	"net/http"
+
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
+	"github.com/gogf/gf/v2/frame/g"
 
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
 )
 
 type ConfigHandler struct {
+	configSvc *svc.ConfigSvc
 }
 
-func NewConfigHandler() *ConfigHandler {
-	return &ConfigHandler{}
+func NewConfigHandler(configSvc *svc.ConfigSvc) *ConfigHandler {
+	return &ConfigHandler{
+		configSvc: configSvc,
+	}
 }
 
 // Tree
 // @Summary  配置树
 // @Tags     配置管理
 // @Param    project_id  query     int                                            false  "配置ID"
-// @Success  200         {object}  response.JsonResponse{data=model.ProjectTree}  "data"
+// @Param    project_group_id  query     int                                            false  "配置组ID"
+// @Success  200         {object}  response.JsonResponse{data=[]model.ProjectTree}  "data"
 // @Router   /v1/config/tree    [GET]
 func (h *ConfigHandler) Tree(c core.Context) {
-	_ = response.JsonResponse{}
-	_ = page.Page{}
-	_ = model.ProjectTree{}
+	type Param struct {
+		ProjectID      int `form:"project_id"`
+		ProjectGroupID int `form:"project_group_id"`
+	}
+
+	params := &Param{}
+
+	err := c.ShouldBindForm(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	data, err := h.configSvc.Tree(c.SvcContext(), params.ProjectID, params.ProjectGroupID)
+	c.AbortWithError(err)
+	c.Payload(data)
 }
 
 // Info
@@ -34,9 +68,33 @@ func (h *ConfigHandler) Tree(c core.Context) {
 // @Success  200        {object}  response.JsonResponse{data=model.ConfigInfo}  "data"
 // @Router   /v1/config/info    [GET]
 func (h *ConfigHandler) Info(c core.Context) {
-	_ = response.JsonResponse{}
-	_ = page.Page{}
-	_ = model.ProjectTree{}
+	type Param struct {
+		ConfigID int `form:"config_id"`
+	}
+	params := &Param{}
+
+	err := c.ShouldBindForm(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	data, err := h.configSvc.Info(c.SvcContext(), params.ConfigID)
+	c.AbortWithError(err)
+	c.Payload(data)
 }
 
 // History
@@ -68,7 +126,30 @@ func (h *ConfigHandler) Rollback(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/config/add    [POST]
 func (h *ConfigHandler) Add(c core.Context) {
+	params := &model.AddConfig{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.configSvc.Add(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Edit

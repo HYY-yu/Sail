@@ -3,6 +3,7 @@ package svc
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,7 +69,9 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 		)
 	}
 
-	namespaceList, err := namespaceMgr.WithOptions(namespaceMgr.WithProjectGroupID(projectGroupID)).Gets()
+	namespaceList, err := namespaceMgr.
+		WithOptions(namespaceMgr.WithProjectGroupID(projectGroupID), namespaceMgr.WithDeleteTime(0)).
+		Gets()
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -76,7 +79,10 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 		).WithErr(err)
 	}
 
-	configList, err := mgr.WithOptions(mgr.WithProjectID(projectID)).WithSelects(
+	configList, err := mgr.WithOptions(
+		mgr.WithProjectID(projectID),
+		mgr.WithProjectGroupID(projectGroupID),
+	).WithSelects(
 		model.ConfigColumns.ID,
 		model.ConfigColumns.Name,
 		model.ConfigColumns.NamespaceID,
@@ -105,6 +111,7 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 			NamespaceID: e.ID,
 			Name:        e.Name,
 			RealTime:    e.RealTime,
+			CanSecret:   e.SecretKey != "",
 		}
 
 		b.Nodes = configNamespaceMap[e.ID]
@@ -113,12 +120,18 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 	return tree, nil
 }
 
-func (s *ConfigSvc) Info(sctx core.SvcContext, configID int, projectGroupID int) (*model.ConfigInfo, error) {
+func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo, error) {
 	ctx := sctx.Context()
-	namespaceMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+	config, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
 
-	_, role := s.CheckStaffGroup(ctx, projectGroupID)
+	_, role := s.CheckStaffGroup(ctx, config.ProjectGroupID)
 	if role > model.RoleManager {
 		return nil, response.NewErrorWithStatusOk(
 			response.AuthorizationError,
@@ -126,8 +139,55 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int, projectGroupID int)
 		)
 	}
 
-	// 如果是owner，则自动解密
+	project, namespace, err := s.getConfigProjectAndNamespace(ctx, config.ProjectID, config.NamespaceID)
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
 
+	// 如果是owner，则自动解密
+	configKey := s.ConfigKey(
+		config.IsPublic,
+		config.ProjectGroupID,
+		project.Key,
+		namespace.Name,
+		config.Name,
+		model.ConfigType(config.ConfigType),
+	)
+	info := &model.ConfigInfo{
+		ConfigID:     config.ID,
+		ConfigKey:    configKey,
+		Name:         config.Name,
+		Type:         config.ConfigType,
+		IsPublic:     config.IsPublic,
+		IsLinkPublic: config.IsLinkPublic,
+		IsEncrypt:    config.IsEncrypt,
+	}
+
+	gresp := s.Store.Get(ctx, configKey)
+	if gresp.Err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	info.Content = gresp.Value
+	if config.IsEncrypt && role <= model.RoleOwner {
+		decrypt, err := s.DecryptConfigContent(info.Content, namespace.SecretKey)
+		if err != nil {
+			return nil, response.NewError(
+				http.StatusInternalServerError,
+				response.ServerError,
+				"文件解码失败",
+			).WithErr(err)
+		}
+		info.Content = decrypt
+	}
+
+	return info, nil
 }
 
 func (s *ConfigSvc) Add(sctx core.SvcContext, param *model.AddConfig) error {
@@ -228,6 +288,19 @@ func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (s
 	return encryptContent, nil
 }
 
+func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (string, error) {
+	if namespaceKey == "" {
+		return "", model.ErrNotEncryptNamespace
+	}
+
+	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
+	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)
+	if err != nil {
+		return "", err
+	}
+	return decryptContent, nil
+}
+
 func (s *ConfigSvc) addConfigHistory(ctx context.Context, db *gorm.DB, configID int, revision int, userId int) error {
 	bean := &model.ConfigHistory{
 		ConfigID:   configID,
@@ -265,36 +338,54 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 		}
 		param.Content = encryptContent
 	}
-	if param.IsLinkPublic && !param.IsPublic {
-		// 取公共配置内容
-		publicConfig, err := mgr.WithOptions(mgr.WithID(param.PublicConfigID)).WithSelects(
-			model.ConfigColumns.ID,
-			model.ConfigColumns.Name,
-			model.ConfigColumns.ConfigType,
-		).Catch()
-		if err != nil {
-			return 0, 0, err
-		}
-
-		publicConfigKey := s.ConfigKey(param.IsPublic, project.Key, namespace.Name, publicConfig.Name, model.ConfigType(publicConfig.ConfigType))
-		gresp := s.Store.Get(ctx, publicConfigKey)
-
-		param.Content = gresp.Value
-
-		// 不需要在 addConfig 的事务里
-		err = s.LinkPublicConfig(ctx, configID, param.PublicConfigID)
-		if err != nil {
-			return 0, 0, err
-		}
-	}
 
 	err = mgr.CreateConfig(bean)
 	if err != nil {
 		return 0, 0, gerror.Wrap(err, "addConfig")
 	}
 
+	if param.IsLinkPublic && !param.IsPublic {
+		// 取公共配置内容
+		publicConfig, err := mgr.WithOptions(mgr.WithID(param.PublicConfigID)).WithSelects(
+			model.ConfigColumns.ID,
+			model.ConfigColumns.Name,
+			model.ConfigColumns.ConfigType,
+			model.ConfigColumns.IsEncrypt,
+		).Catch()
+		if err != nil {
+			return 0, 0, err
+		}
+
+		publicConfigKey := s.ConfigKey(
+			true,
+			param.ProjectGroupID,
+			project.Key,
+			namespace.Name,
+			publicConfig.Name,
+			model.ConfigType(publicConfig.ConfigType),
+		)
+		gresp := s.Store.Get(ctx, publicConfigKey)
+
+		param.Content = gresp.Value
+
+		// 不需要在 addConfig 的事务里
+		err = s.LinkPublicConfig(ctx, bean.ID, param.PublicConfigID)
+		if err != nil {
+			return 0, 0, err
+		}
+
+		if publicConfig.IsEncrypt {
+			tempMgr := s.ConfigRepo.Mgr(ctx, db)
+			tempMgr.Where(model.ConfigColumns.ID, bean.ID).Updates(map[string]interface{}{
+				model.ConfigColumns.IsEncrypt:  publicConfig.IsEncrypt,
+				model.ConfigColumns.ConfigType: publicConfig.ConfigType,
+			})
+		}
+		param.Type = model.ConfigType(publicConfig.ConfigType)
+	}
+
 	// 写入 ETCD
-	configKey := s.ConfigKey(bean.IsPublic, project.Key, namespace.Name, bean.Name, param.Type)
+	configKey := s.ConfigKey(bean.IsPublic, bean.ProjectGroupID, project.Key, namespace.Name, bean.Name, param.Type)
 	sresp := s.Store.Set(ctx, configKey, param.Content)
 	if sresp.Err != nil {
 		return 0, 0, gerror.Wrap(sresp.Err, "addConfig")
@@ -308,7 +399,7 @@ func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID 
 	nMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
 	project, err := pMgr.WithOptions(pMgr.WithID(projectID)).
-		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name, model.ProjectColumns.Key).Catch()
+		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name, model.ProjectColumns.Key).Get()
 	if err != nil {
 		return nil, nil, gerror.Wrap(err, "getConfigProjectAndNamespace")
 	}
@@ -322,21 +413,23 @@ func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID 
 }
 
 // ConfigKey
-// Key : /conf/project_key/namespace_name/config_name.config.type
-func (s *ConfigSvc) ConfigKey(isPublic bool, projectKey string, namespaceName string, configName string, configType model.ConfigType) string {
+// NormalConfigKey : /conf/project_key/namespace_name/config_name.config.type
+// PublicConfigKey : /conf/1/namespace_name/config_name.config.type
+func (s *ConfigSvc) ConfigKey(isPublic bool, projectGroupID int, projectKey string, namespaceName string, configName string, configType model.ConfigType) string {
 	builder := strings.Builder{}
 	builder.WriteString("/conf")
 
-	builder.WriteByte('/')
-	builder.WriteString(projectKey)
+	if !isPublic {
+		builder.WriteByte('/')
+		builder.WriteString(projectKey)
+	}
+	if isPublic {
+		builder.WriteByte('/')
+		builder.WriteString(strconv.Itoa(projectGroupID) + "-public")
+	}
 
 	builder.WriteByte('/')
 	builder.WriteString(namespaceName)
-
-	if isPublic {
-		builder.WriteByte('/')
-		builder.WriteString("public")
-	}
 
 	builder.WriteByte('/')
 	builder.WriteString(configName)

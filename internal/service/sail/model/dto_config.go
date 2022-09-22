@@ -7,7 +7,8 @@ import (
 type ProjectTree struct {
 	NamespaceID int    `json:"namespace_id"`
 	Name        string `json:"name"`
-	RealTime    bool   `json:"real_time"` // 是否需发布
+	RealTime    bool   `json:"real_time"`  // 是否需发布
+	CanSecret   bool   `json:"can_secret"` // 是否能加密
 
 	Nodes []ConfigNode `json:"nodes"`
 }
@@ -39,7 +40,7 @@ type AddConfig struct {
 
 	IsEncrypt bool       `json:"is_encrypt"`
 	Type      ConfigType `json:"type" v:"required"`
-	Content   string     `json:"content" v:"required"`
+	Content   string     `json:"content" `
 
 	PublicConfigID int `json:"public_config_id"`
 }

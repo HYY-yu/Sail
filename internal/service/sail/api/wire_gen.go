@@ -9,6 +9,7 @@ import (
 	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
+	"github.com/HYY-yu/sail/internal/service/sail/storage"
 	"github.com/HYY-yu/seckill.pkg/cache"
 	"github.com/HYY-yu/seckill.pkg/db"
 )
@@ -16,7 +17,7 @@ import (
 // Injectors from wire.go:
 
 // initHandlers init Handlers.
-func initHandlers(d db.Repo, c cache.Repo) (*Handlers, error) {
+func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error) {
 	projectGroupRepo := repo.NewProjectGroupRepo()
 	staffRepo := repo.NewStaffRepo()
 	projectGroupSvc := svc.NewProjectGroupSvc(d, projectGroupRepo, staffRepo)
@@ -32,6 +33,11 @@ func initHandlers(d db.Repo, c cache.Repo) (*Handlers, error) {
 	namespaceRepo := repo.NewNamespaceRepo()
 	namespaceSvc := svc.NewNamespaceSvc(d, namespaceRepo, projectGroupRepo, staffRepo)
 	namespaceHandler := handler.NewNamespaceHandler(namespaceSvc)
-	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler)
+	configRepo := repo.NewConfigRepo()
+	configHistoryRepo := repo.NewConfigHistoryRepo()
+	configLinkRepo := repo.NewConfigLinkRepo()
+	configSvc := svc.NewConfigSvc(d, store, configRepo, configHistoryRepo, configLinkRepo, projectRepo, namespaceRepo)
+	configHandler := handler.NewConfigHandler(configSvc)
+	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler)
 	return handlers, nil
 }

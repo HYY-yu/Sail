@@ -3,7 +3,7 @@ module github.com/HYY-yu/sail
 go 1.18
 
 require (
-	github.com/HYY-yu/seckill.pkg v1.3.3
+	github.com/HYY-yu/seckill.pkg v1.3.4
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gogf/gf/v2 v2.1.2
 	github.com/google/wire v0.5.0
@@ -16,6 +16,6 @@ require (
 
 require (
 	github.com/swaggo/swag v1.7.9
-	go.etcd.io/etcd/client/v3 v3.5.4 // indirect
+	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 )

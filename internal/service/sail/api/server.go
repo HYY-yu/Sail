@@ -25,6 +25,7 @@ type Handlers struct {
 	loginHandler        *handler.LoginHandler
 	projectHandler      *handler.ProjectHandler
 	namespaceHandler    *handler.NamespaceHandler
+	configHandler       *handler.ConfigHandler
 }
 
 func NewHandlers(
@@ -33,6 +34,7 @@ func NewHandlers(
 	loginHandler *handler.LoginHandler,
 	projectHandler *handler.ProjectHandler,
 	namespaceHandler *handler.NamespaceHandler,
+	configHandler *handler.ConfigHandler,
 ) *Handlers {
 	return &Handlers{
 		projectGroupHandler: projectGroupHandler,
@@ -40,6 +42,7 @@ func NewHandlers(
 		loginHandler:        loginHandler,
 		projectHandler:      projectHandler,
 		namespaceHandler:    namespaceHandler,
+		configHandler:       configHandler,
 	}
 }
 
@@ -119,7 +122,7 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	metrics.InitMetrics(cfg.Server.ServerName)
 
 	// Repo Svc Handler
-	c, err := initHandlers(s.DB, s.Cache)
+	c, err := initHandlers(s.DB, s.Cache, s.Storage)
 	if err != nil {
 		panic(err)
 	}
