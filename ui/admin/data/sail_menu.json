@@ -1,0 +1,22 @@
+{
+    "id": 1,
+    "title": "项目中心",
+    "icon": "layui-icon layui-icon-console",
+    "type": 0,
+    "href": "",
+    "children": [{
+        "id": 2,
+        "title": "项目组管理",
+        "icon": "layui-icon layui-icon-console",
+        "type": 1,
+        "openType": "_iframe",
+        "href": "view/console/console1.html"
+    }, {
+        "id": 3,
+        "title": "项目管理",
+        "icon": "layui-icon layui-icon-console",
+        "type": 1,
+        "openType": "_iframe",
+        "href": "view/console/console2.html"
+    }]
+}
