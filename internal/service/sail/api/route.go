@@ -43,7 +43,13 @@ func (s *Server) Route(c *Handlers, engine core.Engine) {
 			g.Use(c.staffHandler.MiddlewareStaffGroup)
 			g.GET("/tree", c.configHandler.Tree)
 			g.GET("/info", c.configHandler.Info)
+			g.GET("/history", c.configHandler.History)
+			g.GET("/history_info", c.configHandler.HistoryInfo)
+			g.POST("/rollback", c.configHandler.Rollback)
 			g.POST("/add", c.configHandler.Add)
+			g.POST("/edit", c.configHandler.Edit)
+			g.POST("/del", c.configHandler.Del)
+			g.POST("/copy", c.configHandler.Copy)
 		}
 
 		{

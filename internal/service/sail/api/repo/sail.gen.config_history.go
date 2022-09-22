@@ -155,6 +155,19 @@ func (obj *_ConfigHistoryMgr) WithReversion(reversion interface{}, cond ...strin
 	})
 }
 
+// WithOpType op_type获取
+func (obj *_ConfigHistoryMgr) WithOpType(opType interface{}, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["op_type"] = queryData{
+			cond: cond[0],
+			data: opType,
+		}
+	})
+}
+
 // WithCreateTime create_time获取
 func (obj *_ConfigHistoryMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {

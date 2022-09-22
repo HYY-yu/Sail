@@ -16,6 +16,7 @@ require (
 
 require (
 	github.com/swaggo/swag v1.7.9
+	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.4
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 )

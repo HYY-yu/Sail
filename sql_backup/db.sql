@@ -100,9 +100,15 @@ CREATE TABLE `sail`.`config_history`
     `id`          int PRIMARY KEY AUTO_INCREMENT,
     `config_id`   int       NOT NULL,
     `reversion`   int       NOT NULL,
+    `op_type`     int       NOT NULL,
     `create_time` timestamp NOT NULL,
     `create_by`   int       NOT NULL
 );
+
+
+create
+    unique index config_history_config_id_uindex
+    on config_history (`config_id`, `reversion`);
 
 CREATE TABLE `sail`.`publish_config`
 (

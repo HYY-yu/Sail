@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/HYY-yu/seckill.pkg/core"
-	"github.com/HYY-yu/seckill.pkg/pkg/page"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
 	"github.com/gogf/gf/v2/frame/g"
 
@@ -104,9 +103,71 @@ func (h *ConfigHandler) Info(c core.Context) {
 // @Success  200        {object}  response.JsonResponse{data=[]model.ConfigHistoryList}  "data"
 // @Router   /v1/config/history    [GET]
 func (h *ConfigHandler) History(c core.Context) {
-	_ = response.JsonResponse{}
-	_ = page.Page{}
-	_ = model.ProjectTree{}
+	type Param struct {
+		ConfigID int `form:"config_id"`
+	}
+	params := &Param{}
+
+	err := c.ShouldBindForm(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	data, err := h.configSvc.History(c.SvcContext(), params.ConfigID)
+	c.AbortWithError(err)
+	c.Payload(data)
+}
+
+// HistoryInfo
+// @Summary  配置历史详情
+// @Tags     配置管理
+// @Param    config_id  query     int                                                    false  "配置ID"
+// @Param    reversion  query     int                                                    false  "reversion"
+// @Success  200        {object}  response.JsonResponse{data=string}  "data"
+// @Router   /v1/config/history_info    [GET]
+func (h *ConfigHandler) HistoryInfo(c core.Context) {
+	type Param struct {
+		ConfigID  int `form:"config_id"`
+		Reversion int `form:"reversion"`
+	}
+	params := &Param{}
+
+	err := c.ShouldBindForm(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	data, err := h.configSvc.HistoryInfo(c.SvcContext(), params.ConfigID, params.Reversion)
+	c.AbortWithError(err)
+	c.Payload(data)
 }
 
 // Rollback
@@ -116,7 +177,30 @@ func (h *ConfigHandler) History(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/config/rollback    [POST]
 func (h *ConfigHandler) Rollback(c core.Context) {
+	params := &model.RollbackConfig{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.configSvc.Rollback(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Add
@@ -159,7 +243,30 @@ func (h *ConfigHandler) Add(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/config/edit    [POST]
 func (h *ConfigHandler) Edit(c core.Context) {
+	params := &model.EditConfig{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.configSvc.Edit(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Copy
@@ -169,7 +276,30 @@ func (h *ConfigHandler) Edit(c core.Context) {
 // @Success  200     {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/config/copy    [POST]
 func (h *ConfigHandler) Copy(c core.Context) {
+	params := &model.ConfigCopy{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.configSvc.Copy(c.SvcContext(), params)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }
 
 // Del
@@ -179,5 +309,31 @@ func (h *ConfigHandler) Copy(c core.Context) {
 // @Success  200        {object}  response.JsonResponse{data=string}  "data=ok"
 // @Router   /v1/config/del    [POST]
 func (h *ConfigHandler) Del(c core.Context) {
+	type Param struct {
+		ConfigID int `json:"config_id"`
+	}
+	params := &Param{}
 
+	err := c.ShouldBindJSON(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	err = h.configSvc.Del(c.SvcContext(), params.ConfigID)
+	c.AbortWithError(err)
+	c.Payload(nil)
 }

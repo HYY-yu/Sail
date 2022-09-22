@@ -1,7 +1,15 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
+	"strings"
+
+	"github.com/gogf/gf/v2/encoding/gini"
+	"github.com/gogf/gf/v2/encoding/gproperties"
+	"github.com/gogf/gf/v2/encoding/gtoml"
+	"github.com/gogf/gf/v2/encoding/gxml"
+	"github.com/gogf/gf/v2/encoding/gyaml"
 )
 
 type ProjectTree struct {
@@ -38,11 +46,43 @@ type AddConfig struct {
 	IsPublic       bool   `json:"is_public"`
 	IsLinkPublic   bool   `json:"is_link_public"`
 
-	IsEncrypt bool       `json:"is_encrypt"`
-	Type      ConfigType `json:"type" v:"required"`
-	Content   string     `json:"content" `
+	IsEncrypt bool          `json:"is_encrypt"`
+	Type      ConfigType    `json:"type" v:"required"`
+	Content   ConfigContent `json:"content" `
 
 	PublicConfigID int `json:"public_config_id"`
+}
+
+type ConfigContent string
+
+func (c ConfigContent) Valid(t ConfigType) bool {
+	// 为空不校验
+	if len(strings.TrimSpace(string(c))) == 0 {
+		return true
+	}
+	cb := []byte(c)
+
+	switch t {
+	case ConfigTypeToml:
+		_, err := gtoml.Decode(cb)
+		return err == nil
+	case ConfigTypeJson:
+		return json.Valid(cb)
+	case ConfigTypeYaml:
+		_, err := gyaml.Decode(cb)
+		return err == nil
+	case ConfigTypeIni:
+		_, err := gini.Decode(cb)
+		return err == nil
+	case ConfigTypeXml:
+		_, err := gxml.Decode(cb)
+		return err == nil
+	case ConfigTypeProperties:
+		_, err := gproperties.Decode(cb)
+		return err == nil
+	default:
+		return true
+	}
 }
 
 var ErrNotEncryptNamespace = errors.New("ErrNotEncryptNamespace")
@@ -50,15 +90,25 @@ var ErrNotEncryptNamespace = errors.New("ErrNotEncryptNamespace")
 type ConfigType string
 
 const (
-	ConfigTypeCustom = "custom"
-	ConfigTypeToml   = "toml"
-	ConfigTypeYaml   = "yaml"
-	ConfigTypeJson   = "json"
-	ConfigTypeIni    = "ini"
+	ConfigTypeCustom     = "custom"
+	ConfigTypeToml       = "toml"
+	ConfigTypeYaml       = "yaml"
+	ConfigTypeJson       = "json"
+	ConfigTypeIni        = "ini"
+	ConfigTypeXml        = "xml"
+	ConfigTypeProperties = "properties"
 )
 
 func (c ConfigType) Valid() bool {
-	for _, e := range []ConfigType{ConfigTypeCustom, ConfigTypeToml, ConfigTypeYaml, ConfigTypeJson, ConfigTypeIni} {
+	for _, e := range []ConfigType{
+		ConfigTypeCustom,
+		ConfigTypeToml,
+		ConfigTypeYaml,
+		ConfigTypeJson,
+		ConfigTypeIni,
+		ConfigTypeXml,
+		ConfigTypeProperties,
+	} {
 		if e == c {
 			return true
 		}
@@ -67,26 +117,39 @@ func (c ConfigType) Valid() bool {
 }
 
 type EditConfig struct {
-	ConfigID       int    `json:"config_id"`
-	IsPublicConfig bool   `json:"is_public_config"`
-	Content        string `json:"content"`
+	ConfigID int           `json:"config_id" v:"required"`
+	Content  ConfigContent `json:"content" v:"required"`
 }
 
 type ConfigCopy struct {
-	ConfigID int `json:"config_id"`
-	Op       int `json:"op"` // 1 转为副本 2关联公共配置
+	ConfigID int `json:"config_id" v:"required"`
+	Op       int `json:"op" v:"required"` // 1 转为副本 2关联公共配置
 }
 
 type ConfigHistoryList struct {
-	ConfigID int `json:"config_id"`
+	ConfigID int `json:"config_id" `
 
 	CreateBy     int    `json:"create_by"`
 	CreateByName string `json:"create_by_name"`
 	CreateTime   int64  `json:"create_time"`
 	Reversion    int    `json:"reversion"`
-	Content      string `json:"content"`
+	OpType       int    `json:"op_type"`
+	OpTypeStr    string `json:"op_type_str"`
+}
+
+type ConfigHistoryOpType int
+
+const (
+	OpTypeAdd ConfigHistoryOpType = iota + 1
+	OpTypeEdit
+	OpTypeRollback
+)
+
+func (o ConfigHistoryOpType) String() string {
+	return [...]string{"未知", "新增", "编辑", "回滚"}[o]
 }
 
 type RollbackConfig struct {
-	HistoryID int `json:"history_id"`
+	ConfigID  int `json:"config_id" v:"required"`
+	Reversion int `json:"reversion" v:"required"`
 }

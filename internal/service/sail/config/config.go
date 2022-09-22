@@ -55,9 +55,10 @@ type Config struct {
 	} `toml:"log"`
 
 	Server struct {
-		ServerName string `toml:"serverName"`
-		Host       string `toml:"host"`
-		Pprof      bool   `toml:"pprof"`
+		ServerName     string `toml:"serverName"`
+		Host           string `toml:"host"`
+		Pprof          bool   `toml:"pprof"`
+		HistoryListLen int64  `toml:"historyListLen"`
 	} `toml:"server"`
 
 	Jaeger struct {

@@ -2,6 +2,7 @@ package svc
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,9 +14,11 @@ import (
 	"github.com/HYY-yu/seckill.pkg/pkg/mysqlerr_helper"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"go.etcd.io/etcd/api/v3/v3rpc/rpctypes"
 	"gorm.io/gorm"
 
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
+	"github.com/HYY-yu/sail/internal/service/sail/config"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
 )
@@ -123,7 +126,7 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo, error) {
 	ctx := sctx.Context()
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
-	config, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
+	cfg, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -131,15 +134,12 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 		).WithErr(err)
 	}
 
-	_, role := s.CheckStaffGroup(ctx, config.ProjectGroupID)
-	if role > model.RoleManager {
-		return nil, response.NewErrorWithStatusOk(
-			response.AuthorizationError,
-			"没有权限访问此接口",
-		)
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return nil, err
 	}
 
-	project, namespace, err := s.getConfigProjectAndNamespace(ctx, config.ProjectID, config.NamespaceID)
+	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -149,21 +149,21 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 
 	// 如果是owner，则自动解密
 	configKey := s.ConfigKey(
-		config.IsPublic,
-		config.ProjectGroupID,
+		cfg.IsPublic,
+		cfg.ProjectGroupID,
 		project.Key,
 		namespace.Name,
-		config.Name,
-		model.ConfigType(config.ConfigType),
+		cfg.Name,
+		model.ConfigType(cfg.ConfigType),
 	)
 	info := &model.ConfigInfo{
-		ConfigID:     config.ID,
+		ConfigID:     cfg.ID,
 		ConfigKey:    configKey,
-		Name:         config.Name,
-		Type:         config.ConfigType,
-		IsPublic:     config.IsPublic,
-		IsLinkPublic: config.IsLinkPublic,
-		IsEncrypt:    config.IsEncrypt,
+		Name:         cfg.Name,
+		Type:         cfg.ConfigType,
+		IsPublic:     cfg.IsPublic,
+		IsLinkPublic: cfg.IsLinkPublic,
+		IsEncrypt:    cfg.IsEncrypt,
 	}
 
 	gresp := s.Store.Get(ctx, configKey)
@@ -175,7 +175,7 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 	}
 
 	info.Content = gresp.Value
-	if config.IsEncrypt && role <= model.RoleOwner {
+	if cfg.IsEncrypt && role <= model.RoleOwner {
 		decrypt, err := s.DecryptConfigContent(info.Content, namespace.SecretKey)
 		if err != nil {
 			return nil, response.NewError(
@@ -201,10 +201,18 @@ func (s *ConfigSvc) Add(sctx core.SvcContext, param *model.AddConfig) error {
 			"没有权限访问此接口",
 		)
 	}
+
 	if !param.Type.Valid() {
 		return response.NewErrorWithStatusOk(
 			response.ParamBindError,
 			"请传正确的Type",
+		)
+	}
+
+	if !param.Content.Valid(param.Type) {
+		return response.NewErrorWithStatusOk(
+			response.ParamBindError,
+			"您上传的配置格式有误，请仔细检查。",
 		)
 	}
 
@@ -241,7 +249,7 @@ func (s *ConfigSvc) Add(sctx core.SvcContext, param *model.AddConfig) error {
 		).WithErr(err)
 	}
 
-	err = s.addConfigHistory(ctx, tx, configID, revision, int(userId))
+	err = s.addConfigHistory(ctx, tx, configID, revision, int(userId), model.OpTypeAdd)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -253,7 +261,483 @@ func (s *ConfigSvc) Add(sctx core.SvcContext, param *model.AddConfig) error {
 	return nil
 }
 
-func (s *ConfigSvc) LinkPublicConfig(ctx context.Context, configID int, publicConfigID int) error {
+func (s *ConfigSvc) History(sctx core.SvcContext, configID int) ([]model.ConfigHistoryList, error) {
+	ctx := sctx.Context()
+	historyMgr := s.ConfigHistoryRepo.Mgr(ctx, s.DB.GetDb())
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	cfg, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return nil, err
+	}
+
+	ch, err := historyMgr.WithOptions(historyMgr.WithConfigID(configID)).Gets()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	result := make([]model.ConfigHistoryList, len(ch))
+	for i, e := range ch {
+		b := model.ConfigHistoryList{
+			ConfigID:   e.ConfigID,
+			CreateBy:   e.CreateBy,
+			CreateTime: e.CreateTime.Unix(),
+			Reversion:  e.Reversion,
+			OpType:     e.OpType,
+			OpTypeStr:  model.ConfigHistoryOpType(e.OpType).String(),
+		}
+		result[i] = b
+	}
+	return result, nil
+}
+
+func (s *ConfigSvc) HistoryInfo(sctx core.SvcContext, configID int, reversion int) (string, error) {
+	ctx := sctx.Context()
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	cfg, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
+	if err != nil {
+		return "", response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return "", err
+	}
+
+	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
+	if err != nil {
+		return "", response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	configKey := s.ConfigKey(
+		cfg.IsPublic,
+		cfg.ProjectGroupID,
+		project.Key,
+		namespace.Name,
+		cfg.Name,
+		model.ConfigType(cfg.ConfigType),
+	)
+	gresp := s.Store.GetWithReversion(ctx, configKey, reversion)
+	if gresp.Err != nil {
+		if gresp.Err == rpctypes.ErrCompacted {
+			// 糟糕，ETCD已经把这个 reversion 压缩了，我们把这个 <= reversion 的记录删掉把
+			historyMgr := s.ConfigHistoryRepo.Mgr(ctx, s.DB.GetDb())
+
+			historyMgr.WithOptions(
+				historyMgr.WithConfigID(configID),
+				historyMgr.WithReversion(reversion, " <= ?"),
+			).Delete(&model.ConfigHistory{})
+
+			return "", response.NewErrorWithStatusOk(
+				10012,
+				"此版本在底层存储中被清除，请尝试其它版本！",
+			)
+		}
+	}
+
+	// 解密
+	if cfg.IsEncrypt && role <= model.RoleOwner {
+		decrypt, err := s.DecryptConfigContent(gresp.Value, namespace.SecretKey)
+		if err != nil {
+			return "", response.NewError(
+				http.StatusInternalServerError,
+				response.ServerError,
+				"文件解码失败",
+			).WithErr(err)
+		}
+		gresp.Value = decrypt
+	}
+	return gresp.Value, nil
+}
+
+func (s *ConfigSvc) roleCheck(cfg *model.Config, role model.Role) error {
+	// 普通配置只有RoleManager可以访问
+	if role > model.RoleManager {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+	// 公共配置只有RoleOwner可以访问
+	if cfg.IsPublic && role > model.RoleOwner {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+	// 加密配置只有RoleOwner可以访问
+	if cfg.IsEncrypt && role > model.RoleOwner {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"您没有权限修改加密配置",
+		)
+	}
+	return nil
+}
+
+func (s *ConfigSvc) Rollback(sctx core.SvcContext, param *model.RollbackConfig) error {
+	ctx := sctx.Context()
+	userId := int(sctx.UserId())
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	cfg, err := mgr.WithOptions(mgr.WithID(param.ConfigID)).Catch()
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return err
+	}
+
+	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	configKey := s.ConfigKey(
+		cfg.IsPublic,
+		cfg.ProjectGroupID,
+		project.Key,
+		namespace.Name,
+		cfg.Name,
+		model.ConfigType(cfg.ConfigType),
+	)
+	gresp := s.Store.GetWithReversion(ctx, configKey, param.Reversion)
+	if gresp.Err != nil {
+		if gresp.Err == rpctypes.ErrCompacted {
+			// 糟糕，ETCD已经把这个 reversion 压缩了，我们把这个 <= reversion 的记录删掉把
+			historyMgr := s.ConfigHistoryRepo.Mgr(ctx, s.DB.GetDb())
+
+			historyMgr.WithOptions(
+				historyMgr.WithConfigID(param.ConfigID),
+				historyMgr.WithReversion(param.Reversion, " <= ?"),
+			).Delete(&model.ConfigHistory{})
+
+			return response.NewErrorWithStatusOk(
+				10012,
+				"此版本在底层存储中被清除，请尝试其它版本！",
+			)
+		}
+	}
+
+	// 用获取的Content替换现有的版本
+	// 不需要解密
+	sresp := s.Store.Set(ctx, configKey, gresp.Value)
+	if sresp.Err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	// 新增一条历史
+	err = s.addConfigHistory(ctx, s.DB.GetDb(), cfg.ID, sresp.Revision, userId, model.OpTypeRollback)
+	if sresp.Err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	return nil
+}
+
+// Copy
+// 可以转为副本：即公共配置的更新不影响自己，此时自己可以编辑
+// 可以关联公共配置：即把自己与公共配置重新关联，此时不能编辑了
+// 注意：这个操作不会吧 config_link 表的记录删除，只是把flag改变，所以可以重新关联（或者叫再次关联）
+// 如果一个配置创建时没关联公共配置，那么它是不能重新关联公共配置的。
+func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
+	ctx := sctx.Context()
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+	isLink := false
+
+	cfg, err := mgr.WithOptions(mgr.WithID(param.ConfigID)).Catch()
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return err
+	}
+
+	switch param.Op {
+	case 1:
+		// 转为副本
+		isLink = false
+	case 2:
+		// 转为公共配置
+		isLink = true
+	}
+	err = mgr.WithOptions(mgr.WithID(param.ConfigID)).
+		Update(model.ConfigColumns.IsLinkPublic, isLink).Error
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	return nil
+}
+
+func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
+	ctx := sctx.Context()
+
+	tx := s.DB.GetDb().Begin()
+	defer tx.Rollback()
+
+	historyMgr := s.ConfigHistoryRepo.Mgr(ctx, tx)
+	linkMgr := s.ConfigLinkRepo.Mgr(ctx, tx)
+	mgr := s.ConfigRepo.Mgr(ctx, tx)
+
+	cfg, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return err
+	}
+
+	err = historyMgr.WithOptions(historyMgr.WithConfigID(configID)).Delete(&model.ConfigHistory{}).Error
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	if !cfg.IsPublic {
+		err = linkMgr.WithOptions(linkMgr.WithConfigID(configID)).Delete(&model.ConfigLink{}).Error
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+	} else {
+		// 公共配置还需要删除 config_link ，并将其中的config is_link_public 解绑
+		cl, _ := linkMgr.WithOptions(linkMgr.WithPublicConfigID(cfg.ID)).Gets()
+		linkMgr.UpdateDB(linkMgr.WithPrepareStmt())
+		for _, e := range cl {
+			cfg, _ := mgr.WithOptions(mgr.WithID(e.ConfigID)).Get()
+			if cfg.ID == 0 {
+				continue
+			}
+			if !cfg.IsLinkPublic {
+				continue
+			}
+
+			err = linkMgr.WithOptions(linkMgr.WithConfigID(cfg.ID), linkMgr.WithPublicConfigID(configID)).Delete(&model.ConfigLink{}).Error
+			if err != nil {
+				return response.NewErrorAutoMsg(
+					http.StatusInternalServerError,
+					response.ServerError,
+				).WithErr(err)
+			}
+		}
+	}
+
+	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	configKey := s.ConfigKey(cfg.IsPublic, cfg.ProjectGroupID, project.Key, namespace.Name, cfg.Name, model.ConfigType(cfg.ConfigType))
+	err = s.Store.Del(ctx, configKey)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	err = mgr.WithOptions(mgr.WithID(cfg.ID)).Delete(&model.Config{}).Error
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// Edit
+// 改公共配置，需要把Link的配置全部改掉
+func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
+	ctx := sctx.Context()
+	userId := int(sctx.UserId())
+
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	cfg, err := mgr.WithOptions(mgr.WithID(param.ConfigID)).Catch()
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
+	if err := s.roleCheck(&cfg, role); err != nil {
+		return err
+	}
+
+	if !param.Content.Valid(model.ConfigType(cfg.ConfigType)) {
+		return response.NewErrorWithStatusOk(
+			response.ParamBindError,
+			"您上传的配置格式有误，请仔细检查。",
+		)
+	}
+
+	if cfg.IsLinkPublic {
+		// 禁止编辑
+		return response.NewErrorWithStatusOk(
+			response.ParamBindError,
+			"此配置关联到公共配置，无法编辑",
+		)
+	}
+
+	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	tx := s.DB.GetDb().Begin()
+	defer tx.Rollback()
+
+	rollback, err := s.editConfig(ctx, userId, tx, string(param.Content), &cfg, project, namespace)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	if cfg.IsPublic {
+		// 更新ConfigLink涉及的配置
+		configLinkMgr := s.ConfigLinkRepo.Mgr(ctx, s.DB.GetDb())
+		cl, _ := configLinkMgr.WithOptions(configLinkMgr.WithPublicConfigID(cfg.ID)).Gets()
+
+		rollbacks := append([]func(s storage.Repo){}, rollback)
+		isRoll := false
+		var bErr error
+
+		for _, e := range cl {
+			cfg, _ := mgr.WithOptions(mgr.WithID(e.ConfigID)).Get()
+			if cfg.ID == 0 {
+				continue
+			}
+			if !cfg.IsLinkPublic {
+				continue
+			}
+
+			rb, err := s.editConfig(ctx, userId, tx, string(param.Content), &cfg, project, namespace)
+			if err != nil {
+				bErr = err
+				isRoll = true
+				break
+			}
+			rollbacks = append(rollbacks, rb)
+		}
+
+		if isRoll {
+			for _, f := range rollbacks {
+				f(s.Store)
+			}
+			return bErr
+		}
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (s *ConfigSvc) editConfig(
+	ctx context.Context,
+	userId int,
+	tx *gorm.DB,
+	newContent string,
+	config *model.Config,
+	project *model.Project,
+	namespace *model.Namespace,
+) (func(s storage.Repo), error) {
+	// 更新到ETCD
+	configKey := s.ConfigKey(
+		config.IsPublic,
+		config.ProjectGroupID,
+		project.Key,
+		namespace.Name,
+		config.Name,
+		model.ConfigType(config.ConfigType),
+	)
+	gresp := s.Store.Get(ctx, configKey)
+	if gresp.Err != nil {
+		return nil, gresp.Err
+	}
+	if len(gresp.Value) == 0 {
+		return nil, errors.New("not found key: " + configKey)
+	}
+	rollbackETCD := func(s storage.Repo) {
+		s.Set(ctx, configKey, gresp.Value)
+	}
+	if config.IsEncrypt {
+		encryptContent, err := s.EncryptConfigContent(newContent, namespace.SecretKey)
+		if err != nil {
+			return nil, errors.New("encryptContent: " + configKey)
+		}
+		newContent = encryptContent
+	}
+
+	sresp := s.Store.Set(ctx, configKey, newContent)
+	if sresp.Err != nil {
+		return nil, sresp.Err
+	}
+
+	err := s.addConfigHistory(ctx, tx, config.ID, sresp.Revision, userId, model.OpTypeEdit)
+	if err != nil {
+		rollbackETCD(s.Store)
+		return nil, err
+	}
+	return rollbackETCD, nil
+}
+
+func (s *ConfigSvc) linkPublicConfig(ctx context.Context, configID int, publicConfigID int) error {
 	bean := &model.ConfigLink{
 		ConfigID:       configID,
 		PublicConfigID: publicConfigID,
@@ -267,7 +751,7 @@ func (s *ConfigSvc) LinkPublicConfig(ctx context.Context, configID int, publicCo
 	return nil
 }
 
-func (s *ConfigSvc) UnlinkPublicConfig(ctx context.Context, configID int, publicConfigID int) {
+func (s *ConfigSvc) unlinkPublicConfig(ctx context.Context, configID int, publicConfigID int) {
 	mgr := s.ConfigLinkRepo.Mgr(ctx, s.DB.GetDb())
 	mgr.WithOptions(mgr.WithConfigID(configID), mgr.WithPublicConfigID(publicConfigID)).Delete(&model.ConfigLink{})
 
@@ -275,42 +759,37 @@ func (s *ConfigSvc) UnlinkPublicConfig(ctx context.Context, configID int, public
 	configMgr.WithOptions(configMgr.WithID(configID)).Update(model.ConfigColumns.IsLinkPublic, false)
 }
 
-func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (string, error) {
-	if namespaceKey == "" {
-		return "", model.ErrNotEncryptNamespace
-	}
-
-	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
-	encryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Encrypt(content)
-	if err != nil {
-		return "", err
-	}
-	return encryptContent, nil
-}
-
-func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (string, error) {
-	if namespaceKey == "" {
-		return "", model.ErrNotEncryptNamespace
-	}
-
-	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
-	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)
-	if err != nil {
-		return "", err
-	}
-	return decryptContent, nil
-}
-
-func (s *ConfigSvc) addConfigHistory(ctx context.Context, db *gorm.DB, configID int, revision int, userId int) error {
+func (s *ConfigSvc) addConfigHistory(ctx context.Context, db *gorm.DB, configID int, revision int, userId int, opType model.ConfigHistoryOpType) error {
 	bean := &model.ConfigHistory{
 		ConfigID:   configID,
 		Reversion:  revision,
 		CreateTime: time.Now(),
 		CreateBy:   userId,
+		OpType:     int(opType),
 	}
 
 	hMgr := s.ConfigHistoryRepo.Mgr(ctx, db)
-	return hMgr.CreateConfigHistory(bean)
+	err := hMgr.CreateConfigHistory(bean)
+	if err != nil {
+		return err
+	}
+
+	// 检查历史长度
+	var cf model.ConfigHistory
+	err = hMgr.
+		WithSelects(model.ConfigHistoryColumns.ID, model.ConfigHistoryColumns.ConfigID).
+		WithOptions(hMgr.WithConfigID(configID)).
+		Order(model.ConfigHistoryColumns.ID + " DESC").
+		Offset(int(config.Get().Server.HistoryListLen)).
+		Take(&cf).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil
+	}
+
+	if cf.ID > 0 {
+		hMgr.WithOptions(hMgr.WithID(cf.ID, " <= ?")).Delete(&model.ConfigHistory{})
+	}
+	return nil
 }
 
 func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.AddConfig) (configID int, revision int, err error) {
@@ -332,11 +811,11 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 	}
 
 	if param.IsEncrypt {
-		encryptContent, err := s.EncryptConfigContent(param.Content, namespace.SecretKey)
+		encryptContent, err := s.EncryptConfigContent(string(param.Content), namespace.SecretKey)
 		if err != nil {
 			return 0, 0, err
 		}
-		param.Content = encryptContent
+		param.Content = model.ConfigContent(encryptContent)
 	}
 
 	err = mgr.CreateConfig(bean)
@@ -366,17 +845,16 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 		)
 		gresp := s.Store.Get(ctx, publicConfigKey)
 
-		param.Content = gresp.Value
+		param.Content = model.ConfigContent(gresp.Value)
 
 		// 不需要在 addConfig 的事务里
-		err = s.LinkPublicConfig(ctx, bean.ID, param.PublicConfigID)
+		err = s.linkPublicConfig(ctx, bean.ID, param.PublicConfigID)
 		if err != nil {
 			return 0, 0, err
 		}
 
 		if publicConfig.IsEncrypt {
-			tempMgr := s.ConfigRepo.Mgr(ctx, db)
-			tempMgr.Where(model.ConfigColumns.ID, bean.ID).Updates(map[string]interface{}{
+			mgr.WithOptions(mgr.WithID(bean.ID)).Updates(map[string]interface{}{
 				model.ConfigColumns.IsEncrypt:  publicConfig.IsEncrypt,
 				model.ConfigColumns.ConfigType: publicConfig.ConfigType,
 			})
@@ -386,7 +864,7 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 
 	// 写入 ETCD
 	configKey := s.ConfigKey(bean.IsPublic, bean.ProjectGroupID, project.Key, namespace.Name, bean.Name, param.Type)
-	sresp := s.Store.Set(ctx, configKey, param.Content)
+	sresp := s.Store.Set(ctx, configKey, string(param.Content))
 	if sresp.Err != nil {
 		return 0, 0, gerror.Wrap(sresp.Err, "addConfig")
 	}
@@ -397,6 +875,8 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
 	pMgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 	nMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
+	pMgr.UpdateDB(pMgr.WithPrepareStmt())
+	nMgr.UpdateDB(nMgr.WithPrepareStmt())
 
 	project, err := pMgr.WithOptions(pMgr.WithID(projectID)).
 		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name, model.ProjectColumns.Key).Get()
@@ -414,7 +894,7 @@ func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID 
 
 // ConfigKey
 // NormalConfigKey : /conf/project_key/namespace_name/config_name.config.type
-// PublicConfigKey : /conf/1/namespace_name/config_name.config.type
+// PublicConfigKey : /conf/1-public/namespace_name/config_name.config.type
 func (s *ConfigSvc) ConfigKey(isPublic bool, projectGroupID int, projectKey string, namespaceName string, configName string, configType model.ConfigType) string {
 	builder := strings.Builder{}
 	builder.WriteString("/conf")
@@ -438,4 +918,30 @@ func (s *ConfigSvc) ConfigKey(isPublic bool, projectGroupID int, projectKey stri
 	builder.WriteString(string(configType))
 
 	return builder.String()
+}
+
+func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (string, error) {
+	if namespaceKey == "" {
+		return "", model.ErrNotEncryptNamespace
+	}
+
+	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
+	encryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Encrypt(content)
+	if err != nil {
+		return "", err
+	}
+	return encryptContent, nil
+}
+
+func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (string, error) {
+	if namespaceKey == "" {
+		return "", model.ErrNotEncryptNamespace
+	}
+
+	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
+	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)
+	if err != nil {
+		return "", err
+	}
+	return decryptContent, nil
 }
