@@ -9,7 +9,7 @@
 	height: 44px !important;
 	line-height: 44px !important;
 	font-size: 16px !important;
-	background-color: #5FB878 !important;
+	background-color: #326adf !important;
 	font-weight: 550 !important;
 }
 
@@ -37,7 +37,7 @@
 }
 
 .layui-input:focus {
-	box-shadow: 0px 0px 2px 1px #5FB878 !important;
+	box-shadow: 0px 0px 2px 1px #326adf !important;
 }
 
 .layui-form-danger:focus{
@@ -52,7 +52,7 @@
 }
 
 .title {
-	font-size: 80px !important;
+	font-size: 50px !important;
 	font-weight: 100 !important;
 	margin-left: 20px !important;
 	color: #326adf !important;
