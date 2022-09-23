@@ -221,6 +221,48 @@ var doc = `{
                 }
             }
         },
+        "/v1/config/history_info": {
+            "get": {
+                "tags": [
+                    "配置管理"
+                ],
+                "summary": "配置历史详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "配置ID",
+                        "name": "config_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "reversion",
+                        "name": "reversion",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "data",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.JsonResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/config/info": {
             "get": {
                 "tags": [
@@ -308,6 +350,12 @@ var doc = `{
                         "description": "配置ID",
                         "name": "project_id",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "配置组ID",
+                        "name": "project_group_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -322,7 +370,10 @@ var doc = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/model.ProjectTree"
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/model.ProjectTree"
+                                            }
                                         }
                                     }
                                 }
@@ -623,6 +674,13 @@ var doc = `{
                     },
                     {
                         "type": "integer",
+                        "description": "ID",
+                        "name": "project_group_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
                         "description": "命名空间ID",
                         "name": "namespace_id",
                         "in": "query"
@@ -906,8 +964,8 @@ var doc = `{
                 "summary": "删除项目组",
                 "parameters": [
                     {
-                        "description": "GroupId",
-                        "name": "group_id",
+                        "description": "project_group_id",
+                        "name": "project_group_id",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -1487,10 +1545,13 @@ var doc = `{
                     "type": "string"
                 },
                 "namespace_id": {
-                    "description": "传-1代表全部",
+                    "type": "integer"
+                },
+                "project_group_id": {
                     "type": "integer"
                 },
                 "project_id": {
+                    "description": "公共配置可以不传projectID",
                     "type": "integer"
                 },
                 "public_config_id": {
@@ -1513,15 +1574,16 @@ var doc = `{
                 "real_time": {
                     "description": "是否灰度",
                     "type": "boolean"
+                },
+                "secret": {
+                    "description": "是否加密",
+                    "type": "boolean"
                 }
             }
         },
         "model.AddProject": {
             "type": "object",
             "properties": {
-                "key": {
-                    "type": "string"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -1588,9 +1650,6 @@ var doc = `{
                 "config_id": {
                     "type": "integer"
                 },
-                "content": {
-                    "type": "string"
-                },
                 "create_by": {
                     "type": "integer"
                 },
@@ -1599,6 +1658,12 @@ var doc = `{
                 },
                 "create_time": {
                     "type": "integer"
+                },
+                "op_type": {
+                    "type": "integer"
+                },
+                "op_type_str": {
+                    "type": "string"
                 },
                 "reversion": {
                     "type": "integer"
@@ -1617,9 +1682,6 @@ var doc = `{
                 "content": {
                     "type": "string"
                 },
-                "is_copy": {
-                    "type": "boolean"
-                },
                 "is_encrypt": {
                     "type": "boolean"
                 },
@@ -1630,6 +1692,23 @@ var doc = `{
                     "type": "boolean"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ConfigNode": {
+            "type": "object",
+            "properties": {
+                "config_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -1758,6 +1837,9 @@ var doc = `{
                 "real_time": {
                     "description": "是否灰度",
                     "type": "boolean"
+                },
+                "secret_key": {
+                    "type": "string"
                 }
             }
         },
@@ -1772,6 +1854,9 @@ var doc = `{
                 },
                 "create_time": {
                     "type": "integer"
+                },
+                "managed": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -1796,6 +1881,9 @@ var doc = `{
                 "key": {
                     "type": "string"
                 },
+                "managed": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1813,11 +1901,25 @@ var doc = `{
         "model.ProjectTree": {
             "type": "object",
             "properties": {
+                "can_secret": {
+                    "description": "是否能加密",
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "namespace_id": {
+                    "type": "integer"
+                },
                 "nodes": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.TreeNode"
+                        "$ref": "#/definitions/model.ConfigNode"
                     }
+                },
+                "real_time": {
+                    "description": "是否需发布",
+                    "type": "boolean"
                 }
             }
         },
@@ -1865,7 +1967,10 @@ var doc = `{
         "model.RollbackConfig": {
             "type": "object",
             "properties": {
-                "history_id": {
+                "config_id": {
+                    "type": "integer"
+                },
+                "reversion": {
                     "type": "integer"
                 }
             }
@@ -1914,31 +2019,6 @@ var doc = `{
                     "type": "string"
                 },
                 "staff_group_rel_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.TreeNode": {
-            "type": "object",
-            "properties": {
-                "children": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.TreeNode"
-                    }
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "real_time": {
-                    "description": "false 代表可发布",
-                    "type": "boolean"
-                },
-                "type": {
-                    "description": "可能是 Namespace，可能是 Config",
                     "type": "integer"
                 }
             }

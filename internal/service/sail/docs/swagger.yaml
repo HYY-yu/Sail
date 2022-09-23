@@ -12,9 +12,11 @@ definitions:
       name:
         type: string
       namespace_id:
-        description: 传-1代表全部
+        type: integer
+      project_group_id:
         type: integer
       project_id:
+        description: 公共配置可以不传projectID
         type: integer
       public_config_id:
         type: integer
@@ -30,11 +32,12 @@ definitions:
       real_time:
         description: 是否灰度
         type: boolean
+      secret:
+        description: 是否加密
+        type: boolean
     type: object
   model.AddProject:
     properties:
-      key:
-        type: string
       name:
         type: string
       project_group_id:
@@ -78,14 +81,16 @@ definitions:
     properties:
       config_id:
         type: integer
-      content:
-        type: string
       create_by:
         type: integer
       create_by_name:
         type: string
       create_time:
         type: integer
+      op_type:
+        type: integer
+      op_type_str:
+        type: string
       reversion:
         type: integer
     type: object
@@ -97,8 +102,6 @@ definitions:
         type: string
       content:
         type: string
-      is_copy:
-        type: boolean
       is_encrypt:
         type: boolean
       is_link_public:
@@ -106,6 +109,17 @@ definitions:
       is_public:
         type: boolean
       name:
+        type: string
+      type:
+        type: string
+    type: object
+  model.ConfigNode:
+    properties:
+      config_id:
+        type: integer
+      name:
+        type: string
+      type:
         type: string
     type: object
   model.EditConfig:
@@ -189,6 +203,8 @@ definitions:
       real_time:
         description: 是否灰度
         type: boolean
+      secret_key:
+        type: string
     type: object
   model.ProjectGroupList:
     properties:
@@ -198,6 +214,8 @@ definitions:
         type: string
       create_time:
         type: integer
+      managed:
+        type: boolean
       name:
         type: string
       project_group_id:
@@ -213,6 +231,8 @@ definitions:
         type: integer
       key:
         type: string
+      managed:
+        type: boolean
       name:
         type: string
       project_group_id:
@@ -224,10 +244,20 @@ definitions:
     type: object
   model.ProjectTree:
     properties:
+      can_secret:
+        description: 是否能加密
+        type: boolean
+      name:
+        type: string
+      namespace_id:
+        type: integer
       nodes:
         items:
-          $ref: '#/definitions/model.TreeNode'
+          $ref: '#/definitions/model.ConfigNode'
         type: array
+      real_time:
+        description: 是否需发布
+        type: boolean
     type: object
   model.PublishConfigList:
     properties:
@@ -258,7 +288,9 @@ definitions:
     type: object
   model.RollbackConfig:
     properties:
-      history_id:
+      config_id:
+        type: integer
+      reversion:
         type: integer
     type: object
   model.RollbackPublish:
@@ -290,23 +322,6 @@ definitions:
       role_info:
         type: string
       staff_group_rel_id:
-        type: integer
-    type: object
-  model.TreeNode:
-    properties:
-      children:
-        items:
-          $ref: '#/definitions/model.TreeNode'
-        type: array
-      id:
-        type: integer
-      name:
-        type: string
-      real_time:
-        description: false 代表可发布
-        type: boolean
-      type:
-        description: 可能是 Namespace，可能是 Config
         type: integer
     type: object
   page.Page:
@@ -444,6 +459,30 @@ paths:
       summary: 配置历史
       tags:
       - 配置管理
+  /v1/config/history_info:
+    get:
+      parameters:
+      - description: 配置ID
+        in: query
+        name: config_id
+        type: integer
+      - description: reversion
+        in: query
+        name: reversion
+        type: integer
+      responses:
+        "200":
+          description: data
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.JsonResponse'
+            - properties:
+                data:
+                  type: string
+              type: object
+      summary: 配置历史详情
+      tags:
+      - 配置管理
   /v1/config/info:
     get:
       parameters:
@@ -493,6 +532,10 @@ paths:
         in: query
         name: project_id
         type: integer
+      - description: 配置组ID
+        in: query
+        name: project_group_id
+        type: integer
       responses:
         "200":
           description: data
@@ -501,7 +544,9 @@ paths:
             - $ref: '#/definitions/response.JsonResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/model.ProjectTree'
+                  items:
+                    $ref: '#/definitions/model.ProjectTree'
+                  type: array
               type: object
       summary: 配置树
       tags:
@@ -670,6 +715,11 @@ paths:
         in: query
         name: sort
         type: string
+      - description: ID
+        in: query
+        name: project_group_id
+        required: true
+        type: integer
       - description: 命名空间ID
         in: query
         name: namespace_id
@@ -830,9 +880,9 @@ paths:
   /v1/project_group/del:
     post:
       parameters:
-      - description: GroupId
+      - description: project_group_id
         in: body
-        name: group_id
+        name: project_group_id
         required: true
         schema:
           type: integer

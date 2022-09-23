@@ -34,6 +34,7 @@ type ConfigSvc struct {
 
 	ProjectRepo   repo.ProjectRepo
 	NamespaceRepo repo.NamespaceRepo
+	StaffRepo     repo.StaffRepo
 }
 
 func NewConfigSvc(
@@ -44,6 +45,7 @@ func NewConfigSvc(
 	cl repo.ConfigLinkRepo,
 	pr repo.ProjectRepo,
 	nr repo.NamespaceRepo,
+	sr repo.StaffRepo,
 ) *ConfigSvc {
 	svc := &ConfigSvc{
 		DB:                db,
@@ -53,6 +55,7 @@ func NewConfigSvc(
 		Store:             store,
 		ProjectRepo:       pr,
 		NamespaceRepo:     nr,
+		StaffRepo:         sr,
 	}
 	return svc
 }
@@ -60,9 +63,9 @@ func NewConfigSvc(
 func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int) ([]model.ProjectTree, error) {
 	ctx := sctx.Context()
 	namespaceMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
-	namespaceMgr.UpdateDB(namespaceMgr.WithPrepareStmt())
+	namespaceMgr.WithPrepareStmt()
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
-	mgr.UpdateDB(mgr.WithPrepareStmt())
+	mgr.WithPrepareStmt()
 
 	_, role := s.CheckStaffGroup(ctx, projectGroupID)
 	if role > model.RoleManager {
@@ -279,7 +282,8 @@ func (s *ConfigSvc) History(sctx core.SvcContext, configID int) ([]model.ConfigH
 		return nil, err
 	}
 
-	ch, err := historyMgr.WithOptions(historyMgr.WithConfigID(configID)).Gets()
+	var ch []model.ConfigHistory
+	err = historyMgr.WithOptions(historyMgr.WithConfigID(configID)).Order(model.ConfigHistoryColumns.ID + " desc").Find(&ch).Error
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -290,12 +294,13 @@ func (s *ConfigSvc) History(sctx core.SvcContext, configID int) ([]model.ConfigH
 	result := make([]model.ConfigHistoryList, len(ch))
 	for i, e := range ch {
 		b := model.ConfigHistoryList{
-			ConfigID:   e.ConfigID,
-			CreateBy:   e.CreateBy,
-			CreateTime: e.CreateTime.Unix(),
-			Reversion:  e.Reversion,
-			OpType:     e.OpType,
-			OpTypeStr:  model.ConfigHistoryOpType(e.OpType).String(),
+			ConfigID:     e.ConfigID,
+			CreateBy:     e.CreateBy,
+			CreateByName: s.GetCreateByName(ctx, s.DB, s.StaffRepo, e.CreateBy),
+			CreateTime:   e.CreateTime.Unix(),
+			Reversion:    e.Reversion,
+			OpType:       e.OpType,
+			OpTypeStr:    model.ConfigHistoryOpType(e.OpType).String(),
 		}
 		result[i] = b
 	}
@@ -546,7 +551,6 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 	} else {
 		// 公共配置还需要删除 config_link ，并将其中的config is_link_public 解绑
 		cl, _ := linkMgr.WithOptions(linkMgr.WithPublicConfigID(cfg.ID)).Gets()
-		linkMgr.UpdateDB(linkMgr.WithPrepareStmt())
 		for _, e := range cl {
 			cfg, _ := mgr.WithOptions(mgr.WithID(e.ConfigID)).Get()
 			if cfg.ID == 0 {
@@ -666,7 +670,7 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			if !cfg.IsLinkPublic {
 				continue
 			}
-
+			project, namespace, _ := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
 			rb, err := s.editConfig(ctx, userId, tx, string(param.Content), &cfg, project, namespace)
 			if err != nil {
 				bErr = err
@@ -680,7 +684,12 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			for _, f := range rollbacks {
 				f(s.Store)
 			}
-			return bErr
+			if bErr != nil {
+				return response.NewErrorAutoMsg(
+					http.StatusInternalServerError,
+					response.ServerError,
+				).WithErr(bErr)
+			}
 		}
 	}
 
@@ -777,12 +786,13 @@ func (s *ConfigSvc) addConfigHistory(ctx context.Context, db *gorm.DB, configID 
 	// 检查历史长度
 	var cf model.ConfigHistory
 	err = hMgr.
-		WithSelects(model.ConfigHistoryColumns.ID, model.ConfigHistoryColumns.ConfigID).
 		WithOptions(hMgr.WithConfigID(configID)).
+		WithSelects(model.ConfigHistoryColumns.ID, model.ConfigHistoryColumns.ConfigID).
 		Order(model.ConfigHistoryColumns.ID + " DESC").
 		Offset(int(config.Get().Server.HistoryListLen)).
-		Take(&cf).Error
-	if err == gorm.ErrRecordNotFound {
+		Limit(1).
+		Find(&cf).Error
+	if err != nil {
 		return nil
 	}
 
@@ -875,8 +885,8 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
 	pMgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 	nMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
-	pMgr.UpdateDB(pMgr.WithPrepareStmt())
-	nMgr.UpdateDB(nMgr.WithPrepareStmt())
+	pMgr.WithPrepareStmt()
+	nMgr.WithPrepareStmt()
 
 	project, err := pMgr.WithOptions(pMgr.WithID(projectID)).
 		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name, model.ProjectColumns.Key).Get()

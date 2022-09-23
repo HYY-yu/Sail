@@ -90,8 +90,7 @@ func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.P
 		).WithErr(err)
 	}
 
-	var count int64
-	mgr.Count(&count)
+	count, _ := mgr.Count()
 	pg, _ := pgMgr.WithOptions(pgMgr.WithID(projectGroupId)).WithSelects(
 		model.ProjectGroupColumns.ID,
 		model.ProjectGroupColumns.Name,

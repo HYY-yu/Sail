@@ -82,9 +82,8 @@ func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Pag
 			response.ServerError,
 		).WithErr(err)
 	}
-	var count int64
-	mgr.Count(&count)
-	pgMgr.UpdateDB(pgMgr.WithPrepareStmt())
+	count, _ := mgr.Count()
+	pgMgr.WithPrepareStmt()
 
 	result := make([]model.ProjectList, len(data))
 	for i, e := range data {

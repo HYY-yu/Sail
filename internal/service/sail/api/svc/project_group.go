@@ -66,8 +66,7 @@ func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*pag
 			response.ServerError,
 		).WithErr(err)
 	}
-	var count int64
-	mgr.Count(&count)
+	count, _ := mgr.Count()
 
 	var result = make([]model.ProjectGroupList, len(data))
 

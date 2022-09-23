@@ -70,9 +70,9 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 			" LIKE ?",
 		))
 	}
-	mgr.UpdateDB(mgr.WithPrepareStmt())
-	sgMgr.UpdateDB(sgMgr.WithPrepareStmt())
-	pgMgr.UpdateDB(pgMgr.WithPrepareStmt())
+	mgr.WithPrepareStmt()
+	sgMgr.WithPrepareStmt()
+	pgMgr.WithPrepareStmt()
 
 	data, err := mgr.WithOptions(op...).ListStaff(limit, offset, sort)
 	if err != nil {
@@ -81,8 +81,7 @@ func (s *StaffSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page,
 			response.ServerError,
 		).WithErr(err)
 	}
-	var count int64
-	mgr.Count(&count)
+	count, _ := mgr.Count()
 
 	var result = make([]model.StaffList, len(data))
 

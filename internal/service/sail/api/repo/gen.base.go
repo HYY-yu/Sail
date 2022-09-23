@@ -27,11 +27,6 @@ func (obj *_BaseMgr) GetDB() *gorm.DB {
 	return obj.DB
 }
 
-// UpdateDB update gorm.DB info
-func (obj *_BaseMgr) UpdateDB(db *gorm.DB) {
-	obj.DB = db
-}
-
 // GetIsRelated Query foreign key Association.获取是否查询外键关联(gorm.Related)
 func (obj *_BaseMgr) GetIsRelated() bool {
 	return obj.isRelated
@@ -40,21 +35,6 @@ func (obj *_BaseMgr) GetIsRelated() bool {
 // SetIsRelated Query foreign key Association.设置是否查询外键关联(gorm.Related)
 func (obj *_BaseMgr) SetIsRelated(b bool) {
 	obj.isRelated = b
-}
-
-// New new gorm.新gorm,重置条件
-func (obj *_BaseMgr) new() {
-	obj.DB = obj.newDB()
-}
-
-// NewDB new gorm.新gorm
-func (obj *_BaseMgr) newDB() *gorm.DB {
-	return obj.DB.Session(&gorm.Session{NewDB: true, Context: obj.ctx})
-}
-
-// 开启语句 PrepareStmt 功能
-func (obj *_BaseMgr) WithPrepareStmt() *gorm.DB {
-	return obj.DB.Session(&gorm.Session{PrepareStmt: true})
 }
 
 type options struct {
@@ -89,13 +69,15 @@ func CloseRelated() {
 
 // -------- sql where helper ----------
 
-func (obj *_BaseMgr) sort(userSort, defaultSort string) *_BaseMgr {
+// sort 不能改变 obj.DB ，变成已初始化的DB，将会对后续语句执行造成影响
+// 因此主动返回 已初始化的DB ，表示：此sort方法只能使用一次
+func (obj *_BaseMgr) sort(userSort, defaultSort string) *gorm.DB {
 	if len(userSort) > 0 {
-		obj.DB = obj.DB.Order(userSort)
+		return obj.DB.Order(userSort)
 	} else {
 		if len(defaultSort) > 0 {
-			obj.DB = obj.DB.Order(defaultSort)
+			return obj.DB.Order(defaultSort)
 		}
 	}
-	return obj
+	return obj.DB
 }

@@ -37,7 +37,7 @@ func (s *BaseSvc) CheckStaffGroup(ctx context.Context, projectGroupId int) ([]in
 
 func (s *BaseSvc) GetCreateByName(ctx context.Context, db db.Repo, staffRepo repo.StaffRepo, createBy int) string {
 	mgr := staffRepo.Mgr(ctx, db.GetDb())
-	mgr.UpdateDB(mgr.WithPrepareStmt())
+	mgr.WithPrepareStmt()
 
 	staff, _ := mgr.WithOptions(mgr.WithID(createBy)).
 		WithSelects(
