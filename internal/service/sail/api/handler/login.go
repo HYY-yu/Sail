@@ -67,7 +67,7 @@ func (h *LoginHandler) Login(c core.Context) {
 // @Router   /v1/login/refresh    [POST]
 func (h *LoginHandler) RefreshToken(c core.Context) {
 	type Param struct {
-		OldRefreshToken string `json:"old_refresh_token"`
+		OldRefreshToken string `json:"old_refresh_token" v:"required"`
 	}
 	params := &Param{}
 

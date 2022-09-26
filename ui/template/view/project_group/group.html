@@ -1,31 +1,27 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
-    <title>用户管理</title>
-    <link rel="stylesheet" href="../../component/pear/css/pear.css" />
+    <title>项目组管理</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
 </head>
+
 <body class="pear-container">
 <div class="layui-card">
     <div class="layui-card-body">
         <form class="layui-form" action="">
             <div class="layui-form-item">
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">用户名</label>
+                    <label class="layui-form-label">项目组ID</label>
                     <div class="layui-input-inline">
-                        <input type="text" name="realName" placeholder="" class="layui-input">
+                        <input type="text" name="project_group_id" placeholder="" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">性别</label>
+                    <label class="layui-form-label">项目组名</label>
                     <div class="layui-input-inline">
-                        <input type="text" name="realName" placeholder="" class="layui-input">
-                    </div>
-                </div>
-                <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">邮箱</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="realName" placeholder="" class="layui-input">
+                        <input type="text" name="project_group_name" placeholder="" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
@@ -53,121 +49,150 @@
         <i class="layui-icon layui-icon-add-1"></i>
         新增
     </button>
-    <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
-        <i class="layui-icon layui-icon-delete"></i>
-        删除
-    </button>
 </script>
 
-<script type="text/html" id="user-bar">
-    <button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button>
-    <button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>
-</script>
-
-<script type="text/html" id="user-enable">
-    <input type="checkbox" name="enable" value="{{d.id}}" lay-skin="switch" lay-text="启用|禁用" lay-filter="user-enable" {{ d.enable== true ? 'checked' : '' }} />
-</script>
-
-<script type="text/html" id="user-sex">
-    {{#if (d.sex == 1) { }}
-    <span>男</span>
-    {{# }else if(d.sex == 2){ }}
-    <span>女</span>
-    {{# } }}
-</script>
-
-<script type="text/html" id="user-login">
-    {{#if (d.login == 0) { }}
-    <span>在线</span>
-    {{# }else if(d.sex == 1){ }}
-    <span>离线</span>
-    {{# } }}
-</script>
-
-<script type="text/html" id="user-createTime">
-    {{layui.util.toDateString(d.createTime, 'yyyy-MM-dd')}}
-</script>
-
-<script src="../../component/layui/layui.js"></script>
-<script src="../../component/pear/pear.js"></script>
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['table', 'form', 'jquery','common'], function() {
+    layui.use(['table', 'form', 'jquery', 'popup'], function () {
         let table = layui.table;
         let form = layui.form;
+        let popup = layui.popup;
         let $ = layui.jquery;
-        let common = layui.common;
 
-        let MODULE_PATH = "operate/";
+        // HELP --- start
+        const ajaxError = function (jqXHR, textStatus) {
+            if (jqXHR.status === 401) {
+                return
+            }
 
-        let cols = [
-            [{
-                type: 'checkbox'
-            },
-                {
-                    title: '账号',
-                    field: 'username',
-                    align: 'center',
-                    width: 100
-                },
-                {
-                    title: '姓名',
-                    field: 'realName',
-                    align: 'center'
-                },
-                {
-                    title: '性别',
-                    field: 'sex',
-                    align: 'center',
-                    width: 80,
-                    templet: '#user-sex'
-                },
-                {
-                    title: '电话',
-                    field: 'phone',
-                    align: 'center'
-                },
-                {
-                    title: '启用',
-                    field: 'enable',
-                    align: 'center',
-                    templet: '#user-enable'
-                },
-                {
-                    title: '登录',
-                    field: 'login',
-                    align: 'center',
-                    templet: '#user-login'
-                },
-                {
-                    title: '注册',
-                    field: 'createTime',
-                    align: 'center',
-                    templet: '#user-createTime'
-                },
-                {
-                    title: '操作',
-                    toolbar: '#user-bar',
-                    align: 'center',
-                    width: 130
+            let sjson = jqXHR.responseJSON;
+            if (sjson.hasOwnProperty("message")) {
+                popup.failure(sjson.message);
+            } else {
+                popup.failure(textStatus.toString());
+            }
+        };
+        const checkSuccess = function (result, callback) {
+            if (result.code === 0) {
+                callback(result);
+            } else {
+                popup.failure(result.message);
+            }
+        }
+        const setAuth = function (token) {
+            return {
+                "Authorization": "Bearer " + token,
+            }
+        }
+        const delRefreshAndRelogin = function () {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            popup.warning("登录过期，请重新登录");
+            top.location.href = "/ui/login";
+        }
+        $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+            originalOptions._error = originalOptions.error;
+            // overwrite error handler for current request
+            options.error = function (_jqXHR, _textStatus, _errorThrown) {
+                if (jqXHR.status !== 401) {
+                    if (originalOptions._error) originalOptions._error(_jqXHR, _textStatus, _errorThrown);
+                    return;
                 }
-            ]
-        ]
+                var refreshToken = localStorage.getItem("refreshToken");
+                $.ajax({
+                    type: "POST",
+                    url: "/sail/v1/login/refresh",
+                    data: JSON.stringify({old_refresh_token: refreshToken}),
+                    contentType: "application/json;charset=utf-8",
+                    cache: false,
+                    dataType: "JSON",
+                    success: function (result) {
+                        if (result.code !== 0) {
+                            delRefreshAndRelogin();
+                            return
+                        }
+                        localStorage.setItem("accessToken", result.data.access_token);
+                        localStorage.setItem("refreshToken", result.data.refresh_token);
+                        originalOptions.headers = setAuth(result.data.access_token);
+                        $.ajax(originalOptions);
+                    },
+                    error: function (jqXHR, textStatus) {
+                        delRefreshAndRelogin();
+                    }
+                })
+            };
+        });
+        // HELP --- end
+
+        var accessToken = localStorage.getItem("accessToken");
 
         table.render({
             elem: '#user-table',
-            url: '../../admin/data/user.json',
+            url: '/sail/v1/project_group/list',
             page: true,
-            cols: cols,
+            headers: setAuth(accessToken),
+            request: {
+                pageName: "page_index",
+                limitName: "page_size",
+            },
+            parseData: function (resp) {
+                if (resp.code === 0) {
+                    return {
+                        code: resp.code,
+                        msg: resp.message,
+                        count: resp.data.count,
+                        data: resp.data.list,
+                    }
+                } else {
+                    popup.failure(resp.message);
+                    return {
+                        code: 0,
+                    }
+                }
+            },
+            cols: [
+                [{
+                    title: 'ID',
+                    field: 'project_group_id',
+                    align: 'center',
+                }, {
+                    title: '项目组名',
+                    field: 'name',
+                    align: 'center',
+                }, {
+                    title: '创建人',
+                    field: 'create_by_name',
+                    align: 'center',
+                }, {
+                    title: '创建时间',
+                    field: 'create_time',
+                    align: 'center',
+                    templet: function (res) {
+                        return getDateString(res.create_time);
+                    },
+                }, {
+                    title: '操作',
+                    align: 'center',
+                    minWidth: 400,
+                    templet: function (res) {
+                        if (res.managed) {
+                            return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                                '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
+                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="public">管理公共配置</button>\n' +
+                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="namespace">管理命名空间</button>'
+                        }
+                        return ' '
+                    }
+                }]
+            ],
             skin: 'line',
             toolbar: '#user-toolbar',
-            defaultToolbar: [{
-                title: '刷新',
-                layEvent: 'refresh',
-                icon: 'layui-icon-refresh',
-            }, 'filter', 'print', 'exports']
+            defaultToolbar: [],
+            error: ajaxError,
         });
 
-        table.on('tool(user-table)', function(obj) {
+        table.on('tool(user-table)', function (obj) {
             if (obj.event === 'remove') {
                 window.remove(obj);
             } else if (obj.event === 'edit') {
@@ -175,68 +200,61 @@
             }
         });
 
-        table.on('toolbar(user-table)', function(obj) {
+        table.on('toolbar(user-table)', function (obj) {
             if (obj.event === 'add') {
                 window.add();
-            } else if (obj.event === 'refresh') {
-                window.refresh();
-            } else if (obj.event === 'batchRemove') {
-                window.batchRemove(obj);
             }
         });
 
-        form.on('submit(user-query)', function(data) {
+        form.on('submit(user-query)', function (data) {
             table.reload('user-table', {
                 where: data.field
             })
             return false;
         });
 
-        form.on('switch(user-enable)', function(obj) {
-            layer.tips(this.value + ' ' + this.name + '：' + obj.elem.checked, obj.othis);
-        });
-
-        window.add = function() {
+        window.add = function () {
             layer.open({
                 type: 2,
                 title: '新增',
                 shade: 0.1,
-                area: [common.isModile()?'100%':'500px', common.isModile()?'100%':'400px'],
-                content: MODULE_PATH + 'add.html'
+                area: [common.isModile() ? '100%' : '500px', common.isModile() ? '100%' : '400px'],
+                content: '/system/admin/add'
             });
         }
 
-        window.edit = function(obj) {
+        window.edit = function (obj) {
             layer.open({
                 type: 2,
                 title: '修改',
                 shade: 0.1,
                 area: ['500px', '400px'],
-                content: MODULE_PATH + 'edit.html'
+                content: '/system/admin/edit/?id=' + obj.data.id
             });
         }
 
-        window.remove = function(obj) {
+        window.remove = function (obj) {
             layer.confirm('确定要删除该用户', {
                 icon: 3,
                 title: '提示'
-            }, function(index) {
+            }, function (index) {
                 layer.close(index);
                 let loading = layer.load();
                 $.ajax({
-                    url: MODULE_PATH + "remove/" + obj.data['userId'],
+                    url: "/system/admin/delete?id=" + obj.data['id'],
                     dataType: 'json',
                     type: 'delete',
-                    success: function(result) {
+                    success: function (result) {
                         layer.close(loading);
-                        if (result.success) {
+                        if (result.code == 200) {
                             layer.msg(result.msg, {
                                 icon: 1,
                                 time: 1000
-                            }, function() {
+                            }, function () {
                                 obj.del();
                             });
                         } else {
+                            layer.close(loading);
                             layer.msg(result.msg, {
                                 icon: 2,
                                 time: 1000
@@ -245,54 +263,17 @@
                     }
                 })
             });
-        }
-
-        window.batchRemove = function(obj) {
-
-            var checkIds = common.checkField(obj,'userId');
-
-            if (checkIds === "") {
-                layer.msg("未选中数据", {
-                    icon: 3,
-                    time: 1000
-                });
-                return false;
-            }
-
-            layer.confirm('确定要删除这些用户', {
-                icon: 3,
-                title: '提示'
-            }, function(index) {
-                layer.close(index);
-                let loading = layer.load();
-                $.ajax({
-                    url: MODULE_PATH + "batchRemove/" + ids,
-                    dataType: 'json',
-                    type: 'delete',
-                    success: function(result) {
-                        layer.close(loading);
-                        if (result.success) {
-                            layer.msg(result.msg, {
-                                icon: 1,
-                                time: 1000
-                            }, function() {
-                                table.reload('user-table');
-                            });
-                        } else {
-                            layer.msg(result.msg, {
-                                icon: 2,
-                                time: 1000
-                            });
-                        }
-                    }
-                })
-            });
-        }
-
-        window.refresh = function(param) {
-            table.reload('user-table');
         }
     })
+
+    function getDateString(n) {
+        let now = new Date(n * 1000),
+            y = now.getFullYear(),
+            m = now.getMonth() + 1,
+            d = now.getDate();
+        return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d) + " " + now.toTimeString().substr(0, 8);
+    }
 </script>
 </body>
+
 </html>

@@ -99,6 +99,7 @@
         var popup = layui.popup;
         var context = layui.context;
 
+        // HELP --- start
         const ajaxError = function (jqXHR, textStatus) {
             if (jqXHR.status === 401) {
                 return
@@ -166,6 +167,7 @@
                 })
             };
         });
+        // HELP --- end
 
         admin.setConfigType("yml");
         admin.setConfigPath("/static/config/pear.config.yml");
@@ -173,7 +175,7 @@
         admin.render();
 
         const accessToken = context.get("accessToken");
-        if (accessToken.length === 0) {
+        if (accessToken) {
             popup.warning("请先登录", function () {
                 location.href = "/ui/login";
             });
