@@ -5,7 +5,7 @@ import (
 )
 
 //go:embed template
-var templateFs embed.FS
+var TemplateFs embed.FS
 
 //go:embed static
-var staticFs embed.FS
+var StaticFs embed.FS

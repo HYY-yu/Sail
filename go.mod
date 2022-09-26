@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/HYY-yu/seckill.pkg v1.3.4
 	github.com/fsnotify/fsnotify v1.5.4
+	github.com/gin-gonic/gin v1.7.7
 	github.com/gogf/gf/v2 v2.1.2
 	github.com/google/wire v0.5.0
 	github.com/spf13/viper v1.12.0

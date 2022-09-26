@@ -38,6 +38,7 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 		handler.NewProjectHandler,
 		handler.NewNamespaceHandler,
 		handler.NewConfigHandler,
+		handler.NewIndexHandler,
 		NewHandlers,
 	))
 }

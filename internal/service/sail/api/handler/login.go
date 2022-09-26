@@ -5,6 +5,7 @@ import (
 
 	"github.com/HYY-yu/seckill.pkg/core"
 	"github.com/HYY-yu/seckill.pkg/pkg/response"
+	"github.com/gin-gonic/gin"
 	"github.com/gogf/gf/v2/frame/g"
 
 	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
@@ -19,6 +20,10 @@ func NewLoginHandler(loginSvc *svc.LoginSvc) *LoginHandler {
 	return &LoginHandler{
 		loginSvc: loginSvc,
 	}
+}
+
+func (h *LoginHandler) LoginHTML(c *gin.Context) {
+	c.HTML(http.StatusOK, "login.html", gin.H{})
 }
 
 // Login

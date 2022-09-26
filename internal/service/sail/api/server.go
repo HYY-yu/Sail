@@ -2,7 +2,10 @@ package api
 
 import (
 	"errors"
+	"html/template"
+	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/HYY-yu/seckill.pkg/cache"
 	"github.com/HYY-yu/seckill.pkg/core"
@@ -10,6 +13,7 @@ import (
 	"github.com/HYY-yu/seckill.pkg/db"
 	"github.com/HYY-yu/seckill.pkg/pkg/jaeger"
 	"github.com/HYY-yu/seckill.pkg/pkg/metrics"
+	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -17,6 +21,7 @@ import (
 	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
+	"github.com/HYY-yu/sail/ui"
 )
 
 type Handlers struct {
@@ -26,6 +31,7 @@ type Handlers struct {
 	projectHandler      *handler.ProjectHandler
 	namespaceHandler    *handler.NamespaceHandler
 	configHandler       *handler.ConfigHandler
+	indexHandler        *handler.IndexHandler
 }
 
 func NewHandlers(
@@ -35,6 +41,7 @@ func NewHandlers(
 	projectHandler *handler.ProjectHandler,
 	namespaceHandler *handler.NamespaceHandler,
 	configHandler *handler.ConfigHandler,
+	indexHandler *handler.IndexHandler,
 ) *Handlers {
 	return &Handlers{
 		projectGroupHandler: projectGroupHandler,
@@ -43,6 +50,7 @@ func NewHandlers(
 		projectHandler:      projectHandler,
 		namespaceHandler:    namespaceHandler,
 		configHandler:       configHandler,
+		indexHandler:        indexHandler,
 	}
 }
 
@@ -142,11 +150,33 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	s.HTTPMiddles = middleware.New(logger, cfg.JWT.Secret)
 
 	// HTTP Static Server
+	staticEngine := gin.New()
+	templateHTML, err := template.ParseFS(ui.TemplateFs, "template/**/**/*.html")
+	if err != nil {
+		panic(err)
+	}
+	staticEngine.SetHTMLTemplate(templateHTML)
+
+	fads, err := fs.Sub(ui.StaticFs, "static")
+	if err != nil {
+		panic(err)
+	}
+
+	staticEngine.StaticFS("/static", http.FS(fads))
 
 	// Route
 	s.Route(c, engine)
+	s.RouteHTML(c, staticEngine)
+
 	server := &http.Server{
-		Handler: engine,
+		Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if strings.HasPrefix(request.URL.Path, "/static") ||
+				strings.HasPrefix(request.URL.Path, "/ui") {
+				staticEngine.ServeHTTP(writer, request)
+				return
+			}
+			engine.ServeHTTP(writer, request)
+		}),
 	}
 	s.HttpServer = server
 

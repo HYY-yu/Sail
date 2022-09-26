@@ -2,7 +2,17 @@ package api
 
 import (
 	"github.com/HYY-yu/seckill.pkg/core"
+	"github.com/gin-gonic/gin"
 )
+
+func (s *Server) RouteHTML(c *Handlers, staticEngine *gin.Engine) {
+	templateGroup := staticEngine.Group("/ui")
+
+	templateGroup.GET("/login", c.loginHandler.LoginHTML)
+	templateGroup.GET("/index", c.indexHandler.Index)
+	templateGroup.GET("/group", c.indexHandler.Group)
+	templateGroup.GET("/staff", c.indexHandler.Staff)
+}
 
 func (s *Server) Route(c *Handlers, engine core.Engine) {
 	v1Group := engine.Group("/v1")
