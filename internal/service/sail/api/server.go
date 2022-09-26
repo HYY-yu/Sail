@@ -141,6 +141,8 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	// Init HTTP Middles
 	s.HTTPMiddles = middleware.New(logger, cfg.JWT.Secret)
 
+	// HTTP Static Server
+
 	// Route
 	s.Route(c, engine)
 	server := &http.Server{
