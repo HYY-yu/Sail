@@ -54,84 +54,21 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['table', 'form', 'jquery', 'popup'], function () {
+    layui.use(['table', 'form', 'jquery', 'popup','util', 'sail'], function () {
         let table = layui.table;
         let form = layui.form;
         let popup = layui.popup;
         let $ = layui.jquery;
-
-        // HELP --- start
-        const ajaxError = function (jqXHR, textStatus) {
-            if (jqXHR.status === 401) {
-                return
-            }
-
-            let sjson = jqXHR.responseJSON;
-            if (sjson.hasOwnProperty("message")) {
-                popup.failure(sjson.message);
-            } else {
-                popup.failure(textStatus.toString());
-            }
-        };
-        const checkSuccess = function (result, callback) {
-            if (result.code === 0) {
-                callback(result);
-            } else {
-                popup.failure(result.message);
-            }
-        }
-        const setAuth = function (token) {
-            return {
-                "Authorization": "Bearer " + token,
-            }
-        }
-        const delRefreshAndRelogin = function () {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            popup.warning("登录过期，请重新登录");
-            top.location.href = "/ui/login";
-        }
-        $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
-            originalOptions._error = originalOptions.error;
-            // overwrite error handler for current request
-            options.error = function (_jqXHR, _textStatus, _errorThrown) {
-                if (jqXHR.status !== 401) {
-                    if (originalOptions._error) originalOptions._error(_jqXHR, _textStatus, _errorThrown);
-                    return;
-                }
-                var refreshToken = localStorage.getItem("refreshToken");
-                $.ajax({
-                    type: "POST",
-                    url: "/sail/v1/login/refresh",
-                    data: JSON.stringify({old_refresh_token: refreshToken}),
-                    contentType: "application/json;charset=utf-8",
-                    cache: false,
-                    dataType: "JSON",
-                    success: function (result) {
-                        if (result.code !== 0) {
-                            delRefreshAndRelogin();
-                            return
-                        }
-                        localStorage.setItem("accessToken", result.data.access_token);
-                        localStorage.setItem("refreshToken", result.data.refresh_token);
-                        originalOptions.headers = setAuth(result.data.access_token);
-                        $.ajax(originalOptions);
-                    },
-                    error: function (jqXHR, textStatus) {
-                        delRefreshAndRelogin();
-                    }
-                })
-            };
-        });
-        // HELP --- end
+        let sail = layui.sail;
+        let util = layui.util;
+        sail.prefilterAjax();
 
         var accessToken = localStorage.getItem("accessToken");
-
         table.render({
             elem: '#user-table',
             url: '/sail/v1/project_group/list',
             page: true,
-            headers: setAuth(accessToken),
+            headers: sail.setAuth(accessToken),
             request: {
                 pageName: "page_index",
                 limitName: "page_size",
@@ -169,7 +106,7 @@
                     field: 'create_time',
                     align: 'center',
                     templet: function (res) {
-                        return getDateString(res.create_time);
+                        return util.toDateString(res.create_time * 1000);
                     },
                 }, {
                     title: '操作',
@@ -189,7 +126,7 @@
             skin: 'line',
             toolbar: '#user-toolbar',
             defaultToolbar: [],
-            error: ajaxError,
+            error: sail.ajaxError,
         });
 
         table.on('tool(user-table)', function (obj) {
@@ -216,64 +153,47 @@
         window.add = function () {
             layer.open({
                 type: 2,
-                title: '新增',
+                title: "新增项目组",
                 shade: 0.1,
-                area: [common.isModile() ? '100%' : '500px', common.isModile() ? '100%' : '400px'],
-                content: '/system/admin/add'
-            });
+                content: '/ui/group/add',
+            })
         }
 
         window.edit = function (obj) {
             layer.open({
                 type: 2,
-                title: '修改',
+                title: '修改项目组',
                 shade: 0.1,
-                area: ['500px', '400px'],
-                content: '/system/admin/edit/?id=' + obj.data.id
+                content: '/ui/group/edit/?id=' + obj.data.project_group_id + '&name=' + obj.data.name,
             });
         }
 
         window.remove = function (obj) {
-            layer.confirm('确定要删除该用户', {
+            layer.confirm('确定要删除', {
                 icon: 3,
                 title: '提示'
             }, function (index) {
                 layer.close(index);
                 let loading = layer.load();
+                let pgid = obj.data['project_group_id'];
                 $.ajax({
-                    url: "/system/admin/delete?id=" + obj.data['id'],
+                    url: '/sail/v1/project_group/del',
+                    data: JSON.stringify({project_group_id: pgid}),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
                     dataType: 'json',
-                    type: 'delete',
+                    type: 'post',
                     success: function (result) {
                         layer.close(loading);
-                        if (result.code == 200) {
-                            layer.msg(result.msg, {
-                                icon: 1,
-                                time: 1000
-                            }, function () {
-                                obj.del();
-                            });
-                        } else {
-                            layer.close(loading);
-                            layer.msg(result.msg, {
-                                icon: 2,
-                                time: 1000
-                            });
-                        }
-                    }
+                        sail.checkSuccess(result, function (resp) {
+                            table.reload("user-table");
+                        });
+                    },
+                    error: sail.ajaxError,
                 })
             });
         }
     })
-
-    function getDateString(n) {
-        let now = new Date(n * 1000),
-            y = now.getFullYear(),
-            m = now.getMonth() + 1,
-            d = now.getDate();
-        return y + "-" + (m < 10 ? "0" + m : m) + "-" + (d < 10 ? "0" + d : d) + " " + now.toTimeString().substr(0, 8);
-    }
 </script>
 </body>
-
 </html>

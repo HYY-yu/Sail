@@ -36,7 +36,7 @@
         <ul class="layui-nav layui-layout-right">
             <li class="layui-nav-item user">
                 <!-- 头 像 -->
-                <a class="layui-icon layui-icon-username" href="javascript:;"></a>
+                <a class="layui-icon layui-icon-username" id="userName" href="javascript:;"></a>
                 <!-- 功 能 菜 单 -->
                 <dl class="layui-nav-child">
                     <!--							<dd><a user-menu-url="view/system/person.html" user-menu-id="5555" user-menu-title="基本资料">基本资料</a></dd>-->
@@ -91,83 +91,16 @@
 <!-- 依 赖 脚 本 -->
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
+
 <!-- 框 架 初 始 化 -->
 <script>
-    layui.use(['admin', 'jquery', 'popup', 'drawer', 'context'], function () {
+    layui.use(['admin', 'jquery', 'popup', 'context', 'sail'], function () {
         var $ = layui.jquery;
         var admin = layui.admin;
         var popup = layui.popup;
         var context = layui.context;
-
-        // HELP --- start
-        const ajaxError = function (jqXHR, textStatus) {
-            if (jqXHR.status === 401) {
-                return
-            }
-
-            let sjson = jqXHR.responseJSON;
-            if (sjson.hasOwnProperty("message")) {
-                popup.failure(sjson.message);
-            } else {
-                popup.failure(textStatus.toString());
-            }
-        };
-        const checkSuccess = function (result, callback) {
-            if (result.code === 0) {
-                callback(result);
-            } else {
-                popup.failure(result.message);
-            }
-        }
-        const setAuth = function (token) {
-            return {
-                "Authorization": "Bearer " + token,
-            }
-        }
-        const delRefreshAndRelogin = function () {
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("refreshToken");
-            popup.warning("登录过期，请重新登录", function () {
-                location.href = "/ui/login";
-            });
-        }
-        $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
-            originalOptions._error = originalOptions.error;
-            // overwrite error handler for current request
-            options.error = function (_jqXHR, _textStatus, _errorThrown) {
-                if (jqXHR.status !== 401) {
-                    if (originalOptions._error) originalOptions._error(_jqXHR, _textStatus, _errorThrown);
-                    return;
-                }
-                var refreshToken = localStorage.getItem("refreshToken");
-                $.ajax({
-                    type: "POST",
-                    url: "/sail/v1/login/refresh",
-                    data: JSON.stringify({old_refresh_token: refreshToken}),
-                    contentType: "application/json;charset=utf-8",
-                    cache: false,
-                    dataType: "JSON",
-                    success: function (result) {
-                        if (result.code !== 0) {
-                            delRefreshAndRelogin();
-                            return
-                        }
-                        context.put("accessToken", result.data.access_token);
-                        context.put("refreshToken", result.data.refresh_token);
-                        originalOptions.headers = setAuth(esult.data.access_token);
-                        $.ajax(originalOptions);
-                    },
-                    error: function (jqXHR, textStatus) {
-                        if (jqXHR.status === 401) {
-                            delRefreshAndRelogin();
-                            return
-                        }
-                        ajaxError(jqXHR, textStatus)
-                    }
-                })
-            };
-        });
-        // HELP --- end
+        var sail = layui.sail;
+        sail.prefilterAjax();
 
         admin.setConfigType("yml");
         admin.setConfigPath("/static/config/pear.config.yml");
@@ -175,22 +108,25 @@
         admin.render();
 
         const accessToken = context.get("accessToken");
-        if (accessToken) {
-            popup.warning("请先登录", function () {
-                location.href = "/ui/login";
-            });
+        const userName = context.get("userName");
+
+        $('#userName').html(userName);
+
+        if (!accessToken) {
+            popup.warning("请先登录");
+            location.href = "/ui/login";
         }
 
         // 登出逻辑
         admin.logout(function () {
             $.ajax({
                 type: "GET",
-                headers: setAuth(accessToken),
+                headers: sail.setAuth(accessToken),
                 url: "/sail/v1/login/login_out",
                 cache: false,
                 dataType: "JSON",
                 success: function (newPassResult) {
-                    checkSuccess(newPassResult, function (newResp) {
+                    sail.checkSuccess(newPassResult, function (newResp) {
                         localStorage.removeItem("accessToken");
                         localStorage.removeItem("refreshToken");
 
@@ -199,7 +135,7 @@
                         });
                     })
                 },
-                error: ajaxError,
+                error: sail.ajaxError,
             })
             return true;
         });

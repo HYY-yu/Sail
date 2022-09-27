@@ -295,6 +295,7 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 				"此用户不能被赋权，请删除他的其它权限",
 			).WithErr(err)
 		}
+		param.ProjectGroupID = 0
 	}
 	for _, e := range sgList {
 		if model.Role(e.RoleType) == model.RoleAdmin {

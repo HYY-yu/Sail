@@ -58,6 +58,10 @@ create
     unique index staff_name_uindex
     on staff (`name`);
 
+INSERT INTO staff (name, password, create_time, create_by) VALUE ('Admin',
+                                                                  '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
+                                                                  NOW(), 1);
+
 CREATE TABLE `sail`.`staff_group_rel`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,

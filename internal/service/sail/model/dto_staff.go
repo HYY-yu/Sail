@@ -16,6 +16,10 @@ const (
 	RoleManager
 )
 
+func (r Role) AllRole() []Role {
+	return []Role{RoleManager, RoleOwner, RoleAdmin}
+}
+
 func (r Role) String() string {
 	return [...]string{"Unknown", "Admin", "Owner", "Manager"}[r]
 }

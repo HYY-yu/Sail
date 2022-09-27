@@ -36,13 +36,14 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['form', 'jquery', 'button', 'popup', 'context'], function () {
+    layui.use(['form', 'jquery', 'button', 'popup', 'context', 'sail'], function () {
         let form = layui.form;
         let button = layui.button;
         let popup = layui.popup;
         let layer = layui.layer;
         let context = layui.context;
         let $ = layui.jquery;
+        let sail = layui.sail;
 
         // 登 录 提 交
         form.on('submit(login)', function (data) {
@@ -57,27 +58,6 @@
                 elem: '.login'
             });
 
-            const ajaxError = function (jqXHR, textStatus) {
-                let sjson = jqXHR.responseJSON;
-                if (sjson.hasOwnProperty("message")) {
-                    popup.failure(sjson.message);
-                } else {
-                    popup.failure(textStatus.toString());
-                }
-            };
-            const checkSuccess = function (result, callback) {
-                if (result.code === 0) {
-                    callback(result);
-                } else {
-                    popup.failure(result.message);
-                }
-            }
-            const setAuth = function (token) {
-                return {
-                    "Authorization": "Bearer " + token,
-                }
-            }
-
             $.ajax(
                 {
                     type: "POST",
@@ -88,7 +68,7 @@
                     dataType: "JSON",
                     success: function (result) {
                         btn.stop();
-                        checkSuccess(result, function (resp) {
+                        sail.checkSuccess(result, function (resp) {
                             let accessToken = resp.data.access_token;
                             let refreshToken = resp.data.refresh_token;
 
@@ -105,14 +85,14 @@
                                     $.ajax(
                                         {
                                             type: "POST",
-                                            headers: setAuth(accessToken),
+                                            headers: sail.setAuth(accessToken),
                                             url: "/sail/v1/login/new_pass",
                                             data: JSON.stringify(newPassData),
                                             contentType: "application/json;charset=utf-8",
                                             cache: false,
                                             dataType: "JSON",
                                             success: function (newPassResult) {
-                                                checkSuccess(newPassResult, function (newResp) {
+                                                sail.checkSuccess(newPassResult, function (newResp) {
                                                     form.val("formLogin", {
                                                         "username": "",
                                                         "password": "",
@@ -120,7 +100,7 @@
                                                     popup.success("设置成功，请重新登录");
                                                 })
                                             },
-                                            error: ajaxError,
+                                            error: sail.ajaxError,
                                         }
                                     )
                                     layer.close(index);
@@ -129,6 +109,7 @@
                                 // 保存token
                                 context.put("accessToken", accessToken);
                                 context.put("refreshToken", refreshToken);
+                                context.put('userName', postdata.user_name);
 
                                 popup.success("登录成功", function () {
                                     location.href = "/ui/index";
@@ -138,7 +119,7 @@
                     },
                     error: function (jqXHR, textStatus) {
                         btn.stop();
-                        ajaxError(jqXHR, textStatus)
+                        sail.ajaxError(jqXHR, textStatus)
                     },
                 }
             );

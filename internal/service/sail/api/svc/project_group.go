@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -36,6 +37,12 @@ func NewProjectGroupSvc(
 		StaffRepo: staffRepo,
 	}
 	return svc
+}
+
+func (s *ProjectGroupSvc) SimpleList() []model.ProjectGroup {
+	mgr := s.PGRepo.Mgr(context.Background(), s.DB.GetDb())
+	allData, _ := mgr.WithOptions(mgr.WithDeleteTime(0)).WithSelects(model.ProjectGroupColumns.ID, model.ProjectGroupColumns.Name).Gets()
+	return allData
 }
 
 func (s *ProjectGroupSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page, error) {

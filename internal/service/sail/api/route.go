@@ -11,6 +11,12 @@ func (s *Server) RouteHTML(c *Handlers, staticEngine *gin.Engine) {
 	templateGroup.GET("/login", c.loginHandler.LoginHTML)
 	templateGroup.GET("/index", c.indexHandler.Index)
 	templateGroup.GET("/group", c.indexHandler.Group)
+	templateGroup.GET("/group/add", c.indexHandler.GroupAdd)
+	templateGroup.GET("/group/edit", c.indexHandler.GroupEdit)
+	templateGroup.GET("/staff/add", c.indexHandler.StaffAdd)
+	templateGroup.GET("/staff/edit", c.indexHandler.StaffEdit)
+	templateGroup.GET("/staff/grant", c.indexHandler.StaffGrant)
+	templateGroup.GET("/staff/del_grant", c.indexHandler.StaffDelGrant)
 	templateGroup.GET("/staff", c.indexHandler.Staff)
 }
 
