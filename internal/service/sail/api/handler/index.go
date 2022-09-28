@@ -129,3 +129,35 @@ func (h *IndexHandler) NamespaceAdd(c *gin.Context) {
 		"PGArr": projectGroups,
 	})
 }
+
+func (h *IndexHandler) Project(c *gin.Context) {
+	projectGroups := h.projectGroupSvc.SimpleList()
+
+	c.HTML(http.StatusOK, "project.html", gin.H{
+		"PGArr": projectGroups,
+	})
+}
+
+func (h *IndexHandler) ProjectAdd(c *gin.Context) {
+	projectGroups := h.projectGroupSvc.SimpleList()
+
+	c.HTML(http.StatusOK, "project_add.html", gin.H{
+		"PGArr": projectGroups,
+	})
+}
+
+func (h *IndexHandler) ProjectEdit(c *gin.Context) {
+	name := c.Query("name")
+	id := c.Query("id")
+	projectGroups := h.projectGroupSvc.SimpleList()
+
+	c.HTML(http.StatusOK, "project_edit.html", gin.H{
+		"Name":  name,
+		"ID":    id,
+		"PGArr": projectGroups,
+	})
+}
+
+func (h *IndexHandler) Config(c *gin.Context) {
+	c.HTML(http.StatusOK, "config.html", gin.H{})
+}

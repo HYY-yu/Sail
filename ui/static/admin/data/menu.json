@@ -35,27 +35,10 @@
     {
         "id": 2,
         "title": "项目管理",
-        "type": 0,
+        "type": 1,
         "icon": "layui-icon layui-icon-app",
-        "href": "",
-        "children": [
-            {
-                "id": 21,
-                "title": "项目列表",
-                "icon": "layui-icon layui-icon-table",
-                "type": 1,
-                "openType": "_iframe",
-                "href": "/ui/project"
-            },
-            {
-                "id": 22,
-                "title": "发布管理",
-                "icon": "layui-icon layui-icon-release",
-                "type": 1,
-                "openType": "_iframe",
-                "href": "/ui/publish"
-            }
-        ]
+        "openType": "_iframe",
+        "href": "/ui/project"
     },
     {
         "id": 3,

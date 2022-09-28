@@ -52,9 +52,12 @@ func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Pag
 	projectGroupArr, role := s.CheckStaffGroup(ctx, 0)
 	if len(projectGroupArr) == 0 && role != model.RoleAdmin {
 		return page.NewPage(
-			0,
-			[]model.ProjectList{},
-		), nil
+				0,
+				[]model.ProjectList{},
+			), response.NewErrorWithStatusOk(
+				response.AuthorizationError,
+				"此账号没有可访问的项目，请赋权",
+			)
 	}
 
 	limit, offset := pr.GetLimitAndOffset()
@@ -73,7 +76,31 @@ func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Pag
 	}
 	op = append(op, mgr.WithDeleteTime(0))
 	if role > model.RoleAdmin {
-		op = append(op, mgr.WithProjectGroupID(projectGroupArr, " IN ?"))
+		if v, ok := pr.Filter["project_group_id"]; ok && util.IsNotZero(v) {
+			f := false
+			for _, a := range projectGroupArr {
+				if a == v {
+					f = true
+				}
+			}
+			if !f {
+				return page.NewPage(
+						0,
+						[]model.ProjectList{},
+					), response.NewErrorWithStatusOk(
+						response.AuthorizationError,
+						"没有权限访问此数据",
+					)
+			}
+			op = append(op, mgr.WithProjectGroupID(gconv.Int(v)))
+		} else {
+			// 默认只能访问被授权的项目组下的项目
+			op = append(op, mgr.WithProjectGroupID(projectGroupArr, " IN ?"))
+		}
+	} else {
+		if v, ok := pr.Filter["project_group_id"]; ok && util.IsNotZero(v) {
+			op = append(op, mgr.WithProjectGroupID(gconv.Int(v)))
+		}
 	}
 
 	data, err := mgr.WithOptions(op...).ListProject(limit, offset, sort)

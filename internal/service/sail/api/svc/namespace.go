@@ -61,9 +61,12 @@ func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.P
 	_, role := s.CheckStaffGroup(ctx, projectGroupId)
 	if role > model.RoleOwner {
 		return page.NewPage(
-			0,
-			[]model.ProjectList{},
-		), nil
+				0,
+				[]model.ProjectList{},
+			), response.NewErrorWithStatusOk(
+				response.AuthorizationError,
+				"没有权限访问此数据",
+			)
 	}
 
 	limit, offset := pr.GetLimitAndOffset()
