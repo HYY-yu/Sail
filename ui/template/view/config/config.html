@@ -10,11 +10,39 @@
 <body class="pear-container">
 <div class="layui-card">
     <div class="layui-card-body">
-        <button id="go-back" class="pear-btn pear-btn-primary"> 回退</button>
+        <div class="layui-row pear-col-space5">
+            <div class="layui-col-md1">
+                <button id="go-back" class="pear-btn pear-btn-primary"><i
+                        class="layui-icon layui-icon-return layui-font-12"></i> 回退
+                </button>
+            </div>
+            <div class="layui-col-md5">
+                <button id="go-info-project" class="layui-btn layui-btn-fluid layui-btn-primary layui-border-black">
+                </button>
+            </div>
+            <div class="layui-col-md6">
+                <button id="go-info-project-group"
+                        class="layui-btn layui-btn-fluid layui-btn-primary layui-border-black">
+                </button>
+            </div>
+        </div>
     </div>
 </div>
-<div class="layui-card">
-    <div class="layui-card-body">
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md3">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <div id="treeContent" style="overflow: auto">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md9">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <div id="configContent" style="overflow: auto"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -30,8 +58,23 @@
         var accessToken = localStorage.getItem("accessToken");
 
         $('#go-back').click(function () {
+            sessionStorage.removeItem("jumpConfig");
             window.history.back();
         });
+        var jumpData = JSON.parse(sessionStorage.getItem("jumpConfig"));
+
+        $('#go-info-project').text('项目名：' + jumpData.project_name);
+        $('#go-info-project-group').text('所属项目组：' + jumpData.project_group_name);
+
+        window.onload = function () {
+            function auto_height() {
+                document.getElementById("treeContent").style.height = "80vh";
+                document.getElementById("configContent").style.height = "80vh";
+            }
+
+            auto_height();
+            window.onresize = auto_height;
+        }
     })
 </script>
 </body>

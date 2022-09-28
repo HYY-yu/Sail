@@ -178,7 +178,7 @@
         window.grant = function (obj) {
             layer.open({
                 type: 2,
-                area: ['600px', '700px'],
+                area: ['300px', '400px'],
                 title: '赋权',
                 shade: 0.1,
                 content: '/ui/staff/grant/?id=' + obj.data.staff_id + '&name=' + obj.data.name,
@@ -192,7 +192,7 @@
                 type: 2,
                 title: '删除权限',
                 shade: 0.1,
-                area: ['600px', '700px'],
+                area: ['400px', '400px'],
                 content: '/ui/staff/del_grant/?id=' + obj.data.staff_id + '&name=' + obj.data.name,
             });
         }
