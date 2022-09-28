@@ -3,6 +3,7 @@ package svc
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/HYY-yu/seckill.pkg/core"
@@ -228,9 +229,11 @@ func (s *ProjectSvc) Delete(sctx core.SvcContext, projectID int) error {
 		)
 	}
 
+	deletetime := int(time.Now().Unix())
 	bean := &model.Project{
 		ID:         project.ID,
-		DeleteTime: int(time.Now().Unix()),
+		Name:       project.Name + strconv.Itoa(deletetime),
+		DeleteTime: deletetime,
 	}
 
 	err = mgr.UpdateProject(bean)

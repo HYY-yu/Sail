@@ -10,11 +10,21 @@
     <div class="mainBox">
         <div class="main-container">
             <div class="layui-form-item">
-                <label class="layui-form-label">项目组名称</label>
+                <label class="layui-form-label">命名空间名称</label>
                 <div class="layui-input-block">
-                    <input type="text" name="name" placeholder="请输入3-10位的中文或英文"  lay-verify="required" autocomplete="off" class="layui-input">
+                    <input type="text" name="name" value="{{.Name}}"
+                           lay-verify="required"
+                           autocomplete="off" class="layui-input">
                 </div>
             </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">空间属性</label>
+                <div class="layui-input-block">
+                    <input type="radio" name="real_time" value="1" title="实时生效" {{.Check1}}>
+                    <input type="radio" name="real_time" value="-1" title="需要发布" {{.Check2}}>
+                </div>
+            </div>
+            <input type="hidden" name="namespace_id" value="{{.ID}}">
         </div>
     </div>
     <div class="bottom">
@@ -44,8 +54,12 @@
         form.on('submit(group-save)', function (data) {
             $('#group-submit-button').attr('disabled', 'true');
             $.ajax({
-                url: '/sail/v1/project_group/add',
-                data: JSON.stringify(data.field),
+                url: '/sail/v1/namespace/edit',
+                data: JSON.stringify({
+                    name: data.field.name,
+                    namespace_id: parseInt(data.field.namespace_id),
+                    real_time: data.field.real_time === "1",
+                }),
                 contentType: "application/json;charset=utf-8",
                 headers: sail.setAuth(accessToken),
                 dataType: 'json',

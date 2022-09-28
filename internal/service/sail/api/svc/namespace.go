@@ -3,6 +3,7 @@ package svc
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/HYY-yu/seckill.pkg/core"
@@ -70,9 +71,7 @@ func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.P
 	sort, _ := pr.Sort()
 
 	op := make([]repo.Option, 0)
-	if v, ok := pr.Filter["namespace_id"]; ok && util.IsNotZero(v) {
-		op = append(op, mgr.WithID(gconv.Int(v)))
-	}
+
 	if v, ok := pr.Filter["namespace_name"]; ok && util.IsNotZero(v) {
 		op = append(op, mgr.WithName(
 			util.WrapSqlLike(gconv.String(v)),
@@ -105,6 +104,7 @@ func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.P
 			Name:             e.Name,
 			SecretKey:        e.SecretKey,
 			RealTime:         e.RealTime,
+			CreateTime:       e.CreateTime.Unix(),
 			CreateBy:         e.CreateBy,
 			CreateByName:     s.GetCreateByName(ctx, s.DB, s.StaffRepo, e.CreateBy),
 		}
@@ -228,9 +228,11 @@ func (s *NamespaceSvc) Delete(sctx core.SvcContext, namespaceID int) error {
 		)
 	}
 
+	deletetime := int(time.Now().Unix())
 	bean := &model.Namespace{
 		ID:         namespace.ID,
-		DeleteTime: int(time.Now().Unix()),
+		Name:       namespace.Name + strconv.Itoa(deletetime),
+		DeleteTime: deletetime,
 	}
 	err = mgr.UpdateNamespace(bean)
 	if err != nil {

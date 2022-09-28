@@ -3,25 +3,30 @@
 
 <head>
     <meta charset="utf-8">
-    <title>项目组管理</title>
+    <title>命名空间管理</title>
     <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
 </head>
 
 <body class="pear-container">
 <div class="layui-card">
     <div class="layui-card-body">
-        <form class="layui-form" action="">
+        <form class="layui-form" lay-filter="namespace-query-form" action="">
             <div class="layui-form-item">
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">项目组ID</label>
+                    <label class="layui-form-label">项目组</label>
                     <div class="layui-input-inline">
-                        <input type="text" name="project_group_id" placeholder="" class="layui-input">
+                        <select id="user-query-select" lay-filter="user-query-select" name="project_group_id"
+                                lay-search="">
+                            {{range $id,$val := .PGArr}}
+                            <option value="{{$val.ID}}">{{$val.Name}}</option>
+                            {{end}}
+                        </select>
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">项目组名</label>
+                    <label class="layui-form-label">名称</label>
                     <div class="layui-input-inline">
-                        <input type="text" name="project_group_name" placeholder="" class="layui-input">
+                        <input type="text" name="namespace_name" placeholder="" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
@@ -54,7 +59,7 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['table', 'admin', 'form', 'jquery', 'popup', 'util', 'sail'], function () {
+    layui.use(['table', 'form', 'jquery', 'popup', 'sail', 'util'], function () {
         let table = layui.table;
         let form = layui.form;
         let popup = layui.popup;
@@ -63,11 +68,25 @@
         let util = layui.util;
         sail.prefilterAjax();
 
+        let projectGroupId = sessionStorage.getItem("jumpNamespaceWith");
+        sessionStorage.removeItem("jumpNamespaceWith");
+        if (projectGroupId !== 0) {
+            let options = $('#user-query-select').children();
+            options.each(function (index, elem) {
+                if ($(elem).val() == projectGroupId) {
+                    $(elem).attr('selected', "true");
+                }
+            })
+        }
+        form.render('select');
+
+        let data = form.val("namespace-query-form");
         var accessToken = localStorage.getItem("accessToken");
         table.render({
             elem: '#user-table',
-            url: '/sail/v1/project_group/list',
+            url: '/sail/v1/namespace/list',
             page: true,
+            where: data,
             headers: sail.setAuth(accessToken),
             request: {
                 pageName: "page_index",
@@ -91,12 +110,39 @@
             cols: [
                 [{
                     title: 'ID',
-                    field: 'project_group_id',
+                    field: 'namespace_id',
                     align: 'center',
                 }, {
-                    title: '项目组名',
+                    title: '名称',
                     field: 'name',
                     align: 'center',
+                }, {
+                    title: '所属项目组',
+                    field: 'project_group_name',
+                    align: 'center',
+                }, {
+                    title: '空间密钥',
+                    field: 'secret_key',
+                    align: 'center',
+                    templet: function (res) {
+                        if (res.secret_key) {
+                            return res.secret_key
+                        }
+                        return ' - '
+                    }
+                }, {
+                    title: '空间属性',
+                    field: 'project_group_name',
+                    align: 'center',
+                    templet: function (res) {
+                        let qq = '';
+                        if (res.real_time) {
+                            qq += '<button lay-id="1" type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">实时生效</button>'
+                        } else {
+                            qq += '<button lay-id="2" type="button" class="tag-item tag-item-warm layui-btn layui-btn-primary layui-btn-sm">需要发布</button>'
+                        }
+                        return '<div class="layui-btn-container tag">' + qq + ' </div>'
+                    },
                 }, {
                     title: '创建人',
                     field: 'create_by_name',
@@ -104,7 +150,7 @@
                 }, {
                     title: '创建时间',
                     field: 'create_time',
-                    align: 'center',
+                    align: 'left',
                     templet: function (res) {
                         return util.toDateString(res.create_time * 1000);
                     },
@@ -113,13 +159,8 @@
                     align: 'center',
                     minWidth: 400,
                     templet: function (res) {
-                        if (res.managed) {
-                            return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
-                                '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
-                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="public">管理公共配置</button>\n' +
-                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="namespace">管理命名空间</button>'
-                        }
-                        return ' '
+                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
                     }
                 }]
             ],
@@ -134,10 +175,6 @@
                 window.remove(obj);
             } else if (obj.event === 'edit') {
                 window.edit(obj);
-            } else if (obj.event === 'public') {
-
-            } else if (obj.event === 'namespace') {
-                window.namespace(obj);
             }
         });
 
@@ -154,27 +191,32 @@
             return false;
         });
 
+        form.on('select(user-query-select)', function (data) {
+            table.reload('user-table', {
+                where: {
+                    project_group_id: data.value,
+                }
+            })
+            return false;
+        });
+
         window.add = function () {
             layer.open({
                 type: 2,
-                title: "新增项目组",
+                title: "新增命名空间",
                 shade: 0.1,
-                content: '/ui/group/add',
+                area: ['400px', '400px'],
+                content: '/ui/namespace/add',
             })
-        }
-
-        window.namespace = function (obj) {
-            sessionStorage.setItem("jumpNamespaceWith", obj.data.project_group_id);
-            parent.layui.admin.jump(13, "命名空间管理", "/ui/namespace");
-            parent.layui.admin.refresh(13)
         }
 
         window.edit = function (obj) {
             layer.open({
                 type: 2,
-                title: '修改项目组',
+                title: '修改命名空间',
                 shade: 0.1,
-                content: '/ui/group/edit/?id=' + obj.data.project_group_id + '&name=' + obj.data.name,
+                area: ['400px', '400px'],
+                content: '/ui/namespace/edit/?id=' + obj.data.namespace_id + '&name=' + obj.data.name + '&real_time=' + obj.data.real_time,
             });
         }
 
@@ -185,10 +227,10 @@
             }, function (index) {
                 layer.close(index);
                 let loading = layer.load();
-                let pgid = obj.data['project_group_id'];
+                let pgid = obj.data['namespace_id'];
                 $.ajax({
-                    url: '/sail/v1/project_group/del',
-                    data: JSON.stringify({project_group_id: pgid}),
+                    url: '/sail/v1/namespace/del',
+                    data: JSON.stringify({namespace_id: pgid}),
                     contentType: "application/json;charset=utf-8",
                     headers: sail.setAuth(accessToken),
                     dataType: 'json',

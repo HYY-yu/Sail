@@ -29,7 +29,6 @@ func NewNamespaceHandler(namespaceSvc *svc.NamespaceSvc) *NamespaceHandler {
 // @Param    page_size       query     int                                                              false  "页长"  default(10)
 // @Param    sort            query     string                                                           false  "排序字段"
 // @Param    project_group_id    query     int                                                              true  "ID"
-// @Param    namespace_id    query     int                                                              false  "命名空间ID"
 // @Param    namespace_name  query     string                                                           false  "命名空间名称"
 // @Success  200             {object}  response.JsonResponse{data=page.Page{List=model.NamespaceList}}  "data"
 // @Router   /v1/namespace/list    [GET]

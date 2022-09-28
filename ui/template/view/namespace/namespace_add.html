@@ -10,9 +10,35 @@
     <div class="mainBox">
         <div class="main-container">
             <div class="layui-form-item">
-                <label class="layui-form-label">项目组名称</label>
+                <label class="layui-form-label">项目组</label>
                 <div class="layui-input-block">
-                    <input type="text" name="name" placeholder="请输入3-10位的中文或英文"  lay-verify="required" autocomplete="off" class="layui-input">
+                    <select name="project_group_id" lay-verify="required" lay-search="">
+                        <option value="">请选择项目组</option>
+
+                        {{range $id,$val := .PGArr}}
+                        <option value="{{$val.ID}}">{{$val.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">命名空间名称</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" placeholder="支持格式：^[a-zA-Z][\\w_\\-.]{1,9}" lay-verify="required"
+                           autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">空间属性</label>
+                <div class="layui-input-block">
+                    <input type="radio" name="real_time" value="1" title="实时生效" checked>
+                    <input type="radio" name="real_time" value="-1" title="需要发布">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">支持加密</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" lay-skin="switch" name="secret">
                 </div>
             </div>
         </div>
@@ -44,8 +70,13 @@
         form.on('submit(group-save)', function (data) {
             $('#group-submit-button').attr('disabled', 'true');
             $.ajax({
-                url: '/sail/v1/project_group/add',
-                data: JSON.stringify(data.field),
+                url: '/sail/v1/namespace/add',
+                data: JSON.stringify({
+                    name: data.field.name,
+                    project_group_id: parseInt(data.field.project_group_id),
+                    real_time: data.field.real_time === "1",
+                    secret: data.field.secret === "on",
+                }),
                 contentType: "application/json;charset=utf-8",
                 headers: sail.setAuth(accessToken),
                 dataType: 'json',

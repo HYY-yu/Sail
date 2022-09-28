@@ -18,6 +18,9 @@ func (s *Server) RouteHTML(c *Handlers, staticEngine *gin.Engine) {
 	templateGroup.GET("/staff/grant", c.indexHandler.StaffGrant)
 	templateGroup.GET("/staff/del_grant", c.indexHandler.StaffDelGrant)
 	templateGroup.GET("/staff", c.indexHandler.Staff)
+	templateGroup.GET("/namespace", c.indexHandler.Namespace)
+	templateGroup.GET("/namespace/add", c.indexHandler.NamespaceAdd)
+	templateGroup.GET("/namespace/edit", c.indexHandler.NamespaceEdit)
 }
 
 func (s *Server) Route(c *Handlers, engine core.Engine) {

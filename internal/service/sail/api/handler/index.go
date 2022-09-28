@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -87,4 +88,44 @@ func (h *IndexHandler) StaffGrant(c *gin.Context) {
 
 func (h *IndexHandler) Staff(c *gin.Context) {
 	c.HTML(http.StatusOK, "staff.html", gin.H{})
+}
+
+func (h *IndexHandler) Namespace(c *gin.Context) {
+	projectGroups := h.projectGroupSvc.SimpleList()
+
+	c.HTML(http.StatusOK, "namespace.html", gin.H{
+		"PGArr": projectGroups,
+	})
+}
+
+func (h *IndexHandler) NamespaceEdit(c *gin.Context) {
+	name := c.Query("name")
+	id := c.Query("id")
+	realTime := c.Query("real_time")
+	rb, _ := strconv.ParseBool(realTime)
+	check1, check2 := "", ""
+	if rb {
+		check1 = "checked"
+	} else {
+		check2 = "checked"
+	}
+
+	c.HTML(
+		http.StatusOK,
+		"namespace_edit.html",
+		gin.H{
+			"Name":   name,
+			"ID":     id,
+			"Check1": check1,
+			"Check2": check2,
+		},
+	)
+}
+
+func (h *IndexHandler) NamespaceAdd(c *gin.Context) {
+	projectGroups := h.projectGroupSvc.SimpleList()
+
+	c.HTML(http.StatusOK, "namespace_add.html", gin.H{
+		"PGArr": projectGroups,
+	})
 }
