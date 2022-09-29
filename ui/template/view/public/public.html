@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>配置详情</title>
+    <title>公共配置</title>
     <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
     <link rel="stylesheet" href="../../../static/component/codemirror5/codemirror.css"/>
 </head>
@@ -11,23 +11,23 @@
 <body class="pear-container">
 <div class="layui-card">
     <div class="layui-card-body">
-        <button id="go-back" class="layui-btn  layui-btn-normal"><i
-                class="layui-icon layui-icon-return layui-font-12"></i>
-        </button>
-        <p style="display: inline-block;vertical-align:middle;height:38px;line-height:38px;text-align:center;font-size:12px;padding-left: 10px">
-            <span class="layui-breadcrumb">
-                    <a id="go-info-project" href=""></a>
-                    <a id="go-info-project-group" href=""></a>
-        </span>
-        </p>
+        <form class="layui-form layui-inline" style="margin: 0" lay-filter="public-query-form" action="">
+            <div class="layui-form-item layui-inline" style="margin: 0">
+                <label class="layui-form-label">项目组</label>
+                <div class="layui-input-inline">
+                    <select id="user-query-select" lay-filter="user-query-select" name="project_group_id"
+                            lay-search="">
+                        {{range $id,$val := .PGArr}}
+                        <option value="{{$val.ID}}">{{$val.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+        </form>
         <div class="layui-layout-right" style="top: 10px;right: 15px;bottom: 15px">
             <button id="configAdd"
                     class="layui-btn  layui-btn-normal">
                 新增配置
-            </button>
-            <button
-                    class="layui-btn  layui-btn-normal">
-                📣发布配置
             </button>
         </div>
     </div>
@@ -51,7 +51,6 @@
                         <button type="button" class="layui-btn layui-btn-normal">编辑</button>
                         <button type="button" class="layui-btn layui-btn-normal">删除</button>
                         <button type="button" class="layui-btn layui-btn-normal">历史版本</button>
-                        <button type="button" class="layui-btn layui-btn-normal">转为副本</button>
                     </div>
                     </p>
                     <p class="layui-word-aux layui-layout-right"
@@ -85,13 +84,26 @@
         window.onresize = auto_height;
     }
 
-    layui.use(['jquery', 'popup', 'sail', 'tree', 'layer'], function () {
+    layui.use(['jquery', 'form', 'popup', 'sail', 'tree', 'layer'], function () {
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
         let tree = layui.tree;
         let layer = layui.layer;
+        let form = layui.form;
         sail.prefilterAjax();
+
+        let projectGroupId = sessionStorage.getItem("jumpPublicWith");
+        sessionStorage.removeItem("jumpPublicWith");
+        if (projectGroupId !== 0) {
+            let options = $('#user-query-select').children();
+            options.each(function (index, elem) {
+                if ($(elem).val() == projectGroupId) {
+                    $(elem).attr('selected', "true");
+                }
+            })
+        }
+        form.render('select');
 
         let cm = new CodeMirror(document.getElementById("configContent"), {
             lineNumbers: true,
@@ -99,34 +111,36 @@
             styleActiveLine: true,
             matchBrackets: true,
         });
+        let jumpData = form.val("public-query-form");
 
-        var jumpData = JSON.parse(sessionStorage.getItem("jumpConfig"));
         var accessToken = localStorage.getItem("accessToken");
-
-        $.ajax({
-            url: '/sail/v1/config/tree',
-            data: {
-                project_id: parseInt(jumpData.project_id),
-                project_group_id: parseInt(jumpData.project_group_id),
-            },
-            headers: sail.setAuth(accessToken),
-            dataType: 'json',
-            type: 'get',
-            success: function (result) {
-                sail.checkSuccess(result, function (resp) {
-                    tree.render({
-                        elem: '#treeContent',  //绑定元素
-                        data: resp.data,
-                        id: "treeConfig"
+        let renderTree = function (pgid) {
+            $.ajax({
+                url: '/sail/v1/config/tree',
+                data: {
+                    project_id: 0,
+                    project_group_id: parseInt(pgid),
+                },
+                headers: sail.setAuth(accessToken),
+                dataType: 'json',
+                type: 'get',
+                success: function (result) {
+                    sail.checkSuccess(result, function (resp) {
+                        tree.render({
+                            elem: '#treeContent',  //绑定元素
+                            data: resp.data,
+                            id: "treeConfig"
+                        });
                     });
-                });
-            },
-            error: sail.ajaxError,
-        })
+                },
+                error: sail.ajaxError,
+            });
+        }
+        renderTree(jumpData.project_group_id);
 
-        $('#go-back').click(function () {
-            sessionStorage.removeItem("jumpConfig");
-            window.history.back();
+        form.on('select(user-query-select)', function (data) {
+            renderTree(data.value);
+            return false;
         });
 
         $('#configAdd').click(function () {
@@ -135,13 +149,9 @@
                 title: "新增配置",
                 shade: 0.1,
                 area: ['400px', '400px'],
-                content: '/ui/config/add?' + 'project_id=' + jumpData.project_id + '&project_group_id=' + jumpData.project_group_id,
+                content: '/ui/public/add?' + 'project_group_id=' + jumpData.project_group_id,
             })
         });
-
-
-        $('#go-info-project').text('项目名：' + jumpData.project_name);
-        $('#go-info-project-group').text('所属项目组：' + jumpData.project_group_name);
     })
 </script>
 </body>

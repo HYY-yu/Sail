@@ -135,7 +135,7 @@
             } else if (obj.event === 'edit') {
                 window.edit(obj);
             } else if (obj.event === 'public') {
-
+                window.public(obj);
             } else if (obj.event === 'namespace') {
                 window.namespace(obj);
             }
@@ -167,6 +167,12 @@
             sessionStorage.setItem("jumpNamespaceWith", obj.data.project_group_id);
             parent.layui.admin.jump(13, "命名空间管理", "/ui/namespace");
             parent.layui.admin.refresh(13)
+        }
+
+        window.public = function (obj) {
+            sessionStorage.setItem("jumpPublicWith", obj.data.project_group_id);
+            parent.layui.admin.jump(12, "公共配置管理", "/ui/public");
+            parent.layui.admin.refresh(12)
         }
 
         window.edit = function (obj) {

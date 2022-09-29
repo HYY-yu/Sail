@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -42,6 +43,18 @@ func NewNamespaceSvc(
 		StaffRepo:        staffRepo,
 	}
 	return svc
+}
+
+func (s *NamespaceSvc) SimpleList(projectGroupId int) []model.Namespace {
+	mgr := s.NamespaceRepo.Mgr(context.Background(), s.DB.GetDb())
+	data, _ := mgr.WithOptions(mgr.WithProjectGroupID(projectGroupId), mgr.WithDeleteTime(0)).
+		WithSelects(model.NamespaceColumns.ID, model.NamespaceColumns.Name, model.NamespaceColumns.SecretKey).Gets()
+	for i := range data {
+		if len(data[i].SecretKey) > 0 {
+			data[i].SecretKey = "true"
+		}
+	}
+	return data
 }
 
 func (s *NamespaceSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Page, error) {

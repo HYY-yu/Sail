@@ -25,6 +25,9 @@ func (s *Server) RouteHTML(c *Handlers, staticEngine *gin.Engine) {
 	templateGroup.GET("/project/add", c.indexHandler.ProjectAdd)
 	templateGroup.GET("/project/edit", c.indexHandler.ProjectEdit)
 	templateGroup.GET("/config", c.indexHandler.Config)
+	templateGroup.GET("/config/add", c.indexHandler.ConfigAdd)
+	templateGroup.GET("/public", c.indexHandler.Public)
+	templateGroup.GET("/public/add", c.indexHandler.PublicAdd)
 
 }
 

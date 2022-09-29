@@ -130,6 +130,12 @@ func (s *LoginSvc) LoginOut(sctx core.SvcContext) error {
 func (s *LoginSvc) ChangePassword(sctx core.SvcContext, newPass string) error {
 	ctx := sctx.Context()
 	mgr := s.StaffRepo.Mgr(ctx, s.DB.GetDb())
+	if len(newPass) < 6 || len(newPass) > 10 {
+		return response.NewErrorWithStatusOk(
+			response.ParamBindError,
+			"请输入6-10位密码 ",
+		)
+	}
 
 	hp, err := bcrypt.GenerateFromPassword([]byte(newPass), 0)
 	if err != nil {

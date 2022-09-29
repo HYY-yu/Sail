@@ -74,6 +74,13 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 			"没有权限访问此接口",
 		)
 	}
+	if projectID == 0 && role > model.RoleOwner {
+		// projectID == 0 说明在访问公共配置，此时需要Owner权限
+		return nil, response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此数据",
+		)
+	}
 
 	namespaceList, err := namespaceMgr.
 		WithOptions(namespaceMgr.WithProjectGroupID(projectGroupID), namespaceMgr.WithDeleteTime(0)).
@@ -116,7 +123,10 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 	for i, e := range namespaceList {
 		title := e.Name
 		if !e.RealTime {
-			title += " (属性：发布)"
+			title += " 📣 "
+		}
+		if len(e.SecretKey) > 0 {
+			title += " 🔐 "
 		}
 		// TODO 检测待发布状态
 
@@ -126,7 +136,7 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 			RealTime:    e.RealTime,
 			CanSecret:   e.SecretKey != "",
 			Spread:      true,
-			Title:       e.Name,
+			Title:       title,
 		}
 
 		b.Nodes = configNamespaceMap[e.ID]
