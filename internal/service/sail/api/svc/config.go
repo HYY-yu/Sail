@@ -108,16 +108,25 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 			ConfigID: e.ID,
 			Name:     e.Name,
 			Type:     e.ConfigType,
+			Title:    e.Name + "." + e.ConfigType,
 		})
 	}
 
 	tree := make([]model.ProjectTree, len(namespaceList))
 	for i, e := range namespaceList {
+		title := e.Name
+		if !e.RealTime {
+			title += " (属性：发布)"
+		}
+		// TODO 检测待发布状态
+
 		b := model.ProjectTree{
 			NamespaceID: e.ID,
 			Name:        e.Name,
 			RealTime:    e.RealTime,
 			CanSecret:   e.SecretKey != "",
+			Spread:      true,
+			Title:       e.Name,
 		}
 
 		b.Nodes = configNamespaceMap[e.ID]

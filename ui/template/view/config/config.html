@@ -5,76 +5,136 @@
     <meta charset="utf-8">
     <title>配置详情</title>
     <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+    <link rel="stylesheet" href="../../../static/component/codemirror5/codemirror.css"/>
 </head>
 
 <body class="pear-container">
 <div class="layui-card">
     <div class="layui-card-body">
-        <div class="layui-row pear-col-space5">
-            <div class="layui-col-md1">
-                <button id="go-back" class="layui-btn layui-btn-radius  layui-btn-normal"><i
-                        class="layui-icon layui-icon-return layui-font-12"></i> 回退
-                </button>
-            </div>
-            <div class="layui-col-md5">
-                <button id="go-info-project" class="layui-btn layui-btn-radius layui-btn-fluid layui-btn-primary layui-border-black">
-                </button>
-            </div>
-            <div class="layui-col-md6">
-                <button id="go-info-project-group"
-                        class="layui-btn layui-btn-radius layui-btn-fluid layui-btn-primary layui-border-black">
-                </button>
-            </div>
+        <button id="go-back" class="layui-btn  layui-btn-normal"><i
+                class="layui-icon layui-icon-return layui-font-12"></i>
+        </button>
+        <p style="display: inline-block;vertical-align:middle;height:38px;line-height:38px;text-align:center;font-size:12px;padding-left: 10px">
+            <span class="layui-breadcrumb">
+                    <a id="go-info-project" href=""></a>
+                    <a id="go-info-project-group" href=""></a>
+        </span>
+        </p>
+        <div class="layui-layout-right" style="top: 10px;right: 15px;bottom: 15px">
+            <button id="configAdd"
+                    class="layui-btn  layui-btn-normal">
+                新增配置
+            </button>
+            <button
+                    class="layui-btn  layui-btn-normal">
+                发布配置
+            </button>
         </div>
     </div>
 </div>
+
 <div class="layui-row layui-col-space15">
     <div class="layui-col-md3">
         <div class="layui-card">
-            <div class="layui-card-body">
-                <div id="treeContent" style="overflow: auto">
+            <div class="layui-card-body" id="divTreeContent" style="overflow: auto">
+                <div id="treeContent">
                 </div>
             </div>
         </div>
     </div>
     <div class="layui-col-md9">
         <div class="layui-card">
-            <div class="layui-card-body">
+            <div class="layui-card-body" id="divConfigContent" style="overflow: auto">
+                <div style="margin-top:12px;margin-bottom: 24px">
+                    <p style="display: inline">
+                    <div class="layui-btn-group">
+                        <button type="button" class="layui-btn layui-btn-normal">编辑</button>
+                        <button type="button" class="layui-btn layui-btn-normal">删除</button>
+                        <button type="button" class="layui-btn layui-btn-normal">历史版本</button>
+                        <button type="button" class="layui-btn layui-btn-normal">转为副本</button>
+                    </div>
+                    </p>
+                    <p class="layui-word-aux layui-layout-right"
+                       style="display: inline-block;top: 20px;right: 15px;height: 38px;vertical-align: middle;line-height: 38px;font-weight: bold;font-size: large">
+                    </p>
+                </div>
                 <div id="configContent" style="overflow: auto"></div>
             </div>
         </div>
     </div>
 </div>
+<style>
+    .CodeMirror {
+        border: 1px solid #eee;
+        height: auto;
+    }
+</style>
 
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
+<script src="../../../static/component/codemirror5/codemirror.js"></script>
+<script src="../../../static/component/codemirror5/mode/yaml.js"></script>
 <script>
-    layui.use(['jquery', 'popup', 'sail'], function () {
+    window.onload = function () {
+        function auto_height() {
+            document.getElementById("divTreeContent").style.height = "80vh";
+            document.getElementById("divConfigContent").style.height = "80vh";
+        }
+
+        auto_height();
+        window.onresize = auto_height;
+    }
+
+    layui.use(['jquery', 'popup', 'sail', 'tree'], function () {
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
+        let tree = layui.tree;
         sail.prefilterAjax();
 
+        let cm = new CodeMirror(document.getElementById("configContent"), {
+            lineNumbers: true,
+            mode: "yaml",
+            styleActiveLine: true,
+            matchBrackets: true,
+        });
+
+        var jumpData = JSON.parse(sessionStorage.getItem("jumpConfig"));
         var accessToken = localStorage.getItem("accessToken");
+
+        $.ajax({
+            url: '/sail/v1/config/tree',
+            data: {
+                project_id: parseInt(jumpData.project_id),
+                project_group_id: parseInt(jumpData.project_group_id),
+            },
+            headers: sail.setAuth(accessToken),
+            dataType: 'json',
+            type: 'get',
+            success: function (result) {
+                sail.checkSuccess(result, function (resp) {
+                    tree.render({
+                        elem: '#treeContent',  //绑定元素
+                        data: resp.data,
+                        id: "treeConfig"
+                    });
+                });
+            },
+            error: sail.ajaxError,
+        })
 
         $('#go-back').click(function () {
             sessionStorage.removeItem("jumpConfig");
             window.history.back();
         });
-        var jumpData = JSON.parse(sessionStorage.getItem("jumpConfig"));
+
+        $('#configAdd').click(function () {
+
+        });
+
 
         $('#go-info-project').text('项目名：' + jumpData.project_name);
         $('#go-info-project-group').text('所属项目组：' + jumpData.project_group_name);
-
-        window.onload = function () {
-            function auto_height() {
-                document.getElementById("treeContent").style.height = "80vh";
-                document.getElementById("configContent").style.height = "80vh";
-            }
-
-            auto_height();
-            window.onresize = auto_height;
-        }
     })
 </script>
 </body>

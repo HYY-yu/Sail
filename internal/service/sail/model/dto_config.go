@@ -18,11 +18,15 @@ type ProjectTree struct {
 	RealTime    bool   `json:"real_time"`  // 是否需发布
 	CanSecret   bool   `json:"can_secret"` // 是否能加密
 
-	Nodes []ConfigNode `json:"nodes"`
+	Title  string `json:"title"`
+	Spread bool   `json:"spread"`
+
+	Nodes []ConfigNode `json:"children"`
 }
 
 type ConfigNode struct {
 	ConfigID int    `json:"config_id"`
+	Title    string `json:"title"`
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 }
