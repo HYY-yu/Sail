@@ -6,6 +6,8 @@
     <title>公共配置</title>
     <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
     <link rel="stylesheet" href="../../../static/component/codemirror5/codemirror.css"/>
+    <link rel="stylesheet" href="../../../static/component/codemirror5/lint/lint.css"/>
+    <link rel="stylesheet" href="../../../static/component/codemirror5/addon/dialog.css"/>
 </head>
 
 <body class="pear-container">
@@ -48,12 +50,12 @@
                 <div style="margin-top:12px;margin-bottom: 24px">
                     <p style="display: inline">
                     <div class="layui-btn-group">
-                        <button type="button" class="layui-btn layui-btn-normal">编辑</button>
-                        <button type="button" class="layui-btn layui-btn-normal">删除</button>
-                        <button type="button" class="layui-btn layui-btn-normal">历史版本</button>
+                        <button type="button" id="editConfigID" class="layui-btn layui-btn-normal">编辑</button>
+                        <button type="button" id="delConfigID" class="layui-btn layui-btn-normal">删除</button>
+                        <button type="button" id="historyConfigID" class="layui-btn layui-btn-normal">历史版本</button>
                     </div>
                     </p>
-                    <p class="layui-word-aux layui-layout-right"
+                    <p id="textConfigID" class="layui-word-aux layui-layout-right"
                        style="display: inline-block;top: 20px;right: 15px;height: 38px;vertical-align: middle;line-height: 38px;font-weight: bold;font-size: large">
                     </p>
                 </div>
@@ -62,17 +64,26 @@
         </div>
     </div>
 </div>
-<style>
-    .CodeMirror {
-        border: 1px solid #eee;
-        height: auto;
-    }
-</style>
 
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script src="../../../static/component/codemirror5/codemirror.js"></script>
+<script src="../../../static/component/codemirror5/addon/matchbrackets.js"></script>
+<script src="../../../static/component/codemirror5/addon/closebrackets.js"></script>
+<script src="../../../static/component/codemirror5/addon/active-line.js"></script>
+<script src="../../../static/component/codemirror5/addon/dialog.js"></script>
+<script src="../../../static/component/codemirror5/addon/search.js"></script>
+<script src="../../../static/component/codemirror5/addon/searchcursor.js"></script>
+<script src="../../../static/component/codemirror5/lint/lint.js"></script>
+<script src="https://unpkg.com/jsonlint@1.6.3/web/jsonlint.js"></script>
+<script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script src="../../../static/component/codemirror5/lint/json-lint.js"></script>
+<script src="../../../static/component/codemirror5/lint/yaml-lint.js"></script>
+<script src="../../../static/component/codemirror5/mode/javascript.js"></script>
+<script src="../../../static/component/codemirror5/mode/properties.js"></script>
+<script src="../../../static/component/codemirror5/mode/toml.js"></script>
 <script src="../../../static/component/codemirror5/mode/yaml.js"></script>
+<script src="../../../static/component/codemirror5/mode/xml.js"></script>
 <script>
     window.onload = function () {
         function auto_height() {
@@ -95,6 +106,7 @@
 
         let projectGroupId = sessionStorage.getItem("jumpPublicWith");
         sessionStorage.removeItem("jumpPublicWith");
+        sessionStorage.removeItem("treeClickConfigID");
         if (projectGroupId !== 0) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
@@ -107,11 +119,133 @@
 
         let cm = new CodeMirror(document.getElementById("configContent"), {
             lineNumbers: true,
-            mode: "yaml",
+            mode: 'null',
             styleActiveLine: true,
             matchBrackets: true,
+            autoCloseBrackets: true,
+            gutters: ["CodeMirror-lint-markers"],
+            lint: true,
+            readOnly: true,
         });
         let jumpData = form.val("public-query-form");
+
+        let renderConfigDetail = function () {
+            let configID = sessionStorage.getItem("treeClickConfigID")
+            if (!configID) {
+                // 清空编辑框
+                $('#textConfigID').html('');
+                cm.getDoc().setValue('');
+                cm.setOption("mode", 'null');
+                cm.setOption("readOnly", true);
+                return
+            }
+            $.ajax({
+                url: '/sail/v1/config/info',
+                data: {
+                    config_id: configID,
+                },
+                headers: sail.setAuth(accessToken),
+                dataType: 'json',
+                type: 'get',
+                success: function (result) {
+                    sail.checkSuccess(result, function (resp) {
+                        $('#textConfigID').html(resp.data.config_key);
+                        // 渲染编辑框
+                        let typeConfig = resp.data.type;
+                        cm.setOption("mode", sail.setCMType(typeConfig));
+                        cm.getDoc().setValue(resp.data.content);
+                    });
+                },
+                error: sail.ajaxError,
+            })
+        }
+
+        $('#editConfigID').click(function () {
+            let configID = sessionStorage.getItem("treeClickConfigID")
+            if (!configID) {
+                return
+            }
+
+            let buttonText = $('#editConfigID').text()
+            if (buttonText === '保存') {
+                let content = cm.getValue();
+                $.ajax({
+                    url: '/sail/v1/config/edit',
+                    data: JSON.stringify({
+                        config_id: parseInt(configID),
+                        content: content,
+                    }),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (result) {
+                        sail.checkSuccess(result, function (resp) {
+                            popup.success("保存成功");
+                            renderConfigDetail();
+                            $('#editConfigID').text('编辑');
+                            cm.setOption('readOnly', true);
+                        });
+                    },
+                    error: sail.ajaxError,
+                })
+                return
+            }
+
+            // 打开编辑框
+            cm.setOption('readOnly', false);
+            cm.focus();
+            $('#editConfigID').text('保存');
+        })
+
+        $('#delConfigID').click(function () {
+            let configID = sessionStorage.getItem("treeClickConfigID")
+            if (!configID) {
+                return
+            }
+
+            layer.confirm('确定要删除吗？', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                sessionStorage.removeItem("treeClickConfigID");
+                $.ajax({
+                    url: '/sail/v1/config/del',
+                    data: JSON.stringify({
+                        config_id: parseInt(configID),
+                    }),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (result) {
+                        sail.checkSuccess(result, function (resp) {
+                            popup.success("删除成功");
+
+                            renderTree(jumpData.project_group_id);
+                            renderConfigDetail();
+                        });
+                    },
+                    error: sail.ajaxError,
+                })
+                layer.close(index);
+            })
+        })
+
+        $('#historyConfigID').click(function () {
+            let configID = sessionStorage.getItem("treeClickConfigID")
+            if (!configID) {
+                return
+            }
+
+            layer.open({
+                type: 2,
+                title: "配置历史",
+                shade: 0.1,
+                area: ['900px', '500px'],
+                content: '/ui/public/history?' + 'config_id=' + configID,
+            })
+        })
 
         var accessToken = localStorage.getItem("accessToken");
         let renderTree = function (pgid) {
@@ -129,7 +263,17 @@
                         tree.render({
                             elem: '#treeContent',  //绑定元素
                             data: resp.data,
-                            id: "treeConfig"
+                            id: "treeConfig",
+                            click: function (obj) {
+                                if (obj.data.children) {
+                                    return
+                                }
+                                if (!obj.data.config_id) {
+                                    return
+                                }
+                                sessionStorage.setItem("treeClickConfigID", obj.data.config_id);
+                                renderConfigDetail();
+                            }
                         });
                     });
                 },
@@ -140,8 +284,19 @@
 
         form.on('select(user-query-select)', function (data) {
             renderTree(data.value);
+            jumpData.project_group_id = data.value;
             return false;
         });
+
+        window.refreshTree = function () {
+            renderTree(jumpData.project_group_id);
+        }
+        window.refreshConfigDetail = function () {
+            renderConfigDetail();
+        }
+        window.getConfigDetail = function () {
+            return cm.getDoc().getValue();
+        }
 
         $('#configAdd').click(function () {
             layer.open({

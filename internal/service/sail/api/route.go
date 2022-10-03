@@ -28,6 +28,8 @@ func (s *Server) RouteHTML(c *Handlers, staticEngine *gin.Engine) {
 	templateGroup.GET("/config/add", c.indexHandler.ConfigAdd)
 	templateGroup.GET("/public", c.indexHandler.Public)
 	templateGroup.GET("/public/add", c.indexHandler.PublicAdd)
+	templateGroup.GET("/public/history", c.indexHandler.PublicHistory)
+	templateGroup.GET("/public/history_diff", c.indexHandler.PublicHistoryDiff)
 
 }
 

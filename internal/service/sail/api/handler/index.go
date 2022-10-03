@@ -191,8 +191,29 @@ func (h *IndexHandler) PublicAdd(c *gin.Context) {
 	projectGroupId := c.Query("project_group_id")
 	NSArr := h.namespaceSvc.SimpleList(gconv.Int(projectGroupId))
 
+	ac := model.ConfigTypeYaml.AllConfigType()
+
 	c.HTML(http.StatusOK, "public_add.html", gin.H{
 		"projectGroupId": projectGroupId,
 		"NSArr":          NSArr,
+		"AConfigType":    ac,
+	})
+}
+
+func (h *IndexHandler) PublicHistory(c *gin.Context) {
+	ConfigID := c.Query("config_id")
+
+	c.HTML(http.StatusOK, "public_history.html", gin.H{
+		"configID": ConfigID,
+	})
+}
+
+func (h *IndexHandler) PublicHistoryDiff(c *gin.Context) {
+	ConfigID := c.Query("config_id")
+	reversion := c.Query("reversion")
+
+	c.HTML(http.StatusOK, "public_diff.html", gin.H{
+		"configID":  ConfigID,
+		"reversion": reversion,
 	})
 }

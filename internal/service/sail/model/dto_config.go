@@ -94,14 +94,18 @@ var ErrNotEncryptNamespace = errors.New("ErrNotEncryptNamespace")
 type ConfigType string
 
 const (
-	ConfigTypeCustom     = "custom"
-	ConfigTypeToml       = "toml"
-	ConfigTypeYaml       = "yaml"
-	ConfigTypeJson       = "json"
-	ConfigTypeIni        = "ini"
-	ConfigTypeXml        = "xml"
-	ConfigTypeProperties = "properties"
+	ConfigTypeCustom     ConfigType = "custom"
+	ConfigTypeToml       ConfigType = "toml"
+	ConfigTypeYaml       ConfigType = "yaml"
+	ConfigTypeJson       ConfigType = "json"
+	ConfigTypeIni        ConfigType = "ini"
+	ConfigTypeXml        ConfigType = "xml"
+	ConfigTypeProperties ConfigType = "properties"
 )
+
+func (c ConfigType) AllConfigType() []ConfigType {
+	return []ConfigType{ConfigTypeCustom, ConfigTypeToml, ConfigTypeYaml, ConfigTypeJson, ConfigTypeIni, ConfigTypeXml, ConfigTypeProperties}
+}
 
 func (c ConfigType) Valid() bool {
 	for _, e := range []ConfigType{

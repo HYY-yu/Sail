@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+    <link rel="stylesheet" href="../../../static/component/codemirror5/codemirror.css"/>
+    <link rel="stylesheet" href="../../../static/component/codemirror5/lint/lint.css"/>
 </head>
 <body>
 <form class="layui-form" action="" id="group-add">
@@ -20,7 +22,7 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">命名空间</label>
                 <div class="layui-input-block">
-                    <select name="project_group_id" lay-filter="namespace-query-select" lay-verify="required"
+                    <select name="namespace_id" lay-filter="namespace-query-select" lay-verify="required"
                             lay-search="">
                         <option value="">请选择命名空间</option>
 
@@ -31,11 +33,29 @@
                 </div>
             </div>
             <div class="layui-form-item" id="formSecretCheckbox" style="display: none">
-                <label class="layui-form-label">支持加密</label>
+                <label class="layui-form-label">加密</label>
                 <div class="layui-input-block">
-                    <input type="checkbox" lay-skin="switch" name="secret">
+                    <input type="checkbox" lay-skin="switch" name="is_encrypt">
                 </div>
             </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">配置类型</label>
+                <div class="layui-input-block">
+                    <select name="type" id="type-query-select" lay-filter="type-query-select" lay-verify="required"
+                            lay-search="">
+                        {{range $id,$val := .AConfigType}}
+                        <option value="{{$val}}">{{$val}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">配置内容</label>
+                <div class="layui-input-block">
+                    <textarea name="content" id="publicAddConfigContent"></textarea>
+                </div>
+            </div>
+            <input type="hidden" name="project_group_id" value="{{.projectGroupId}}">
         </div>
     </div>
     <div class="bottom">
@@ -54,6 +74,20 @@
 </form>
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
+<script src="../../../static/component/codemirror5/codemirror.js"></script>
+<script src="../../../static/component/codemirror5/addon/matchbrackets.js"></script>
+<script src="../../../static/component/codemirror5/addon/closebrackets.js"></script>
+<script src="../../../static/component/codemirror5/addon/active-line.js"></script>
+<script src="../../../static/component/codemirror5/lint/lint.js"></script>
+<script src="https://unpkg.com/jsonlint@1.6.3/web/jsonlint.js"></script>
+<script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script src="../../../static/component/codemirror5/lint/json-lint.js"></script>
+<script src="../../../static/component/codemirror5/lint/yaml-lint.js"></script>
+<script src="../../../static/component/codemirror5/mode/javascript.js"></script>
+<script src="../../../static/component/codemirror5/mode/properties.js"></script>
+<script src="../../../static/component/codemirror5/mode/toml.js"></script>
+<script src="../../../static/component/codemirror5/mode/yaml.js"></script>
+<script src="../../../static/component/codemirror5/mode/xml.js"></script>
 <script>
     layui.use(['form', 'jquery', 'sail'], function () {
         let form = layui.form;
@@ -72,7 +106,7 @@
 
         form.on('select(namespace-query-select)', function (data) {
             for (var i = 0; i < nsarr.length; i++) {
-                if (nsarr[i].id == data.value ) {
+                if (nsarr[i].id == data.value) {
                     if (nsarr[i].secret === 'true') {
                         console.log('ccsda')
                         document.getElementById('formSecretCheckbox').style.display = "block"
@@ -80,19 +114,38 @@
                     }
                 }
             }
-            console.log('cca')
             document.getElementById('formSecretCheckbox').style.display = "none"
         });
+        let selectType = $('#type-query-select').val();
+        console.log(selectType);
+
+        let cm = CodeMirror.fromTextArea(document.getElementById("publicAddConfigContent"), {
+            lineNumbers: true,
+            mode: sail.setCMType(selectType),
+            styleActiveLine: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            gutters: ["CodeMirror-lint-markers"],
+            lint: true,
+        });
+        form.on('select(type-query-select)', function (data) {
+            console.log(sail.setCMType(data.value));
+            cm.setOption('mode', sail.setCMType(data.value));
+        })
 
         form.on('submit(group-save)', function (data) {
+            let content = cm.getValue();
             $('#group-submit-button').attr('disabled', 'true');
             $.ajax({
-                url: '/sail/v1/namespace/add',
+                url: '/sail/v1/config/add',
                 data: JSON.stringify({
                     name: data.field.name,
                     project_group_id: parseInt(data.field.project_group_id),
-                    real_time: data.field.real_time === "1",
-                    secret: data.field.secret === "on",
+                    namespace_id: parseInt(data.field.namespace_id),
+                    is_public: true,
+                    is_encrypt: data.field.is_encrypt === "on",
+                    type: data.field.type,
+                    content: content,
                 }),
                 contentType: "application/json;charset=utf-8",
                 headers: sail.setAuth(accessToken),
@@ -103,7 +156,7 @@
                     sail.checkSuccess(result, function (resp) {
                         layer.msg("成功", {icon: 1, time: 1000}, function () {
                             parent.layer.close(parent.layer.getFrameIndex(window.name));//关闭当前页
-                            parent.layui.table.reload("user-table");
+                            parent.window.refreshTree();
                         });
                     })
                 },

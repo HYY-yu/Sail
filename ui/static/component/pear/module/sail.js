@@ -6,6 +6,17 @@ layui.define(['jquery', 'layer'], function (exports) {
 
     var sail = new function () {
 
+        this.setCMType = function (value) {
+            if (value === 'ini') {
+                return 'text/x-ini'
+            } else if (value === 'json') {
+                return 'application/json'
+            }else if(value === 'custom'){
+                return 'null'
+            }
+            return value
+        }
+
         this.ajaxError = function (jqXHR, textStatus) {
             if (jqXHR.status === 401) {
                 return
