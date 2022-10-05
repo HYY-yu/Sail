@@ -57,7 +57,7 @@
         let util = layui.util;
         sail.prefilterAjax();
 
-        var accessToken = localStorage.getItem("accessToken");
+        let accessToken = localStorage.getItem("accessToken");
         table.render({
             elem: '#user-table',
             url: '/sail/v1/staff/list',

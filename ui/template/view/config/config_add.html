@@ -32,7 +32,7 @@
                     </select>
                 </div>
             </div>
-            <div class="layui-form-item" ¬>
+            <div class="layui-form-item" >
                 <label class="layui-form-label">链接到公共配置</label>
                 <div class="layui-input-block">
                     <input type="checkbox" lay-filter="link-query-checkbox" lay-verify="required" lay-skin="switch"
@@ -154,7 +154,7 @@
                 form.render($('#public-query-select'))
             }
 
-            for (var i = 0; i < nsarr.length; i++) {
+            for (let i = 0; i < nsarr.length; i++) {
                 if (nsarr[i].id == data.value) {
                     if (nsarr[i].secret === 'true') {
                         document.getElementById('formSecretCheckbox').style.display = "block"

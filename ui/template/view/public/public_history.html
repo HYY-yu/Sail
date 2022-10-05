@@ -26,7 +26,7 @@
         sail.prefilterAjax();
 
         let configID = parseInt('{{.configID}}');
-        var accessToken = localStorage.getItem("accessToken");
+        let accessToken = localStorage.getItem("accessToken");
         table.render({
             elem: '#user-table',
             url: '/sail/v1/config/history',
@@ -55,7 +55,7 @@
                     title: '版本号',
                     field: 'reversion',
                     align: 'center',
-                }, , {
+                }, {
                     title: '操作类型',
                     field: 'project_group_name',
                     align: 'center',
@@ -129,7 +129,7 @@
                             popup.success("回滚成功");
                             //关闭此弹窗
                             parent.window.refreshConfigDetail();
-                            var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+                            let index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
                             parent.layer.close(index); //再执行关闭
                         });
                     },

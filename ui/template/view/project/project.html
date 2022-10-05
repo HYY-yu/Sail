@@ -79,7 +79,7 @@
         form.val('project-query-form', JSON.parse(formData));
 
         sessionStorage.removeItem("projectFormTemp")
-        var accessToken = localStorage.getItem("accessToken");
+        let accessToken = localStorage.getItem("accessToken");
         table.render({
             elem: '#user-table',
             url: '/sail/v1/project/list',

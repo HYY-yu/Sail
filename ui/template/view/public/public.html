@@ -48,13 +48,11 @@
         <div class="layui-card">
             <div class="layui-card-body" id="divConfigContent" style="overflow: auto">
                 <div style="margin-top:12px;margin-bottom: 24px">
-                    <p style="display: inline">
                     <div class="layui-btn-group">
                         <button type="button" id="editConfigID" class="layui-btn layui-btn-normal">编辑</button>
                         <button type="button" id="delConfigID" class="layui-btn layui-btn-normal">删除</button>
                         <button type="button" id="historyConfigID" class="layui-btn layui-btn-normal">历史版本</button>
                     </div>
-                    </p>
                     <p id="textConfigID" class="layui-word-aux layui-layout-right"
                        style="display: inline-block;top: 20px;right: 15px;height: 38px;vertical-align: middle;line-height: 38px;font-weight: bold;font-size: large">
                     </p>
@@ -107,7 +105,7 @@
         let projectGroupId = sessionStorage.getItem("jumpPublicWith");
         sessionStorage.removeItem("jumpPublicWith");
         sessionStorage.removeItem("treePublicClickConfigID");
-        if (projectGroupId !== 0) {
+        if (projectGroupId) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
                 if ($(elem).val() == projectGroupId) {
@@ -128,7 +126,7 @@
             readOnly: true,
         });
         let jumpData = form.val("public-query-form");
-        var accessToken = localStorage.getItem("accessToken");
+        let accessToken = localStorage.getItem("accessToken");
 
         let renderConfigDetail = function () {
             let configID = sessionStorage.getItem("treePublicClickConfigID")
@@ -223,7 +221,7 @@
                         sail.checkSuccess(result, function (resp) {
                             popup.success("删除成功");
 
-                            renderTree(jumpData.project_group_id );
+                            renderTree(jumpData.project_group_id);
                             renderConfigDetail();
                         });
                     },

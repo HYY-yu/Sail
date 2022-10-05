@@ -105,7 +105,7 @@
         '{{end}}'
 
         form.on('select(namespace-query-select)', function (data) {
-            for (var i = 0; i < nsarr.length; i++) {
+            for (let i = 0; i < nsarr.length; i++) {
                 if (nsarr[i].id == data.value) {
                     if (nsarr[i].secret === 'true') {
                         document.getElementById('formSecretCheckbox').style.display = "block"

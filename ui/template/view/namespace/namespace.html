@@ -70,7 +70,7 @@
 
         let projectGroupId = sessionStorage.getItem("jumpNamespaceWith");
         sessionStorage.removeItem("jumpNamespaceWith");
-        if (projectGroupId !== 0) {
+        if (projectGroupId) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
                 if ($(elem).val() == projectGroupId) {
@@ -81,7 +81,7 @@
         form.render('select');
 
         let data = form.val("namespace-query-form");
-        var accessToken = localStorage.getItem("accessToken");
+        let accessToken = localStorage.getItem("accessToken");
         table.render({
             elem: '#user-table',
             url: '/sail/v1/namespace/list',

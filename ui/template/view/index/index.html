@@ -20,8 +20,6 @@
     <div class="layui-header">
         <!-- 菜 单 顶 部 -->
         <div class="layui-logo">
-            <!-- 图 标 -->
-            <img class="logo">
             <!-- 标 题 -->
             <span class="title"></span>
         </div>
@@ -40,7 +38,7 @@
                 <!-- 功 能 菜 单 -->
                 <dl class="layui-nav-child">
                     <!--							<dd><a user-menu-url="view/system/person.html" user-menu-id="5555" user-menu-title="基本资料">基本资料</a></dd>-->
-                    <dd><a href="javascript:void(0);" class="logout">注销登录</a></dd>
+                    <dd><a href="javascript:void(0)" class="logout">注销登录</a></dd>
                 </dl>
             </li>
             <!-- 主 题 配 置 -->
@@ -51,8 +49,6 @@
     <div class="layui-side layui-bg-black">
         <!-- 菜 单 顶 部 -->
         <div class="layui-logo">
-            <!-- 图 标 -->
-            <img class="logo">
             <!-- 标 题 -->
             <span class="title"></span>
         </div>
@@ -95,11 +91,11 @@
 <!-- 框 架 初 始 化 -->
 <script>
     layui.use(['admin', 'jquery', 'popup', 'context', 'sail'], function () {
-        var $ = layui.jquery;
-        var admin = layui.admin;
-        var popup = layui.popup;
-        var context = layui.context;
-        var sail = layui.sail;
+        let $ = layui.jquery;
+        let admin = layui.admin;
+        let popup = layui.popup;
+        let context = layui.context;
+        let sail = layui.sail;
 
         admin.setConfigType("yml");
         admin.setConfigPath("/static/config/pear.config.yml");
