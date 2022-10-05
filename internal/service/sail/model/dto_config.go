@@ -151,10 +151,11 @@ const (
 	OpTypeAdd ConfigHistoryOpType = iota + 1
 	OpTypeEdit
 	OpTypeRollback
+	OpTypeLink
 )
 
 func (o ConfigHistoryOpType) String() string {
-	return [...]string{"未知", "新增", "编辑", "回滚"}[o]
+	return [...]string{"未知", "新增", "编辑", "回滚", "关联"}[o]
 }
 
 type RollbackConfig struct {

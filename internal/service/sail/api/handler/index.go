@@ -14,15 +14,18 @@ import (
 type IndexHandler struct {
 	projectGroupSvc *svc.ProjectGroupSvc
 	namespaceSvc    *svc.NamespaceSvc
+	configSvc       *svc.ConfigSvc
 }
 
 func NewIndexHandler(
 	projectGroupSvc *svc.ProjectGroupSvc,
 	namespaceSvc *svc.NamespaceSvc,
+	configSvc *svc.ConfigSvc,
 ) *IndexHandler {
 	return &IndexHandler{
 		projectGroupSvc: projectGroupSvc,
 		namespaceSvc:    namespaceSvc,
+		configSvc:       configSvc,
 	}
 }
 
@@ -171,11 +174,15 @@ func (h *IndexHandler) ConfigAdd(c *gin.Context) {
 	projectGroupId := c.Query("project_group_id")
 
 	NSArr := h.namespaceSvc.SimpleList(gconv.Int(projectGroupId))
+	ac := model.ConfigTypeYaml.AllConfigType()
+	ConfigNSMap := h.configSvc.SimplePublicTree(gconv.Int(projectGroupId))
 
 	c.HTML(http.StatusOK, "config_add.html", gin.H{
 		"projectId":      projectId,
 		"projectGroupId": projectGroupId,
 		"NSArr":          NSArr,
+		"AConfigType":    ac,
+		"ConfigNSMap":    ConfigNSMap,
 	})
 }
 
@@ -190,7 +197,6 @@ func (h *IndexHandler) Public(c *gin.Context) {
 func (h *IndexHandler) PublicAdd(c *gin.Context) {
 	projectGroupId := c.Query("project_group_id")
 	NSArr := h.namespaceSvc.SimpleList(gconv.Int(projectGroupId))
-
 	ac := model.ConfigTypeYaml.AllConfigType()
 
 	c.HTML(http.StatusOK, "public_add.html", gin.H{

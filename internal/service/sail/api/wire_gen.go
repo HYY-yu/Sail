@@ -39,7 +39,7 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 	configLinkRepo := repo.NewConfigLinkRepo()
 	configSvc := svc.NewConfigSvc(d, store, configRepo, configHistoryRepo, configLinkRepo, projectRepo, namespaceRepo, staffRepo)
 	configHandler := handler.NewConfigHandler(configSvc)
-	indexHandler := handler.NewIndexHandler(projectGroupSvc, namespaceSvc)
+	indexHandler := handler.NewIndexHandler(projectGroupSvc, namespaceSvc, configSvc)
 	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler, indexHandler)
 	return handlers, nil
 }

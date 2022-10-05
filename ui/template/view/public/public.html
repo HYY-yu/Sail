@@ -106,7 +106,7 @@
 
         let projectGroupId = sessionStorage.getItem("jumpPublicWith");
         sessionStorage.removeItem("jumpPublicWith");
-        sessionStorage.removeItem("treeClickConfigID");
+        sessionStorage.removeItem("treePublicClickConfigID");
         if (projectGroupId !== 0) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
@@ -128,9 +128,10 @@
             readOnly: true,
         });
         let jumpData = form.val("public-query-form");
+        var accessToken = localStorage.getItem("accessToken");
 
         let renderConfigDetail = function () {
-            let configID = sessionStorage.getItem("treeClickConfigID")
+            let configID = sessionStorage.getItem("treePublicClickConfigID")
             if (!configID) {
                 // 清空编辑框
                 $('#textConfigID').html('');
@@ -149,7 +150,7 @@
                 type: 'get',
                 success: function (result) {
                     sail.checkSuccess(result, function (resp) {
-                        $('#textConfigID').html(resp.data.config_key);
+                        $('#textConfigID').html(resp.data.name + '.' + resp.data.type);
                         // 渲染编辑框
                         let typeConfig = resp.data.type;
                         cm.setOption("mode", sail.setCMType(typeConfig));
@@ -161,7 +162,7 @@
         }
 
         $('#editConfigID').click(function () {
-            let configID = sessionStorage.getItem("treeClickConfigID")
+            let configID = sessionStorage.getItem("treePublicClickConfigID")
             if (!configID) {
                 return
             }
@@ -199,7 +200,7 @@
         })
 
         $('#delConfigID').click(function () {
-            let configID = sessionStorage.getItem("treeClickConfigID")
+            let configID = sessionStorage.getItem("treePublicClickConfigID")
             if (!configID) {
                 return
             }
@@ -208,7 +209,7 @@
                 icon: 3,
                 title: '提示'
             }, function (index) {
-                sessionStorage.removeItem("treeClickConfigID");
+                sessionStorage.removeItem("treePublicClickConfigID");
                 $.ajax({
                     url: '/sail/v1/config/del',
                     data: JSON.stringify({
@@ -222,7 +223,7 @@
                         sail.checkSuccess(result, function (resp) {
                             popup.success("删除成功");
 
-                            renderTree(jumpData.project_group_id);
+                            renderTree(jumpData.project_group_id );
                             renderConfigDetail();
                         });
                     },
@@ -233,7 +234,7 @@
         })
 
         $('#historyConfigID').click(function () {
-            let configID = sessionStorage.getItem("treeClickConfigID")
+            let configID = sessionStorage.getItem("treePublicClickConfigID")
             if (!configID) {
                 return
             }
@@ -247,7 +248,6 @@
             })
         })
 
-        var accessToken = localStorage.getItem("accessToken");
         let renderTree = function (pgid) {
             $.ajax({
                 url: '/sail/v1/config/tree',
@@ -271,7 +271,7 @@
                                 if (!obj.data.config_id) {
                                     return
                                 }
-                                sessionStorage.setItem("treeClickConfigID", obj.data.config_id);
+                                sessionStorage.setItem("treePublicClickConfigID", obj.data.config_id);
                                 renderConfigDetail();
                             }
                         });

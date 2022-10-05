@@ -60,6 +60,32 @@ func NewConfigSvc(
 	return svc
 }
 
+func (s *ConfigSvc) SimplePublicTree(projectGroupID int) map[int][]model.ConfigNode {
+	mgr := s.ConfigRepo.Mgr(context.Background(), s.DB.GetDb())
+	mgr.WithPrepareStmt()
+
+	configList, _ := mgr.WithOptions(
+		mgr.WithProjectID(0),
+		mgr.WithProjectGroupID(projectGroupID),
+	).WithSelects(
+		model.ConfigColumns.ID,
+		model.ConfigColumns.Name,
+		model.ConfigColumns.NamespaceID,
+		model.ConfigColumns.ConfigType,
+	).
+		Gets()
+	configNamespaceMap := make(map[int][]model.ConfigNode)
+	for _, e := range configList {
+		configNamespaceMap[e.NamespaceID] = append(configNamespaceMap[e.NamespaceID], model.ConfigNode{
+			ConfigID: e.ID,
+			Name:     e.Name,
+			Type:     e.ConfigType,
+			Title:    e.Name + "." + e.ConfigType,
+		})
+	}
+	return configNamespaceMap
+}
+
 func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int) ([]model.ProjectTree, error) {
 	ctx := sctx.Context()
 	namespaceMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
@@ -495,7 +521,10 @@ func (s *ConfigSvc) Rollback(sctx core.SvcContext, param *model.RollbackConfig) 
 // 如果一个配置创建时没关联公共配置，那么它是不能重新关联公共配置的。
 func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
 	ctx := sctx.Context()
+	userId := int(sctx.UserId())
+
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+	linkMgr := s.ConfigLinkRepo.Mgr(ctx, s.DB.GetDb())
 	isLink := false
 
 	cfg, err := mgr.WithOptions(mgr.WithID(param.ConfigID)).Catch()
@@ -510,6 +539,21 @@ func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
 		return err
 	}
 
+	link, err := linkMgr.WithOptions(linkMgr.WithConfigID(cfg.ID)).Get()
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	if link.ID == 0 {
+		// 没有公共配置关联记录
+		return response.NewErrorWithStatusOk(
+			response.ServerError,
+			"此记录没有关联过公共配置",
+		)
+	}
+
 	switch param.Op {
 	case 1:
 		// 转为副本
@@ -517,6 +561,72 @@ func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
 	case 2:
 		// 转为公共配置
 		isLink = true
+		// 重新关联需要用公共配置内容做一次覆盖
+		// 取公共配置内容
+		publicConfig, err := mgr.WithOptions(mgr.WithID(link.PublicConfigID)).WithSelects(
+			model.ConfigColumns.ID,
+			model.ConfigColumns.Name,
+			model.ConfigColumns.ConfigType,
+			model.ConfigColumns.IsEncrypt,
+		).Catch()
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+
+		publicConfigKey := s.ConfigKey(
+			true,
+			cfg.ProjectGroupID,
+			project.Key,
+			namespace.Name,
+			publicConfig.Name,
+			model.ConfigType(publicConfig.ConfigType),
+		)
+		gresp := s.Store.Get(ctx, publicConfigKey)
+
+		configKey := s.ConfigKey(
+			cfg.IsPublic,
+			cfg.ProjectGroupID,
+			project.Key,
+			namespace.Name,
+			cfg.Name,
+			model.ConfigType(cfg.ConfigType),
+		)
+		grespConfig := s.Store.Get(ctx, configKey)
+		if grespConfig.Err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		rollbackETCD := func(s storage.Repo) {
+			s.Set(ctx, configKey, grespConfig.Value)
+		}
+
+		sresp := s.Store.Set(ctx, configKey, gresp.Value)
+		if sresp.Err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		err = s.addConfigHistory(ctx, s.DB.GetDb(), cfg.ID, sresp.Revision, userId, model.OpTypeLink)
+		if err != nil {
+			rollbackETCD(s.Store)
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
 	}
 	err = mgr.WithOptions(mgr.WithID(param.ConfigID)).
 		Update(model.ConfigColumns.IsLinkPublic, isLink).Error
@@ -875,6 +985,7 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 		gresp := s.Store.Get(ctx, publicConfigKey)
 
 		param.Content = model.ConfigContent(gresp.Value)
+		param.Type = model.ConfigType(publicConfig.ConfigType)
 
 		// 不需要在 addConfig 的事务里
 		err = s.linkPublicConfig(ctx, bean.ID, param.PublicConfigID)
@@ -888,7 +999,6 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 				model.ConfigColumns.ConfigType: publicConfig.ConfigType,
 			})
 		}
-		param.Type = model.ConfigType(publicConfig.ConfigType)
 	}
 
 	// 写入 ETCD

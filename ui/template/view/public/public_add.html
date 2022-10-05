@@ -108,7 +108,6 @@
             for (var i = 0; i < nsarr.length; i++) {
                 if (nsarr[i].id == data.value) {
                     if (nsarr[i].secret === 'true') {
-                        console.log('ccsda')
                         document.getElementById('formSecretCheckbox').style.display = "block"
                         return
                     }
@@ -117,7 +116,6 @@
             document.getElementById('formSecretCheckbox').style.display = "none"
         });
         let selectType = $('#type-query-select').val();
-        console.log(selectType);
 
         let cm = CodeMirror.fromTextArea(document.getElementById("publicAddConfigContent"), {
             lineNumbers: true,
