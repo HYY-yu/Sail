@@ -264,7 +264,6 @@
                 icon: 3,
                 title: '提示'
             }, function (index) {
-                sessionStorage.removeItem("treeClickConfigID");
                 $.ajax({
                     url: '/sail/v1/config/copy',
                     data: JSON.stringify({
@@ -278,7 +277,7 @@
                     success: function (result) {
                         sail.checkSuccess(result, function (resp) {
                             popup.success("操作成功");
-
+                            sessionStorage.removeItem("treeClickConfigID");
                             renderConfigDetail();
                         });
                     },

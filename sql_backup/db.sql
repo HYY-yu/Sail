@@ -58,9 +58,9 @@ create
     unique index staff_name_uindex
     on staff (`name`);
 
-INSERT INTO staff (name, password, create_time, create_by) VALUE ('Admin',
-                                                                  '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
-                                                                  NOW(), 1);
+INSERT INTO staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
+                                                                      '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
+                                                                      NOW(), 1);
 
 CREATE TABLE `sail`.`staff_group_rel`
 (
@@ -69,6 +69,8 @@ CREATE TABLE `sail`.`staff_group_rel`
     `staff_id`         int NOT NULL,
     `role_type`        int NOT NULL COMMENT '权限角色'
 );
+
+INSERT INTO staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
 
 CREATE TABLE `sail`.`config`
 (

@@ -993,12 +993,10 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 			return 0, 0, err
 		}
 
-		if publicConfig.IsEncrypt {
-			mgr.WithOptions(mgr.WithID(bean.ID)).Updates(map[string]interface{}{
-				model.ConfigColumns.IsEncrypt:  publicConfig.IsEncrypt,
-				model.ConfigColumns.ConfigType: publicConfig.ConfigType,
-			})
-		}
+		mgr.WithOptions(mgr.WithID(bean.ID)).Updates(map[string]interface{}{
+			model.ConfigColumns.IsEncrypt:  publicConfig.IsEncrypt,
+			model.ConfigColumns.ConfigType: publicConfig.ConfigType,
+		})
 	}
 
 	// 写入 ETCD
