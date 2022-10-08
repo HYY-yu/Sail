@@ -195,7 +195,6 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 		).WithErr(err)
 	}
 
-	// 如果是owner，则自动解密
 	configKey := s.ConfigKey(
 		cfg.IsPublic,
 		cfg.ProjectGroupID,
@@ -223,6 +222,7 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 	}
 
 	info.Content = gresp.Value
+	// 如果是owner，则自动解密
 	if cfg.IsEncrypt && role <= model.RoleOwner {
 		decrypt, err := s.DecryptConfigContent(info.Content, namespace.SecretKey)
 		if err != nil {
@@ -386,19 +386,8 @@ func (s *ConfigSvc) HistoryInfo(sctx core.SvcContext, configID int, reversion in
 	)
 	gresp := s.Store.GetWithReversion(ctx, configKey, reversion)
 	if gresp.Err != nil {
-		if gresp.Err == rpctypes.ErrCompacted {
-			// 糟糕，ETCD已经把这个 reversion 压缩了，我们把这个 <= reversion 的记录删掉把
-			historyMgr := s.ConfigHistoryRepo.Mgr(ctx, s.DB.GetDb())
-
-			historyMgr.WithOptions(
-				historyMgr.WithConfigID(configID),
-				historyMgr.WithReversion(reversion, " <= ?"),
-			).Delete(&model.ConfigHistory{})
-
-			return "", response.NewErrorWithStatusOk(
-				10012,
-				"此版本在底层存储中被清除，请尝试其它版本！",
-			)
+		if err := s.etcdErrCompacted(ctx, gresp.Err, configID, reversion); err != nil {
+			return "", err
 		}
 	}
 
@@ -415,31 +404,6 @@ func (s *ConfigSvc) HistoryInfo(sctx core.SvcContext, configID int, reversion in
 		gresp.Value = decrypt
 	}
 	return gresp.Value, nil
-}
-
-func (s *ConfigSvc) roleCheck(cfg *model.Config, role model.Role) error {
-	// 普通配置只有RoleManager可以访问
-	if role > model.RoleManager {
-		return response.NewErrorWithStatusOk(
-			response.AuthorizationError,
-			"没有权限访问此接口",
-		)
-	}
-	// 公共配置只有RoleOwner可以访问
-	if cfg.IsPublic && role > model.RoleOwner {
-		return response.NewErrorWithStatusOk(
-			response.AuthorizationError,
-			"没有权限访问此接口",
-		)
-	}
-	// 加密配置只有RoleOwner可以访问
-	if cfg.IsEncrypt && role > model.RoleOwner {
-		return response.NewErrorWithStatusOk(
-			response.AuthorizationError,
-			"您没有权限修改加密配置",
-		)
-	}
-	return nil
 }
 
 func (s *ConfigSvc) Rollback(sctx core.SvcContext, param *model.RollbackConfig) error {
@@ -477,19 +441,8 @@ func (s *ConfigSvc) Rollback(sctx core.SvcContext, param *model.RollbackConfig) 
 	)
 	gresp := s.Store.GetWithReversion(ctx, configKey, param.Reversion)
 	if gresp.Err != nil {
-		if gresp.Err == rpctypes.ErrCompacted {
-			// 糟糕，ETCD已经把这个 reversion 压缩了，我们把这个 <= reversion 的记录删掉把
-			historyMgr := s.ConfigHistoryRepo.Mgr(ctx, s.DB.GetDb())
-
-			historyMgr.WithOptions(
-				historyMgr.WithConfigID(param.ConfigID),
-				historyMgr.WithReversion(param.Reversion, " <= ?"),
-			).Delete(&model.ConfigHistory{})
-
-			return response.NewErrorWithStatusOk(
-				10012,
-				"此版本在底层存储中被清除，请尝试其它版本！",
-			)
+		if err := s.etcdErrCompacted(ctx, gresp.Err, param.ConfigID, param.Reversion); err != nil {
+			return err
 		}
 	}
 
@@ -510,6 +463,24 @@ func (s *ConfigSvc) Rollback(sctx core.SvcContext, param *model.RollbackConfig) 
 			http.StatusInternalServerError,
 			response.ServerError,
 		).WithErr(err)
+	}
+	return nil
+}
+
+func (s *ConfigSvc) etcdErrCompacted(ctx context.Context, err error, configID int, reversion int) error {
+	if err == rpctypes.ErrCompacted {
+		// 糟糕，ETCD已经把这个 reversion 压缩了，我们把这个 <= reversion 的记录删掉把
+		historyMgr := s.ConfigHistoryRepo.Mgr(ctx, s.DB.GetDb())
+
+		historyMgr.WithOptions(
+			historyMgr.WithConfigID(configID),
+			historyMgr.WithReversion(reversion, " <= ?"),
+		).Delete(&model.ConfigHistory{})
+
+		return response.NewErrorWithStatusOk(
+			10012,
+			"此版本在底层存储中被清除，请尝试其它版本！",
+		)
 	}
 	return nil
 }
@@ -562,7 +533,6 @@ func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
 		// 转为公共配置
 		isLink = true
 		// 重新关联需要用公共配置内容做一次覆盖
-		// 取公共配置内容
 		publicConfig, err := mgr.WithOptions(mgr.WithID(link.PublicConfigID)).WithSelects(
 			model.ConfigColumns.ID,
 			model.ConfigColumns.Name,
@@ -1027,6 +997,31 @@ func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID 
 	}
 
 	return &project, &namespace, nil
+}
+
+func (s *ConfigSvc) roleCheck(cfg *model.Config, role model.Role) error {
+	// 普通配置只有RoleManager可以访问
+	if role > model.RoleManager {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+	// 公共配置只有RoleOwner可以访问
+	if cfg.IsPublic && role > model.RoleOwner {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+	// 加密配置只有RoleOwner可以访问
+	if cfg.IsEncrypt && role > model.RoleOwner {
+		return response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"您没有权限修改加密配置",
+		)
+	}
+	return nil
 }
 
 // ConfigKey
