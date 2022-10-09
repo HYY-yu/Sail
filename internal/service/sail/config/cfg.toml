@@ -40,8 +40,13 @@ jsonFormat = true
 serverName = "sail"
 host = ":8108"
 pprof = true
-historyListLen=50
+historyListLen = 50
 
 [jaeger]
 udpEndpoint = "http://127.0.0.1:14268/api/traces"
 stdOut = false
+
+[sdk]
+configFilePath = "."
+logLevel = "WARN"
+MergeConfig = false
