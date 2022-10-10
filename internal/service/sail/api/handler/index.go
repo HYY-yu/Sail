@@ -186,6 +186,18 @@ func (h *IndexHandler) ConfigAdd(c *gin.Context) {
 	})
 }
 
+func (h *IndexHandler) ConfigMeta(c *gin.Context) {
+	projectId := c.Query("project_id")
+	projectGroupId := c.Query("project_group_id")
+	NSArr := h.namespaceSvc.SimpleList(gconv.Int(projectGroupId))
+
+	c.HTML(http.StatusOK, "config_meta.html", gin.H{
+		"projectId":      projectId,
+		"projectGroupId": projectGroupId,
+		"NSArr":          NSArr,
+	})
+}
+
 func (h *IndexHandler) Public(c *gin.Context) {
 	projectGroups := h.projectGroupSvc.SimpleList()
 

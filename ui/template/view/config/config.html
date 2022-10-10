@@ -27,6 +27,10 @@
                     class="layui-btn  layui-btn-normal">
                 新增配置
             </button>
+            <button id="configMeta"
+                    class="layui-btn  layui-btn-normal">
+                获取元配置
+            </button>
             <button id="configPublish"
                     class="layui-btn  layui-btn-normal">
                 📣发布配置
@@ -343,6 +347,15 @@
                 shade: 0.1,
                 area: ['400px', '400px'],
                 content: '/ui/config/add?' + 'project_id=' + jumpData.project_id + '&project_group_id=' + jumpData.project_group_id,
+            })
+        });
+        $('#configMeta').click(function () {
+            layer.open({
+                type: 2,
+                title: "获取元配置",
+                shade: 0.1,
+                area: ['700px', '600px'],
+                content: '/ui/config/meta?' + 'project_id=' + jumpData.project_id + '&project_group_id=' + jumpData.project_group_id,
             })
         });
         $('#configPublish').click(function () {

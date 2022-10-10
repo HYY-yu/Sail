@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+</head>
+<body>
+<form class="layui-form" action="" lay-filter="group-add">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">命名空间</label>
+                <div class="layui-input-block">
+                    <select name="namespace_id" lay-filter="namespace-query-select" lay-verify="required"
+                            lay-search="">
+                        <option value="">请选择命名空间</option>
+
+                        {{range $id,$val := .NSArr}}
+                        <option value="{{$val.ID}}">{{$val.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">配置类型</label>
+                <div class="layui-input-block">
+                    <input type="radio" lay-filter="radio_temp" name="temp" value="TOML" title="TOML" checked>
+                    <input type="radio" lay-filter="radio_temp" name="temp" value="ENV" title="ENV">
+                    <input type="radio" lay-filter="radio_temp" name="temp" value="FLAG" title="FLAG">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">内容</label>
+                <div class="layui-input-block">
+                    <pre class="layui-code" id="metaConfigContent"></pre>
+                </div>
+            </div>
+
+            <input type="hidden" name="project_group_id" value="{{.projectGroupId}}">
+            <input type="hidden" name="project_id" value="{{.projectId}}">
+        </div>
+    </div>
+</form>
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+
+<script>
+    layui.use(['form', 'jquery', 'sail', 'code'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+        const accessToken = localStorage.getItem("accessToken");
+        sail.prefilterAjax();
+        layui.code();
+        let refreshContent = function (formData) {
+            $.ajax({
+                url: '/sail/v1/config/meta',
+                data: {
+                    project_group_id: parseInt(formData.project_group_id),
+                    project_id: parseInt(formData.project_id),
+                    namespace_id: parseInt(formData.namespace_id),
+                    temp: formData.temp,
+                },
+                headers: sail.setAuth(accessToken),
+                dataType: 'json',
+                cache: false,
+                type: 'get',
+                success: function (result) {
+                    sail.checkSuccess(result, function (resp) {
+                        $('#metaConfigContent').html(resp.data);
+                        layui.code();
+                    })
+                },
+                error: sail.ajaxError
+            });
+        }
+
+        form.on('select(namespace-query-select)', function (data) {
+            let formData = form.val('group-add');
+            if (!formData.namespace_id) {
+                return
+            }
+            refreshContent(formData)
+        });
+        form.on('radio(radio_temp)', function (data) {
+            let formData = form.val('group-add');
+            if (!formData.namespace_id) {
+                return
+            }
+            refreshContent(formData)
+        });
+    })
+</script>
+</body>
+</html>

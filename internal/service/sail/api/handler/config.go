@@ -21,6 +21,48 @@ func NewConfigHandler(configSvc *svc.ConfigSvc) *ConfigHandler {
 	}
 }
 
+// MetaConfig
+// @Summary  获取元配置
+// @Tags     配置管理
+// @Param    project_id  query     int                                            false  "配置ID"
+// @Param    project_group_id  query     int                                            false  "配置组ID"
+// @Param    namespace_id  query     int                                            false  "配置组ID"
+// @Success  200         {object}  response.JsonResponse{data=string}  "data"
+// @Router   /v1/config/meta    [GET]
+func (h *ConfigHandler) MetaConfig(c core.Context) {
+	type Param struct {
+		Temp           string `form:"temp"`
+		ProjectID      int    `form:"project_id"`
+		ProjectGroupID int    `form:"project_group_id"`
+		NamespaceID    int    `form:"namespace_id"`
+	}
+
+	params := &Param{}
+
+	err := c.ShouldBindForm(params)
+	if err != nil {
+		c.AbortWithError(response.NewErrorAutoMsg(
+			http.StatusBadRequest,
+			response.ParamBindError,
+		).WithErr(err))
+		return
+	}
+
+	validErr := g.Validator().Data(params).Run(c.SvcContext().Context())
+	if validErr != nil {
+		c.AbortWithError(response.NewError(
+			http.StatusBadRequest,
+			response.ParamBindError,
+			validErr.Error(),
+		))
+		return
+	}
+
+	data, err := h.configSvc.GetTemplate(c.SvcContext(), params.Temp, params.ProjectID, params.ProjectGroupID, params.NamespaceID)
+	c.AbortWithError(err)
+	c.Payload(data)
+}
+
 // Tree
 // @Summary  配置树
 // @Tags     配置管理

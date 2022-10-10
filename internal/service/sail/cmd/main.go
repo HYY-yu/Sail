@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/HYY-yu/seckill.pkg/pkg/shutdown"
 	"go.uber.org/zap"
 
 	"github.com/HYY-yu/sail/internal/service/sail/api"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
 
 	"github.com/HYY-yu/seckill.pkg/pkg/logger"
-	"github.com/HYY-yu/seckill.pkg/pkg/shutdown"
 )
 
 // @title                       配置中心
