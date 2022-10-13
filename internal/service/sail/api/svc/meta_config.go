@@ -31,7 +31,7 @@ const flagTemplate = `
 {{if .ETCDUsername}}--sail-etcd-username={{.ETCDUsername}}{{end}} {{if .ETCDPassword}}--sail-etcd-password={{.ETCDPassword}}{{end}} \
 --sail-project-key={{.ProjectKey}} --sail-namespace={{.Namespace}} \
 {{if .NamespaceKey}}--sail-namespace-key={{.NamespaceKey}}{{end}} {{if .Configs}}--sail-configs={{.Configs}}{{end}} \ 
-{{if .ConfigFilePath}}--sail-config-path={{.ConfigFilePath}}{{end}} {{if .LogLevel}}--sail-log-level={{.LogLevel}}{{end}} {{if .MergeConfig}}--sail-merge-config={{.MergeConfig}}{{end}}
+{{if .ConfigFilePath}}--sail-config-file-path={{.ConfigFilePath}}{{end}} {{if .LogLevel}}--sail-log-level={{.LogLevel}}{{end}} {{if .MergeConfig}}--sail-merge-config={{.MergeConfig}}{{end}}
 `
 
 const envTemplate = `

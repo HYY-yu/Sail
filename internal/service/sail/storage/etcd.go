@@ -29,13 +29,14 @@ func New(cfg *ETCDConfig) (*etcdRepo, error) {
 
 func etcdConnect(cfg *ETCDConfig) (*clientv3.Client, error) {
 	return clientv3.New(clientv3.Config{
-		Endpoints: cfg.Endpoints,
-		//AutoSyncInterval:     time.Minute,
+		Endpoints:            cfg.Endpoints,
+		AutoSyncInterval:     time.Minute,
 		DialTimeout:          cfg.DialTimeout,
 		DialKeepAliveTime:    cfg.DialKeepAlive,
 		DialKeepAliveTimeout: cfg.DialKeepAliveTimeout,
 		Username:             cfg.Username,
 		Password:             cfg.Password,
+		PermitWithoutStream:  true,
 	})
 }
 

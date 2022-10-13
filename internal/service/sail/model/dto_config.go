@@ -8,7 +8,6 @@ import (
 	"github.com/gogf/gf/v2/encoding/gini"
 	"github.com/gogf/gf/v2/encoding/gproperties"
 	"github.com/gogf/gf/v2/encoding/gtoml"
-	"github.com/gogf/gf/v2/encoding/gxml"
 	"github.com/gogf/gf/v2/encoding/gyaml"
 )
 
@@ -78,9 +77,6 @@ func (c ConfigContent) Valid(t ConfigType) bool {
 	case ConfigTypeIni:
 		_, err := gini.Decode(cb)
 		return err == nil
-	case ConfigTypeXml:
-		_, err := gxml.Decode(cb)
-		return err == nil
 	case ConfigTypeProperties:
 		_, err := gproperties.Decode(cb)
 		return err == nil
@@ -99,12 +95,11 @@ const (
 	ConfigTypeYaml       ConfigType = "yaml"
 	ConfigTypeJson       ConfigType = "json"
 	ConfigTypeIni        ConfigType = "ini"
-	ConfigTypeXml        ConfigType = "xml"
 	ConfigTypeProperties ConfigType = "properties"
 )
 
 func (c ConfigType) AllConfigType() []ConfigType {
-	return []ConfigType{ConfigTypeCustom, ConfigTypeToml, ConfigTypeYaml, ConfigTypeJson, ConfigTypeIni, ConfigTypeXml, ConfigTypeProperties}
+	return []ConfigType{ConfigTypeCustom, ConfigTypeToml, ConfigTypeYaml, ConfigTypeJson, ConfigTypeIni, ConfigTypeProperties}
 }
 
 func (c ConfigType) Valid() bool {
@@ -114,7 +109,6 @@ func (c ConfigType) Valid() bool {
 		ConfigTypeYaml,
 		ConfigTypeJson,
 		ConfigTypeIni,
-		ConfigTypeXml,
 		ConfigTypeProperties,
 	} {
 		if e == c {

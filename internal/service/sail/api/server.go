@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -88,7 +87,6 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 		logger.Fatal("new db err", zap.Error(err))
 	}
 	s.DB = dbRepo
-	fmt.Println("start")
 
 	etcdRepo, err := storage.New(&storage.ETCDConfig{
 		Endpoints:            cfg.ETCD.Endpoints,
@@ -102,7 +100,6 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 		logger.Fatal("new etcd err", zap.Error(err))
 	}
 	s.Storage = etcdRepo
-	fmt.Println("start")
 
 	//cacheRepo, err := cache.New(cfg.Server.ServerName, &cache.RedisConf{
 	//	Addr:         cfg.Redis.Addr,

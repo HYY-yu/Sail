@@ -12,64 +12,64 @@ var config = new(Config)
 type Config struct {
 	MySQL struct {
 		Base struct {
-			MaxOpenConn     int           `toml:"maxOpenConn"`
-			MaxIdleConn     int           `toml:"maxIdleConn"`
-			ConnMaxLifeTime time.Duration `toml:"connMaxLifeTime"`
-			Addr            string        `toml:"addr"`
-			User            string        `toml:"user"`
-			Pass            string        `toml:"pass"`
-			Name            string        `toml:"name"`
-		} `toml:"base"`
-	} `toml:"mysql"`
+			MaxOpenConn     int
+			MaxIdleConn     int
+			ConnMaxLifeTime time.Duration
+			Addr            string
+			User            string
+			Pass            string
+			Name            string
+		}
+	}
 
 	Redis struct {
-		Addr        string `toml:"addr"`
-		Pass        string `toml:"pass"`
-		Db          int    `toml:"db"`
-		MaxRetries  int    `toml:"maxRetries"`
-		PoolSize    int    `toml:"poolSize"`
-		MinIdleConn int    `toml:"minIdleConn"`
-	} `toml:"redis"`
+		Addr        string
+		Pass        string
+		Db          int
+		MaxRetries  int
+		PoolSize    int
+		MinIdleConn int
+	}
 
 	ETCD struct {
-		Endpoints            []string      `toml:"endpoints"`
-		Username             string        `toml:"username"`
-		Password             string        `toml:"password"`
-		DialTimeout          time.Duration `toml:"dialTimeout"`
-		DialKeepAlive        time.Duration `toml:"dialKeepAlive"`
-		DialKeepAliveTimeout time.Duration `toml:"dialKeepAliveTimeout"`
+		Endpoints            []string
+		Username             string
+		Password             string
+		DialTimeout          time.Duration
+		DialKeepAlive        time.Duration
+		DialKeepAliveTimeout time.Duration
 	}
 
 	JWT struct {
-		Secret          string        `toml:"secret"`
-		ExpireDuration  time.Duration `toml:"expireDuration"`
-		Type            string        `toml:"type"`
-		RefreshDuration time.Duration `toml:"refreshDuration"`
-	} `toml:"jwt"`
+		Secret          string
+		ExpireDuration  time.Duration
+		Type            string
+		RefreshDuration time.Duration
+	}
 
 	Log struct {
-		LogPath    string `toml:"logPath"`
-		Level      string `toml:"level"`
-		Stdout     bool   `toml:"stdout"`
-		JsonFormat bool   `toml:"jsonFormat"`
-	} `toml:"log"`
+		LogPath    string
+		Level      string
+		Stdout     bool
+		JsonFormat bool
+	}
 
 	Server struct {
-		ServerName     string `toml:"serverName"`
-		Host           string `toml:"host"`
-		Pprof          bool   `toml:"pprof"`
-		HistoryListLen int64  `toml:"historyListLen"`
-	} `toml:"server"`
+		ServerName     string
+		Host           string
+		Pprof          bool
+		HistoryListLen int64
+	}
 
 	Jaeger struct {
-		UdpEndpoint string `toml:"udpEndpoint"`
-		StdOut      bool   `toml:"stdOut"`
-	} `toml:"jaeger"`
+		UdpEndpoint string
+		StdOut      bool
+	}
 
 	SDK struct {
-		ConfigFilePath string `toml:"configFilePath"`
-		LogLevel       string `toml:"LogLevel"`
-		MergeConfig    bool   `toml:"mergeConfig"`
+		ConfigFilePath string
+		LogLevel       string
+		MergeConfig    bool
 	}
 }
 
