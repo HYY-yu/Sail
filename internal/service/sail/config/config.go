@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -20,15 +21,6 @@ type Config struct {
 			Pass            string
 			Name            string
 		}
-	}
-
-	Redis struct {
-		Addr        string
-		Pass        string
-		Db          int
-		MaxRetries  int
-		PoolSize    int
-		MinIdleConn int
 	}
 
 	ETCD struct {
@@ -73,13 +65,18 @@ type Config struct {
 	}
 }
 
+var configPath string
+
 func InitConfig() {
+	flag.StringVar(&configPath, "config_path", ".", "path of cfg.toml")
+	flag.Parse()
+
 	viper.SetConfigName("cfg")
 	viper.SetConfigType("toml")
 	// 本地开发配置
 	viper.AddConfigPath("./internal/service/sail/config")
 	// 容器配置
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		panic(err)

@@ -14,14 +14,6 @@ name = "sail"
 pass = "root"
 user = "root"
 
-[redis]
-addr = "127.0.0.1:6379"
-db = "0"
-maxRetries = 3
-minIdleConn = 60
-pass = "redis"
-poolSize = 120
-
 [etcd]
 endpoints = ["127.0.0.1:2379", "127.0.0.1:12379", "127.0.0.1:22379"]
 username = ""
