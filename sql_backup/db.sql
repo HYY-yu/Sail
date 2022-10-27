@@ -1,34 +1,26 @@
-CREATE SCHEMA `sail`;
+CREATE SCHEMA IF NOT EXISTS `sailtest`;
 
-CREATE TABLE `sail`.`project_group`
+CREATE TABLE IF NOT EXISTS `sailtest`.`project_group`
 (
     `id`          int PRIMARY KEY AUTO_INCREMENT,
-    `name`        varchar(50) NOT NULL,
-    `create_time` timestamp   NOT NULL,
-    `create_by`   int         NOT NULL,
-    `delete_time` int         NOT NULL DEFAULT 0
+    `name`        varchar(50) UNIQUE NOT NULL,
+    `create_time` timestamp          NOT NULL,
+    `create_by`   int                NOT NULL,
+    `delete_time` int                NOT NULL DEFAULT 0
 );
 
-create
-    unique index project_group_name_uindex
-    on project_group (name);
-
-CREATE TABLE `sail`.`project`
+CREATE TABLE IF NOT EXISTS `sailtest`.`project`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
-    `project_group_id` int         NOT NULL,
-    `key`              varchar(50) NOT NULL,
-    `name`             varchar(50) NOT NULL,
-    `create_time`      timestamp   NOT NULL,
-    `create_by`        int         NOT NULL,
-    `delete_time`      int         NOT NULL DEFAULT 0
+    `project_group_id` int                NOT NULL,
+    `key`              varchar(50) UNIQUE NOT NULL,
+    `name`             varchar(50)        NOT NULL,
+    `create_time`      timestamp          NOT NULL,
+    `create_by`        int                NOT NULL,
+    `delete_time`      int                NOT NULL DEFAULT 0
 );
 
-create
-    unique index project_key_uindex
-    on project (`key`);
-
-CREATE TABLE `sail`.`namespace`
+CREATE TABLE IF NOT EXISTS `sailtest`.`namespace`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `project_group_id` int          NOT NULL,
@@ -37,42 +29,31 @@ CREATE TABLE `sail`.`namespace`
     `secret_key`       varchar(100) NOT null,
     `create_time`      timestamp    NOT NULL,
     `create_by`        int          NOT NULL,
-    `delete_time`      int          NOT NULL DEFAULT 0
+    `delete_time`      int          NOT NULL DEFAULT 0,
+    UNIQUE KEY (`project_group_id`, `name`)
 );
 
-create
-    unique index namespace_pid_name_uindex
-    on namespace (`project_group_id`, `name`);
-
-CREATE TABLE `sail`.`staff`
+CREATE TABLE IF NOT EXISTS `sailtest`.`staff`
 (
     `id`            int PRIMARY KEY AUTO_INCREMENT,
-    `name`          varchar(30)  NOT NULL,
-    `password`      varchar(100) NOT NULL,
-    `refresh_token` varchar(200) NOT NULL DEFAULT '',
-    `create_time`   timestamp    NOT NULL,
-    `create_by`     int          NOT NULL
+    `name`          varchar(30) UNIQUE NOT NULL,
+    `password`      varchar(100)       NOT NULL,
+    `refresh_token` varchar(200)       NOT NULL DEFAULT '',
+    `create_time`   timestamp          NOT NULL,
+    `create_by`     int                NOT NULL
 );
 
-create
-    unique index staff_name_uindex
-    on staff (`name`);
-
-INSERT INTO staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
-                                                                      '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
-                                                                      NOW(), 1);
-
-CREATE TABLE `sail`.`staff_group_rel`
+CREATE TABLE IF NOT EXISTS `sailtest`.`staff_group_rel`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `project_group_id` int NOT NULL,
     `staff_id`         int NOT NULL,
-    `role_type`        int NOT NULL COMMENT '权限角色'
+    `role_type`        int NOT NULL COMMENT '权限角色',
+    INDEX (`project_group_id`),
+    INDEX (`staff_id`)
 );
 
-INSERT INTO staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
-
-CREATE TABLE `sail`.`config`
+CREATE TABLE IF NOT EXISTS `sailtest`.`config`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `name`             varchar(50) NOT NULL,
@@ -82,41 +63,31 @@ CREATE TABLE `sail`.`config`
     `is_public`        bool        NOT NULL,
     `is_link_public`   bool        NOT NULL,
     `is_encrypt`       bool        NOT NULL,
-    `config_type`      varchar(10) NOT NULL
+    `config_type`      varchar(10) NOT NULL,
+    UNIQUE KEY (`project_id`, `namespace_id`, `project_group_id`, `name`, `config_type`)
 );
 
-create
-    unique index config_big_key_uindex
-    on config (`project_id`, `namespace_id`, `project_group_id`, `name`, `config_type`);
-
-CREATE TABLE `sail`.`config_link`
+CREATE TABLE IF NOT EXISTS `sailtest`.`config_link`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `config_id`        int NOT NULL,
-    `public_config_id` int NOT NULL
+    `public_config_id` int NOT NULL,
+    UNIQUE KEY (`config_id`, `public_config_id`),
+    INDEX (`public_config_id`)
 );
 
-create
-    unique index config_link_config_id_uindex
-    on config_link (`config_id`, `public_config_id`);
-
-
-CREATE TABLE `sail`.`config_history`
+CREATE TABLE IF NOT EXISTS `sailtest`.`config_history`
 (
     `id`          int PRIMARY KEY AUTO_INCREMENT,
     `config_id`   int       NOT NULL,
     `reversion`   int       NOT NULL,
     `op_type`     int       NOT NULL,
     `create_time` timestamp NOT NULL,
-    `create_by`   int       NOT NULL
+    `create_by`   int       NOT NULL,
+    UNIQUE KEY (`config_id`, `reversion`)
 );
 
-
-create
-    unique index config_history_config_id_uindex
-    on config_history (`config_id`, `reversion`);
-
-CREATE TABLE `sail`.`publish_config`
+CREATE TABLE IF NOT EXISTS `sailtest`.`publish_config`
 (
     `id`                 int PRIMARY KEY AUTO_INCREMENT,
     `project_id`         int          NOT NULL,
@@ -126,5 +97,14 @@ CREATE TABLE `sail`.`publish_config`
     `publish_config_ids` varchar(100) NOT NULL,
     `status`             int          NOT NULL,
     `create_time`        timestamp    NOT NULL Default CURRENT_TIMESTAMP,
-    `update_time`        timestamp    NOT NULL Default CURRENT_TIMESTAMP
+    `update_time`        timestamp    NOT NULL Default CURRENT_TIMESTAMP,
+    INDEX (`project_id`),
+    INDEX (`namespace_id`)
 );
+
+INSERT INTO `sailtest`.staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
+                                                                                 '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
+                                                                                 NOW(), 1);
+
+INSERT INTO `sailtest`.staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
+
