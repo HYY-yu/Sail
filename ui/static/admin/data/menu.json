@@ -1,0 +1,51 @@
+[
+    {
+        "id": 1,
+        "title": "项目组管理",
+        "type": 0,
+        "icon": "layui-icon layui-icon-template-1",
+        "href": "",
+        "children": [
+            {
+                "id": 11,
+                "title": "项目组列表",
+                "icon": "layui-icon layui-icon-table",
+                "type": 1,
+                "openType": "_iframe",
+                "href": "/ui/group"
+            },
+            {
+                "id": 12,
+                "title": "公共配置管理",
+                "icon": "layui-icon layui-icon-set-fill",
+                "type": 1,
+                "openType": "_iframe",
+                "href": "/ui/public"
+            },
+            {
+                "id": 13,
+                "title": "命名空间管理",
+                "icon": "layui-icon layui-icon-component",
+                "type": 1,
+                "openType": "_iframe",
+                "href": "/ui/namespace"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "title": "项目管理",
+        "type": 1,
+        "icon": "layui-icon layui-icon-app",
+        "openType": "_iframe",
+        "href": "/ui/project"
+    },
+    {
+        "id": 3,
+        "title": "成员权限管理",
+        "type": 1,
+        "icon": "layui-icon layui-icon-user",
+        "href": "/ui/staff",
+        "children": []
+    }
+]

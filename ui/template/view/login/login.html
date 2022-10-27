@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Login Page</title>
+    <!-- 样 式 文 件 -->
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+    <link rel="stylesheet" href="../../../static/admin/css/other/login.css"/>
+</head>
+<!-- 代 码 结 构 -->
+<body background="../../../static/admin/images/background.svg" style="background-size: cover;">
+<form class="layui-form" lay-filter="formLogin" action="javascript:void(0);">
+    <div class="layui-form-item">
+        <img class="logo" alt="" src="../../../static/admin/images/logo.svg"/>
+        <div class="title">配置中心</div>
+    </div>
+    <div class="layui-form-item">
+        <input placeholder="账 户  " name="username" lay-verify="required" class="layui-input"/>
+    </div>
+    <div class="layui-form-item">
+        <input placeholder="密 码  " name="password" type="password" lay-verify="required" class="layui-input"/>
+    </div>
+    <!--			<div class="layui-form-item">-->
+    <!--				<input placeholder="验证码 : "  hover  lay-verify="required" class="code layui-input layui-input-inline"  />-->
+    <!--				<img src="admin/images/captcha.gif" class="codeImage" />-->
+    <!--			</div>-->
+
+    <div class="layui-form-item">
+        <button type="button" class="pear-btn pear-btn-success login" lay-submit lay-filter="login">
+            登 录
+        </button>
+    </div>
+</form>
+<!-- 资 源 引 入 -->
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script>
+    layui.use(['form', 'jquery', 'button', 'popup', 'context', 'sail'], function () {
+        let form = layui.form;
+        let button = layui.button;
+        let popup = layui.popup;
+        let layer = layui.layer;
+        let context = layui.context;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+
+        // 登 录 提 交
+        form.on('submit(login)', function (data) {
+            /// 登录
+            let postdata = {
+                "user_name": data.field.username,
+                "password": data.field.password,
+            };
+
+            /// 动画
+            let btn = button.load({
+                elem: '.login'
+            });
+
+            $.ajax(
+                {
+                    type: "POST",
+                    url: "/sail/v1/login",
+                    data: JSON.stringify(postdata),
+                    contentType: "application/json;charset=utf-8",
+                    cache: false,
+                    dataType: "JSON",
+                    success: function (result) {
+                        btn.stop();
+                        sail.checkSuccess(result, function (resp) {
+                            let accessToken = resp.data.access_token;
+                            let refreshToken = resp.data.refresh_token;
+
+                            if (resp.data.init_password) {
+                                // 重新设置密码
+                                layer.prompt({
+                                    formType: 1,
+                                    title: "请重新设置您的密码",
+                                    maxlength: 30,
+                                }, function (value, index, elem) {
+                                    let newPassData = {
+                                        "new_pass": value,
+                                    }
+                                    $.ajax(
+                                        {
+                                            type: "POST",
+                                            headers: sail.setAuth(accessToken),
+                                            url: "/sail/v1/login/new_pass",
+                                            data: JSON.stringify(newPassData),
+                                            contentType: "application/json;charset=utf-8",
+                                            cache: false,
+                                            dataType: "JSON",
+                                            success: function (newPassResult) {
+                                                sail.checkSuccess(newPassResult, function (newResp) {
+                                                    form.val("formLogin", {
+                                                        "username": "",
+                                                        "password": "",
+                                                    });
+                                                    popup.success("设置成功，请重新登录");
+                                                })
+                                            },
+                                            error: sail.ajaxError,
+                                        }
+                                    )
+                                    layer.close(index);
+                                })
+                            } else {
+                                // 保存token
+                                context.put("accessToken", accessToken);
+                                context.put("refreshToken", refreshToken);
+                                context.put('userName', postdata.user_name);
+
+                                popup.success("登录成功", function () {
+                                    location.href = "/ui/index";
+                                }, 1000);
+                            }
+                        });
+                    },
+                    error: function (jqXHR, textStatus) {
+                        btn.stop();
+                        sail.ajaxError(jqXHR, textStatus)
+                    },
+                }
+            );
+            return false;
+        });
+    })
+</script>
+</body>
+</html>

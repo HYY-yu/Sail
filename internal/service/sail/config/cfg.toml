@@ -1,38 +1,44 @@
 [jwt]
-expireDuration = "2h"
+expireDuration = "12h"
 secret = "i1ydX9RtHyuJTrw7frcu"
+type = "refresh_token"
+refreshDuration = "168h"
 
 [mysql]
 [mysql.base]
-connMaxLifeTime = "60s"
+connMaxLifeTime = "3m"
 maxIdleConn = 30
 maxOpenConn = 60
-addr = "mysql-0.mysql.mysql.svc.cluster.local:3306"
-name = "seckill"
+addr = "127.0.0.1:3306"
+name = "sail"
 pass = "root"
 user = "root"
 
-[redis]
-addr = "redis.mysql.svc.cluster.local:6379"
-db = "0"
-maxRetries = 3
-minIdleConns = 60
-pass = "123456"
-poolSize = 120
+[etcd]
+endpoints = ["127.0.0.1:2379", "127.0.0.1:12379", "127.0.0.1:22379"]
+username = ""
+password = ""
+dialTimeout = "10s"
+dialKeepAlive = "1m"
+dialKeepAliveTimeout = "5s"
 
 [log]
-logPath = "./sk-shop-goods.log"
+logPath = "./services.log"
 level = "DEBUG" # DEBUG INFO WARN ERROR
 stdout = true
 jsonFormat = true
 
 [server]
-serverName = "sk_shop_goods"
-host = ":8081"
+serverName = "sail"
+host = ":8108"
 pprof = true
-[server.grpc]
-host = ":8082"
+historyListLen = 50
 
 [jaeger]
-udpEndpoint = "http://tempo.kube-ops.svc.cluster.local:14268/api/traces"
+udpEndpoint = "http://127.0.0.1:14268/api/traces"
 stdOut = false
+
+[sdk]
+configFilePath = "."
+logLevel = "WARN"
+MergeConfig = false

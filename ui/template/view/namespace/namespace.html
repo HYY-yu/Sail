@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>命名空间管理</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+</head>
+
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" lay-filter="namespace-query-form" action="">
+            <div class="layui-form-item">
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">项目组</label>
+                    <div class="layui-input-inline">
+                        <select id="user-query-select" lay-filter="user-query-select" name="project_group_id"
+                                lay-search="">
+                            {{range $id,$val := .PGArr}}
+                            <option value="{{$val.ID}}">{{$val.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="namespace_name" placeholder="" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+                    <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
+                        <i class="layui-icon layui-icon-search"></i>
+                        查询
+                    </button>
+                    <button type="reset" class="pear-btn pear-btn-md">
+                        <i class="layui-icon layui-icon-refresh"></i>
+                        重置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="user-toolbar">
+    <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新增
+    </button>
+</script>
+
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script>
+    layui.use(['table', 'form', 'jquery', 'popup', 'sail', 'util'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let popup = layui.popup;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+        let util = layui.util;
+        sail.prefilterAjax();
+
+        let projectGroupId = sessionStorage.getItem("jumpNamespaceWith");
+        sessionStorage.removeItem("jumpNamespaceWith");
+        if (projectGroupId) {
+            let options = $('#user-query-select').children();
+            options.each(function (index, elem) {
+                if ($(elem).val() == projectGroupId) {
+                    $(elem).attr('selected', "true");
+                }
+            })
+        }
+        form.render('select');
+
+        let data = form.val("namespace-query-form");
+        let accessToken = localStorage.getItem("accessToken");
+        table.render({
+            elem: '#user-table',
+            url: '/sail/v1/namespace/list',
+            page: true,
+            where: data,
+            headers: sail.setAuth(accessToken),
+            request: {
+                pageName: "page_index",
+                limitName: "page_size",
+            },
+            parseData: function (resp) {
+                if (resp.code === 0) {
+                    return {
+                        code: resp.code,
+                        msg: resp.message,
+                        count: resp.data.count,
+                        data: resp.data.list,
+                    }
+                } else {
+                    popup.failure(resp.message);
+                    return {
+                        code: 0,
+                    }
+                }
+            },
+            cols: [
+                [{
+                    title: 'ID',
+                    field: 'namespace_id',
+                    align: 'center',
+                }, {
+                    title: '名称',
+                    field: 'name',
+                    align: 'center',
+                }, {
+                    title: '所属项目组',
+                    field: 'project_group_name',
+                    align: 'center',
+                }, {
+                    title: '空间密钥',
+                    field: 'secret_key',
+                    align: 'center',
+                    templet: function (res) {
+                        if (res.secret_key) {
+                            return res.secret_key
+                        }
+                        return ' - '
+                    }
+                }, {
+                    title: '空间属性',
+                    field: 'project_group_name',
+                    align: 'center',
+                    templet: function (res) {
+                        let qq = '';
+                        if (res.real_time) {
+                            qq += '<button lay-id="1" type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">实时生效</button>'
+                        } else {
+                            qq += '<button lay-id="2" type="button" class="tag-item tag-item-warm layui-btn layui-btn-primary layui-btn-sm">需要发布</button>'
+                        }
+                        return '<div class="layui-btn-container tag">' + qq + ' </div>'
+                    },
+                }, {
+                    title: '创建人',
+                    field: 'create_by_name',
+                    align: 'center',
+                }, {
+                    title: '创建时间',
+                    field: 'create_time',
+                    align: 'left',
+                    templet: function (res) {
+                        return util.toDateString(res.create_time * 1000);
+                    },
+                }, {
+                    title: '操作',
+                    align: 'center',
+                    minWidth: 400,
+                    templet: function (res) {
+                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
+                    }
+                }]
+            ],
+            skin: 'line',
+            toolbar: '#user-toolbar',
+            defaultToolbar: [],
+            error: sail.ajaxError,
+        });
+
+        table.on('tool(user-table)', function (obj) {
+            if (obj.event === 'remove') {
+                window.remove(obj);
+            } else if (obj.event === 'edit') {
+                window.edit(obj);
+            }
+        });
+
+        table.on('toolbar(user-table)', function (obj) {
+            if (obj.event === 'add') {
+                window.add();
+            }
+        });
+
+        form.on('submit(user-query)', function (data) {
+            table.reload('user-table', {
+                where: data.field
+            })
+            return false;
+        });
+
+        form.on('select(user-query-select)', function (data) {
+            table.reload('user-table', {
+                where: {
+                    project_group_id: data.value,
+                }
+            })
+            return false;
+        });
+
+        window.add = function () {
+            layer.open({
+                type: 2,
+                title: "新增命名空间",
+                shade: 0.1,
+                area: ['400px', '400px'],
+                content: '/ui/namespace/add',
+            })
+        }
+
+        window.edit = function (obj) {
+            layer.open({
+                type: 2,
+                title: '修改命名空间',
+                shade: 0.1,
+                area: ['400px', '400px'],
+                content: '/ui/namespace/edit/?id=' + obj.data.namespace_id + '&name=' + obj.data.name + '&real_time=' + obj.data.real_time,
+            });
+        }
+
+        window.remove = function (obj) {
+            layer.confirm('确定要删除', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                let pgid = obj.data['namespace_id'];
+                $.ajax({
+                    url: '/sail/v1/namespace/del',
+                    data: JSON.stringify({namespace_id: pgid}),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (result) {
+                        layer.close(loading);
+                        sail.checkSuccess(result, function (resp) {
+                            table.reload("user-table");
+                        });
+                    },
+                    error: sail.ajaxError,
+                })
+            });
+        }
+    })
+</script>
+</body>
+</html>

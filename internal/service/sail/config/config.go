@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -12,59 +13,70 @@ var config = new(Config)
 type Config struct {
 	MySQL struct {
 		Base struct {
-			MaxOpenConn     int           `toml:"maxOpenConn"`
-			MaxIdleConn     int           `toml:"maxIdleConn"`
-			ConnMaxLifeTime time.Duration `toml:"connMaxLifeTime"`
-			Addr            string        `toml:"addr"`
-			User            string        `toml:"user"`
-			Pass            string        `toml:"pass"`
-			Name            string        `toml:"name"`
-		} `toml:"base"`
-	} `toml:"mysql"`
+			MaxOpenConn     int
+			MaxIdleConn     int
+			ConnMaxLifeTime time.Duration
+			Addr            string
+			User            string
+			Pass            string
+			Name            string
+		}
+	}
 
-	Redis struct {
-		Addr         string `toml:"addr"`
-		Pass         string `toml:"pass"`
-		Db           int    `toml:"db"`
-		MaxRetries   int    `toml:"maxRetries"`
-		PoolSize     int    `toml:"poolSize"`
-		MinIdleConns int    `toml:"minIdleConns"`
-	} `toml:"redis"`
+	ETCD struct {
+		Endpoints            []string
+		Username             string
+		Password             string
+		DialTimeout          time.Duration
+		DialKeepAlive        time.Duration
+		DialKeepAliveTimeout time.Duration
+	}
 
 	JWT struct {
-		Secret         string        `toml:"secret"`
-		ExpireDuration time.Duration `toml:"expireDuration"`
-	} `toml:"jwt"`
+		Secret          string
+		ExpireDuration  time.Duration
+		Type            string
+		RefreshDuration time.Duration
+	}
 
 	Log struct {
-		LogPath    string `toml:"logPath"`
-		Level      string `toml:"level"`
-		Stdout     bool   `toml:"stdout"`
-		JsonFormat bool   `toml:"jsonFormat"`
-	} `toml:"log"`
+		LogPath    string
+		Level      string
+		Stdout     bool
+		JsonFormat bool
+	}
 
 	Server struct {
-		ServerName string `toml:"serverName"`
-		Host       string `toml:"host"`
-		Pprof      bool   `toml:"pprof"`
-		Grpc       struct {
-			Host string `toml:"host"`
-		} `toml:"grpc"`
-	} `toml:"server"`
+		ServerName     string
+		Host           string
+		Pprof          bool
+		HistoryListLen int64
+	}
 
 	Jaeger struct {
-		UdpEndpoint string `toml:"udpEndpoint"`
-		StdOut      bool   `toml:"stdOut"`
-	} `toml:"jaeger"`
+		UdpEndpoint string
+		StdOut      bool
+	}
+
+	SDK struct {
+		ConfigFilePath string
+		LogLevel       string
+		MergeConfig    bool
+	}
 }
 
+var configPath string
+
 func InitConfig() {
+	flag.StringVar(&configPath, "config_path", ".", "path of cfg.toml")
+	flag.Parse()
+
 	viper.SetConfigName("cfg")
 	viper.SetConfigType("toml")
 	// 本地开发配置
 	viper.AddConfigPath("./internal/service/sail/config")
 	// 容器配置
-	viper.AddConfigPath(".")
+	viper.AddConfigPath(configPath)
 
 	if err := viper.ReadInConfig(); err != nil {
 		panic(err)

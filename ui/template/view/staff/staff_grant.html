@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+</head>
+<body>
+<form class="layui-form" action="" id="group-grant">
+    <div class="mainBox">
+        <div class="main-container">
+            <div class="layui-form-item">
+                <label class="layui-form-label">员工姓名</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" readonly value="{{.Name}}" lay-verify="required" autocomplete="off"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">项目组</label>
+                <div class="layui-input-block">
+                    <select name="project_group_id" lay-search="">
+                        <option value="">请选择项目组</option>
+
+                        {{range $id,$val := .PGArr}}
+                        <option value="{{$val.ID}}">{{$val.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">权限</label>
+                <div class="layui-input-block">
+                    <select name="role" lay-search="">
+                        <option value="">请选择权限</option>
+
+                        {{range $id,$val := .RDS}}
+                        <option value="{{$val.ID}}">{{$val.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+            </div>
+            <input type="hidden" name="staff_id" value="{{.ID}}">
+        </div>
+    </div>
+    <div class="bottom">
+        <div class="button-container">
+            <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" id="group-submit-button" lay-submit=""
+                    lay-filter="group-save">
+                <i class="layui-icon layui-icon-ok"></i>
+                提交
+            </button>
+            <button type="reset" class="pear-btn pear-btn-sm">
+                <i class="layui-icon layui-icon-refresh"></i>
+                重置
+            </button>
+        </div>
+    </div>
+</form>
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script>
+    layui.use(['form', 'jquery', 'sail'], function () {
+        let form = layui.form;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+        const accessToken = localStorage.getItem("accessToken");
+        sail.prefilterAjax();
+
+        form.on('submit(group-save)', function (data) {
+            $('#group-submit-button').attr('disabled', 'true');
+            $.ajax({
+                url: '/sail/v1/staff/grant',
+                data: JSON.stringify({
+                    staff_id: parseInt(data.field.staff_id),
+                    role: parseInt(data.field.role),
+                    project_group_id: parseInt(data.field.project_group_id),
+                }),
+                contentType: "application/json;charset=utf-8",
+                headers: sail.setAuth(accessToken),
+                dataType: 'json',
+                cache: false,
+                type: 'post',
+                success: function (result) {
+                    sail.checkSuccess(result, function (resp) {
+                        layer.msg("成功", {icon: 1, time: 1000}, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));//关闭当前页
+                            parent.layui.table.reload("user-table");
+                        });
+                    })
+                },
+                error: sail.ajaxError,
+                complete: function () {
+                    setTimeout(function () {
+                        $('#group-submit-button').removeAttr('disabled');
+                    }, 2000);
+                }
+            })
+            return false;
+        });
+    })
+</script>
+</body>
+</html>

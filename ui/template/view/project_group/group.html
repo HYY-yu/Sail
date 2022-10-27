@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>项目组管理</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+</head>
+
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">项目组ID</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="project_group_id" placeholder="" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">项目组名</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="project_group_name" placeholder="" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+                    <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
+                        <i class="layui-icon layui-icon-search"></i>
+                        查询
+                    </button>
+                    <button type="reset" class="pear-btn pear-btn-md">
+                        <i class="layui-icon layui-icon-refresh"></i>
+                        重置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="user-toolbar">
+    <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新增
+    </button>
+</script>
+
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script>
+    layui.use(['table', 'admin', 'form', 'jquery', 'popup', 'util', 'sail'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let popup = layui.popup;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+        let util = layui.util;
+        sail.prefilterAjax();
+
+        let accessToken = localStorage.getItem("accessToken");
+        table.render({
+            elem: '#user-table',
+            url: '/sail/v1/project_group/list',
+            page: true,
+            headers: sail.setAuth(accessToken),
+            request: {
+                pageName: "page_index",
+                limitName: "page_size",
+            },
+            parseData: function (resp) {
+                if (resp.code === 0) {
+                    return {
+                        code: resp.code,
+                        msg: resp.message,
+                        count: resp.data.count,
+                        data: resp.data.list,
+                    }
+                } else {
+                    popup.failure(resp.message);
+                    return {
+                        code: 0,
+                    }
+                }
+            },
+            cols: [
+                [{
+                    title: 'ID',
+                    field: 'project_group_id',
+                    align: 'center',
+                }, {
+                    title: '项目组名',
+                    field: 'name',
+                    align: 'center',
+                }, {
+                    title: '创建人',
+                    field: 'create_by_name',
+                    align: 'center',
+                }, {
+                    title: '创建时间',
+                    field: 'create_time',
+                    align: 'center',
+                    templet: function (res) {
+                        return util.toDateString(res.create_time * 1000);
+                    },
+                }, {
+                    title: '操作',
+                    align: 'center',
+                    minWidth: 400,
+                    templet: function (res) {
+                        if (res.managed) {
+                            return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                                '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
+                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="public">管理公共配置</button>\n' +
+                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="namespace">管理命名空间</button>'
+                        }
+                        return ' '
+                    }
+                }]
+            ],
+            skin: 'line',
+            toolbar: '#user-toolbar',
+            defaultToolbar: [],
+            error: sail.ajaxError,
+        });
+
+        table.on('tool(user-table)', function (obj) {
+            if (obj.event === 'remove') {
+                window.remove(obj);
+            } else if (obj.event === 'edit') {
+                window.edit(obj);
+            } else if (obj.event === 'public') {
+                window.public(obj);
+            } else if (obj.event === 'namespace') {
+                window.namespace(obj);
+            }
+        });
+
+        table.on('toolbar(user-table)', function (obj) {
+            if (obj.event === 'add') {
+                window.add();
+            }
+        });
+
+        form.on('submit(user-query)', function (data) {
+            table.reload('user-table', {
+                where: data.field
+            })
+            return false;
+        });
+
+        window.add = function () {
+            layer.open({
+                type: 2,
+                title: "新增项目组",
+                shade: 0.1,
+                content: '/ui/group/add',
+            })
+        }
+
+        window.namespace = function (obj) {
+            sessionStorage.setItem("jumpNamespaceWith", obj.data.project_group_id);
+            parent.layui.admin.jump(13, "命名空间管理", "/ui/namespace");
+            parent.layui.admin.refresh(13)
+        }
+
+        window.public = function (obj) {
+            sessionStorage.setItem("jumpPublicWith", obj.data.project_group_id);
+            parent.layui.admin.jump(12, "公共配置管理", "/ui/public");
+            parent.layui.admin.refresh(12)
+        }
+
+        window.edit = function (obj) {
+            layer.open({
+                type: 2,
+                title: '修改项目组',
+                shade: 0.1,
+                content: '/ui/group/edit/?id=' + obj.data.project_group_id + '&name=' + obj.data.name,
+            });
+        }
+
+        window.remove = function (obj) {
+            layer.confirm('确定要删除', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                let pgid = obj.data['project_group_id'];
+                $.ajax({
+                    url: '/sail/v1/project_group/del',
+                    data: JSON.stringify({project_group_id: pgid}),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (result) {
+                        layer.close(loading);
+                        sail.checkSuccess(result, function (resp) {
+                            table.reload("user-table");
+                        });
+                    },
+                    error: sail.ajaxError,
+                })
+            });
+        }
+    })
+</script>
+</body>
+</html>

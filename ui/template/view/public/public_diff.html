@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>历史管理</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+    <link rel="stylesheet" href="../../../static/component/codemirror5/codemirror.css"/>
+    <link rel="stylesheet" media="all" href="../../../static/component/mergely/mergely.css"/>
+</head>
+
+<body class="pear-container">
+<div class="mergely-full-screen-8">
+    <div class="mergely-resizer">
+        <div id="mergely"></div>
+    </div>
+</div>
+
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script src="../../../static/component/codemirror5/codemirror.js"></script>
+<script src="../../../static/component/codemirror5/addon/searchcursor.js"></script>
+<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+<script src="../../../static/component/mergely/mergely.js"></script>
+<script>
+    layui.use(['sail'], function () {
+        let sail = layui.sail;
+        sail.prefilterAjax();
+        $('#mergely').mergely({
+            cmsettings: {
+                readOnly: true,
+            },
+            license: 'lgpl-separate-notice',
+        });
+
+        let configID = parseInt('{{.configID}}')
+        let reversion = parseInt('{{.reversion}}')
+
+        let accessToken = localStorage.getItem("accessToken");
+        // 当前内容
+        let lcontent = parent.parent.window.getConfigDetail();
+
+        $.ajax({
+            url: '/sail/v1/config/history_info',
+            data: {
+                config_id: configID,
+                reversion: reversion,
+            },
+            headers: sail.setAuth(accessToken),
+            dataType: 'json',
+            type: 'get',
+            success: function (result) {
+                sail.checkSuccess(result, function (resp) {
+                    let rcontent = resp.data
+
+                    $('#mergely').mergely('lhs', lcontent);
+                    $('#mergely').mergely('rhs', rcontent);
+                });
+            },
+            error: sail.ajaxError,
+        });
+    })
+</script>
+</body>
+</html>

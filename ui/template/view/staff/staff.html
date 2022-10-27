@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>成员权限管理</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+</head>
+
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">成员名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="staff_name" placeholder="" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+                    <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
+                        <i class="layui-icon layui-icon-search"></i>
+                        查询
+                    </button>
+                    <button type="reset" class="pear-btn pear-btn-md">
+                        <i class="layui-icon layui-icon-refresh"></i>
+                        重置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+<script type="text/html" id="user-toolbar">
+    <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+        <i class="layui-icon layui-icon-add-1"></i>
+        新增
+    </button>
+</script>
+
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script>
+    layui.use(['table', 'form', 'jquery', 'popup', 'sail', 'util'], function () {
+        let table = layui.table;
+        let form = layui.form;
+        let popup = layui.popup;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+        let util = layui.util;
+        sail.prefilterAjax();
+
+        let accessToken = localStorage.getItem("accessToken");
+        table.render({
+            elem: '#user-table',
+            url: '/sail/v1/staff/list',
+            page: true,
+            headers: sail.setAuth(accessToken),
+            request: {
+                pageName: "page_index",
+                limitName: "page_size",
+            },
+            parseData: function (resp) {
+                if (resp.code === 0) {
+                    return {
+                        code: resp.code,
+                        msg: resp.message,
+                        count: resp.data.count,
+                        data: resp.data.list,
+                    }
+                } else {
+                    popup.failure(resp.message);
+                    return {
+                        code: 0,
+                    }
+                }
+            },
+            cols: [
+                [{
+                    title: 'ID',
+                    field: 'staff_id',
+                    align: 'center',
+                }, {
+                    title: '名称',
+                    field: 'name',
+                    align: 'left',
+                }, {
+                    title: '权限范围',
+                    align: 'left',
+                    width: '40%',
+                    templet: function (res) {
+                        let qq = '';
+                        for (let i = 0; i < res.roles.length; i++) {
+                            if (res.roles[i].role === 1) {
+                                qq += '<li "><span class="layui-badge">' + res.roles[i].role_info + '</span></li> '
+                            } else {
+                                qq += '<li ><span class="layui-badge layui-bg-blue">' + res.roles[i].project_group_name + '：' + res.roles[i].role_info + '</span></li> '
+                            }
+                        }
+
+                        return '<div class="layui-tab layui-tab-brief"> <ul class="layui-tab-title">' + qq + '</ul></div>'
+                    }
+                }, {
+                    title: '创建时间',
+                    field: 'create_time',
+                    align: 'left',
+                    templet: function (res) {
+                        return util.toDateString(res.create_time * 1000);
+                    },
+                }, {
+                    title: '操作',
+                    align: 'center',
+                    minWidth: 400,
+                    templet: function (res) {
+                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
+                            '<button class="pear-btn  pear-btn-primary pear-btn-sm" lay-event="grant"><i class="layui-icon layui-icon-add-circle"></i> 赋权</button>\n' +
+                            '<button class="pear-btn  pear-btn-primary pear-btn-sm" lay-event="del_grant"><i class="layui-icon layui-icon-reduce-circle"></i> 删除权限</button>\n'
+                    }
+                }]
+            ],
+            skin: 'line',
+            toolbar: '#user-toolbar',
+            defaultToolbar: [],
+            error: sail.ajaxError,
+        });
+
+        table.on('tool(user-table)', function (obj) {
+            if (obj.event === 'remove') {
+                window.remove(obj);
+            } else if (obj.event === 'edit') {
+                window.edit(obj);
+            } else if (obj.event === 'grant') {
+                window.grant(obj);
+            } else if (obj.event === 'del_grant') {
+                window.del_grant(obj);
+            }
+        });
+
+        table.on('toolbar(user-table)', function (obj) {
+            if (obj.event === 'add') {
+                window.add();
+            }
+        });
+
+        form.on('submit(user-query)', function (data) {
+            table.reload('user-table', {
+                where: data.field
+            })
+            return false;
+        });
+
+        window.add = function () {
+            layer.open({
+                type: 2,
+                title: "新增员工",
+                shade: 0.1,
+                content: '/ui/staff/add',
+            })
+        }
+
+        window.edit = function (obj) {
+            layer.open({
+                type: 2,
+                title: '修改员工',
+                shade: 0.1,
+                content: '/ui/staff/edit/?id=' + obj.data.staff_id + '&name=' + obj.data.name,
+            });
+        }
+
+        window.grant = function (obj) {
+            layer.open({
+                type: 2,
+                area: ['300px', '400px'],
+                title: '赋权',
+                shade: 0.1,
+                content: '/ui/staff/grant/?id=' + obj.data.staff_id + '&name=' + obj.data.name,
+            });
+        }
+
+        window.del_grant = function (obj) {
+            sessionStorage.setItem('DelGrantRoles' + obj.data.staff_id, JSON.stringify(obj.data.roles));
+
+            layer.open({
+                type: 2,
+                title: '删除权限',
+                shade: 0.1,
+                area: ['400px', '400px'],
+                content: '/ui/staff/del_grant/?id=' + obj.data.staff_id + '&name=' + obj.data.name,
+            });
+        }
+
+        window.remove = function (obj) {
+            layer.confirm('确定要删除', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                let pgid = obj.data['staff_id'];
+                $.ajax({
+                    url: '/sail/v1/staff/del',
+                    data: JSON.stringify({staff_id: pgid}),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (result) {
+                        layer.close(loading);
+                        sail.checkSuccess(result, function (resp) {
+                            table.reload("user-table");
+                        });
+                    },
+                    error: sail.ajaxError,
+                })
+            });
+        }
+    })
+</script>
+</body>
+</html>

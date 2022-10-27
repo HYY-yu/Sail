@@ -2,6 +2,8 @@ package api
 
 import (
 	"errors"
+	"html/template"
+	"io/fs"
 	"net/http"
 	"strings"
 
@@ -11,18 +13,45 @@ import (
 	"github.com/HYY-yu/seckill.pkg/db"
 	"github.com/HYY-yu/seckill.pkg/pkg/jaeger"
 	"github.com/HYY-yu/seckill.pkg/pkg/metrics"
+	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
+	"github.com/HYY-yu/sail/internal/service/sail/storage"
+	"github.com/HYY-yu/sail/ui"
 )
 
 type Handlers struct {
+	projectGroupHandler *handler.ProjectGroupHandler
+	staffHandler        *handler.StaffHandler
+	loginHandler        *handler.LoginHandler
+	projectHandler      *handler.ProjectHandler
+	namespaceHandler    *handler.NamespaceHandler
+	configHandler       *handler.ConfigHandler
+	indexHandler        *handler.IndexHandler
 }
 
-func NewHandlers() *Handlers {
-	return &Handlers{}
+func NewHandlers(
+	projectGroupHandler *handler.ProjectGroupHandler,
+	staffHandler *handler.StaffHandler,
+	loginHandler *handler.LoginHandler,
+	projectHandler *handler.ProjectHandler,
+	namespaceHandler *handler.NamespaceHandler,
+	configHandler *handler.ConfigHandler,
+	indexHandler *handler.IndexHandler,
+) *Handlers {
+	return &Handlers{
+		projectGroupHandler: projectGroupHandler,
+		staffHandler:        staffHandler,
+		loginHandler:        loginHandler,
+		projectHandler:      projectHandler,
+		namespaceHandler:    namespaceHandler,
+		configHandler:       configHandler,
+		indexHandler:        indexHandler,
+	}
 }
 
 type Server struct {
@@ -31,6 +60,7 @@ type Server struct {
 	GrpcServer  *grpc.Server
 	DB          db.Repo
 	Cache       cache.Repo
+	Storage     storage.Repo
 	Trace       *trace.TracerProvider
 	HTTPMiddles middleware.Middleware
 }
@@ -58,18 +88,31 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	}
 	s.DB = dbRepo
 
-	cacheRepo, err := cache.New(cfg.Server.ServerName, &cache.RedisConf{
-		Addr:         cfg.Redis.Addr,
-		Pass:         cfg.Redis.Pass,
-		Db:           cfg.Redis.Db,
-		MaxRetries:   cfg.Redis.MaxRetries,
-		PoolSize:     cfg.Redis.PoolSize,
-		MinIdleConns: cfg.Redis.MinIdleConns,
+	etcdRepo, err := storage.New(&storage.ETCDConfig{
+		Endpoints:            cfg.ETCD.Endpoints,
+		Username:             cfg.ETCD.Username,
+		Password:             cfg.ETCD.Password,
+		DialTimeout:          cfg.ETCD.DialTimeout,
+		DialKeepAlive:        cfg.ETCD.DialKeepAlive,
+		DialKeepAliveTimeout: cfg.ETCD.DialKeepAliveTimeout,
 	})
 	if err != nil {
-		logger.Fatal("new cache err", zap.Error(err))
+		logger.Fatal("new etcd err", zap.Error(err))
 	}
-	s.Cache = cacheRepo
+	s.Storage = etcdRepo
+
+	//cacheRepo, err := cache.New(cfg.Server.ServerName, &cache.RedisConf{
+	//	Addr:         cfg.Redis.Addr,
+	//	Pass:         cfg.Redis.Pass,
+	//	Db:           cfg.Redis.Db,
+	//	MaxRetries:   cfg.Redis.MaxRetries,
+	//	PoolSize:     cfg.Redis.PoolSize,
+	//	MinIdleConns: cfg.Redis.MinIdleConn,
+	//})
+	//if err != nil {
+	//	logger.Fatal("new cache err", zap.Error(err))
+	//}
+	//s.Cache = cacheRepo
 
 	// Jaeger
 	var tp *trace.TracerProvider
@@ -84,11 +127,10 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	s.Trace = tp
 
 	// Metrics
-	sn := strings.Split(cfg.Server.ServerName, "_")
-	metrics.InitMetrics(strings.Join(sn[:2], "_"))
+	metrics.InitMetrics(cfg.Server.ServerName)
 
 	// Repo Svc Handler
-	c, err := initHandlers(logger, s.DB, s.Cache)
+	c, err := initHandlers(s.DB, s.Cache, s.Storage)
 	if err != nil {
 		panic(err)
 	}
@@ -107,10 +149,34 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	// Init HTTP Middles
 	s.HTTPMiddles = middleware.New(logger, cfg.JWT.Secret)
 
+	// HTTP Static Server
+	staticEngine := gin.New()
+	templateHTML, err := template.ParseFS(ui.TemplateFs, "template/**/**/*.html")
+	if err != nil {
+		panic(err)
+	}
+	staticEngine.SetHTMLTemplate(templateHTML)
+
+	fads, err := fs.Sub(ui.StaticFs, "static")
+	if err != nil {
+		panic(err)
+	}
+
+	staticEngine.StaticFS("/static", http.FS(fads))
+
 	// Route
 	s.Route(c, engine)
+	s.RouteHTML(c, staticEngine)
+
 	server := &http.Server{
-		Handler: engine,
+		Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if strings.HasPrefix(request.URL.Path, "/static") ||
+				strings.HasPrefix(request.URL.Path, "/ui") {
+				staticEngine.ServeHTTP(writer, request)
+				return
+			}
+			engine.ServeHTTP(writer, request)
+		}),
 	}
 	s.HttpServer = server
 

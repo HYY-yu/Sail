@@ -3,7 +3,6 @@ package repo
 
 import (
 	"context"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -15,14 +14,7 @@ type _BaseMgr struct {
 	*gorm.DB
 	ctx       context.Context
 	cancel    context.CancelFunc
-	timeout   time.Duration
 	isRelated bool
-}
-
-// SetTimeOut set timeout
-func (obj *_BaseMgr) SetTimeOut(timeout time.Duration) {
-	obj.ctx, obj.cancel = context.WithTimeout(obj.ctx, timeout)
-	obj.timeout = timeout
 }
 
 // Cancel cancel context
@@ -35,11 +27,6 @@ func (obj *_BaseMgr) GetDB() *gorm.DB {
 	return obj.DB
 }
 
-// UpdateDB update gorm.DB info
-func (obj *_BaseMgr) UpdateDB(db *gorm.DB) {
-	obj.DB = db
-}
-
 // GetIsRelated Query foreign key Association.获取是否查询外键关联(gorm.Related)
 func (obj *_BaseMgr) GetIsRelated() bool {
 	return obj.isRelated
@@ -50,18 +37,13 @@ func (obj *_BaseMgr) SetIsRelated(b bool) {
 	obj.isRelated = b
 }
 
-// New new gorm.新gorm,重置条件
-func (obj *_BaseMgr) new() {
-	obj.DB = obj.newDB()
-}
-
-// NewDB new gorm.新gorm
-func (obj *_BaseMgr) newDB() *gorm.DB {
-	return obj.DB.Session(&gorm.Session{NewDB: true, Context: obj.ctx})
-}
-
 type options struct {
-	query map[string]interface{}
+	query map[string]queryData
+}
+
+type queryData struct {
+	data interface{}
+	cond string
 }
 
 // Option overrides behavior of Connect.
@@ -87,25 +69,15 @@ func CloseRelated() {
 
 // -------- sql where helper ----------
 
-type CheckWhere func(v interface{}) bool
-type DoWhere func(*gorm.DB, interface{}) *gorm.DB
-
-// AddWhere
-// CheckWhere 函数 如果返回true，则表明 DoWhere 的查询条件需要加到sql中去
-func (obj *_BaseMgr) addWhere(v interface{}, c CheckWhere, d DoWhere) *_BaseMgr {
-	if c(v) {
-		obj.DB = d(obj.DB, v)
-	}
-	return obj
-}
-
-func (obj *_BaseMgr) sort(userSort, defaultSort string) *_BaseMgr {
+// sort 不能改变 obj.DB ，变成已初始化的DB，将会对后续语句执行造成影响
+// 因此主动返回 已初始化的DB ，表示：此sort方法只能使用一次
+func (obj *_BaseMgr) sort(userSort, defaultSort string) *gorm.DB {
 	if len(userSort) > 0 {
-		obj.DB = obj.DB.Order(userSort)
+		return obj.DB.Order(userSort)
 	} else {
 		if len(defaultSort) > 0 {
-			obj.DB = obj.DB.Order(defaultSort)
+			return obj.DB.Order(defaultSort)
 		}
 	}
-	return obj
+	return obj.DB
 }

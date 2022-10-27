@@ -1,0 +1,12 @@
+html:-moz-full-screen {
+    background: grey;
+}
+html:-webkit-full-screen {
+    background: grey;
+}
+html:fullscreen {
+    background: grey;
+}
+:not(:root):fullscreen::backdrop{
+    background:whitesmoke;
+}

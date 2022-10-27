@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>历史管理</title>
+    <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
+</head>
+
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+<script src="../../../static/component/layui/layui.js"></script>
+<script src="../../../static/component/pear/pear.js"></script>
+<script>
+    layui.use(['table', 'jquery', 'popup', 'sail', 'util'], function () {
+        let table = layui.table;
+        let popup = layui.popup;
+        let $ = layui.jquery;
+        let sail = layui.sail;
+        let util = layui.util;
+        sail.prefilterAjax();
+
+        let configID = parseInt('{{.configID}}');
+        let accessToken = localStorage.getItem("accessToken");
+        table.render({
+            elem: '#user-table',
+            url: '/sail/v1/config/history',
+            page: false,
+            where: {
+                config_id: configID,
+            },
+            toolbar: false,
+            headers: sail.setAuth(accessToken),
+            parseData: function (resp) {
+                if (resp.code === 0) {
+                    return {
+                        code: resp.code,
+                        msg: resp.message,
+                        data: resp.data,
+                    }
+                } else {
+                    popup.failure(resp.message);
+                    return {
+                        code: 0,
+                    }
+                }
+            },
+            cols: [
+                [{
+                    title: '版本号',
+                    field: 'reversion',
+                    align: 'center',
+                }, {
+                    title: '操作类型',
+                    field: 'project_group_name',
+                    align: 'center',
+                    templet: function (res) {
+                        let qq = '';
+                        qq += '<button type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">' + res.op_type_str + '</button>'
+                        return '<div class="layui-btn-container tag">' + qq + ' </div>'
+                    },
+                }, {
+                    title: '创建人',
+                    field: 'create_by_name',
+                    align: 'center',
+                }, {
+                    title: '创建时间',
+                    field: 'create_time',
+                    align: 'left',
+                    templet: function (res) {
+                        return util.toDateString(res.create_time * 1000);
+                    },
+                }, {
+                    title: '操作',
+                    align: 'center',
+                    templet: function (res) {
+                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="compare">对比</button> \n' +
+                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="rollback">回滚</button>\n'
+                    }
+                }]
+            ],
+            skin: 'line',
+            defaultToolbar: [],
+            error: sail.ajaxError,
+        });
+
+        table.on('tool(user-table)', function (obj) {
+            if (obj.event === 'compare') {
+                window.compare(obj);
+            } else if (obj.event === 'rollback') {
+                window.rollback(obj);
+            }
+        });
+
+        window.compare = function (obj) {
+            layer.open({
+                type: 2,
+                title: "历史对比（当前值 vs 历史值）",
+                shade: 0.1,
+                area: ['600px', '400px'],
+                content: '/ui/public/history_diff?' + 'config_id=' + obj.data.config_id + '&reversion=' + obj.data.reversion,
+            })
+        }
+
+        window.rollback = function (obj) {
+            layer.confirm('确定要回滚?', {
+                icon: 3,
+                title: '提示'
+            }, function (index) {
+                layer.close(index);
+                let loading = layer.load();
+                let configID = obj.data['config_id'];
+                let reversion = obj.data['reversion'];
+                $.ajax({
+                    url: '/sail/v1/config/rollback',
+                    data: JSON.stringify({config_id: configID, reversion: reversion}),
+                    contentType: "application/json;charset=utf-8",
+                    headers: sail.setAuth(accessToken),
+                    dataType: 'json',
+                    type: 'post',
+                    success: function (result) {
+                        layer.close(loading);
+                        sail.checkSuccess(result, function (resp) {
+                            popup.success("回滚成功");
+                            //关闭此弹窗
+                            parent.window.refreshConfigDetail();
+                            let index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
+                            parent.layer.close(index); //再执行关闭
+                        });
+                    },
+                    error: sail.ajaxError,
+                })
+            });
+        }
+    })
+</script>
+</body>
+</html>

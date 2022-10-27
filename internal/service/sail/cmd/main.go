@@ -5,15 +5,24 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/HYY-yu/seckill.pkg/pkg/shutdown"
 	"go.uber.org/zap"
 
 	"github.com/HYY-yu/sail/internal/service/sail/api"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
 
 	"github.com/HYY-yu/seckill.pkg/pkg/logger"
-	"github.com/HYY-yu/seckill.pkg/pkg/shutdown"
 )
 
+// @title                       配置中心
+// @version                     1.0
+// @description                 配置中心接口设计文档
+// @contact.name                FengYu
+// @contact.url                 https://hyy-yu.space
+// @host                        localhost:8080
+// @securityDefinitions.apikey  ApiKeyAuth
+// @in                          header
+// @name                        Authorization
 func main() {
 	config.InitConfig()
 	lp := findLogConfigOption()
@@ -55,14 +64,25 @@ func main() {
 
 		// 关闭 grpc server
 		func() {
-			s.GrpcServer.GracefulStop()
+			if s.GrpcServer != nil {
+				s.GrpcServer.GracefulStop()
+			}
 		},
 
 		// 关闭 db
 		func() {
 			if s.DB != nil {
 				if err := s.DB.DbClose(); err != nil {
-					l.Error("dbw close err", zap.Error(err))
+					l.Error("db close err", zap.Error(err))
+				}
+			}
+		},
+
+		// 关闭 Storage
+		func() {
+			if s.Storage != nil {
+				if err := s.Storage.Close(); err != nil {
+					l.Error("storage close err", zap.Error(err))
 				}
 			}
 		},
