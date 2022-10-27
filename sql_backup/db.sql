@@ -1,6 +1,6 @@
-CREATE SCHEMA IF NOT EXISTS `sailtest`;
+CREATE SCHEMA IF NOT EXISTS `sail`;
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`project_group`
+CREATE TABLE IF NOT EXISTS `sail`.`project_group`
 (
     `id`          int PRIMARY KEY AUTO_INCREMENT,
     `name`        varchar(50) UNIQUE NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`project_group`
     `delete_time` int                NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`project`
+CREATE TABLE IF NOT EXISTS `sail`.`project`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `project_group_id` int                NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`project`
     `delete_time`      int                NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`namespace`
+CREATE TABLE IF NOT EXISTS `sail`.`namespace`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `project_group_id` int          NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`namespace`
     UNIQUE KEY (`project_group_id`, `name`)
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`staff`
+CREATE TABLE IF NOT EXISTS `sail`.`staff`
 (
     `id`            int PRIMARY KEY AUTO_INCREMENT,
     `name`          varchar(30) UNIQUE NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`staff`
     `create_by`     int                NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`staff_group_rel`
+CREATE TABLE IF NOT EXISTS `sail`.`staff_group_rel`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `project_group_id` int NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`staff_group_rel`
     INDEX (`staff_id`)
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`config`
+CREATE TABLE IF NOT EXISTS `sail`.`config`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `name`             varchar(50) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`config`
     UNIQUE KEY (`project_id`, `namespace_id`, `project_group_id`, `name`, `config_type`)
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`config_link`
+CREATE TABLE IF NOT EXISTS `sail`.`config_link`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
     `config_id`        int NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`config_link`
     INDEX (`public_config_id`)
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`config_history`
+CREATE TABLE IF NOT EXISTS `sail`.`config_history`
 (
     `id`          int PRIMARY KEY AUTO_INCREMENT,
     `config_id`   int       NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`config_history`
     UNIQUE KEY (`config_id`, `reversion`)
 );
 
-CREATE TABLE IF NOT EXISTS `sailtest`.`publish_config`
+CREATE TABLE IF NOT EXISTS `sail`.`publish_config`
 (
     `id`                 int PRIMARY KEY AUTO_INCREMENT,
     `project_id`         int          NOT NULL,
@@ -102,9 +102,9 @@ CREATE TABLE IF NOT EXISTS `sailtest`.`publish_config`
     INDEX (`namespace_id`)
 );
 
-INSERT INTO `sailtest`.staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
+INSERT INTO `sail`.staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
                                                                                  '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
                                                                                  NOW(), 1);
 
-INSERT INTO `sailtest`.staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
+INSERT INTO `sail`.staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
 
