@@ -1,0 +1,53 @@
+version: "3.9"
+networks:
+  sail:
+services:
+  mysql:
+    image: "mysql:5.7"
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+    volumes:
+      - "./sql_backup:/docker-entrypoint-initdb.d"
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    ports:
+      - "127.0.0.1:3306:3306"
+    networks:
+      - sail
+    healthcheck:
+      test: [ "CMD", 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p$$MYSQL_ROOT_PASSWORD' ]
+      timeout: 2s
+      retries: 2
+  etcd-node:
+    image: quay.io/coreos/etcd:v3.5.0
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    volumes:
+      - "/var/folders/etcd-node:/etcd_data"
+    networks:
+      sail: { }
+    entrypoint:
+      - "/usr/local/bin/etcd"
+      - "--data-dir=/etcd_data"
+      - "--name=node"
+      - "--initial-advertise-peer-urls=http://etcd-node:2380"
+      - "--listen-peer-urls=http://0.0.0.0:2380"
+      - "--advertise-client-urls=http://etcd-node:2379"
+      - "--listen-client-urls=http://0.0.0.0:2379"
+      - "--initial-cluster=node=http://etcd-node:2380"
+  sail:
+    image: ccr.ccs.tencentyun.com/hyy-yu/sail:latest
+    ports:
+      - "8108:8108"
+    volumes:
+      - "./compose-cfg.toml:/app/cfg.toml"
+    restart: on-failure
+    networks:
+      sail: { }
+    depends_on:
+      mysql:
+        condition: service_healthy
+      etcd-node:
+        condition: service_started
