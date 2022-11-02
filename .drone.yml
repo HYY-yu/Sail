@@ -53,7 +53,7 @@ steps:
     commands:
       - cd /tmp
       - git config --global user.name drone.robot
-      - git config --global user.email 690174435@qq.com
+      - git config --global user.email hyy-yu@qq.com
       - git clone https://$GIT_USERNAME:$GIT_PASSWORD@git.hyy-yu.space/yufeng/${DRONE_STAGE_NAME}.chart.git
       - cd ${DRONE_STAGE_NAME}.chart
       - current_version=$(cat Chart.yaml | grep "version" | awk '{ print $2 }' | sed 's/-dev[a-z,0-9]*//')

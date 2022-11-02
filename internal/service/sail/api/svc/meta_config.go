@@ -100,6 +100,13 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 	ctx := sctx.Context()
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
 	mgr.WithPrepareStmt()
+	_, role := s.CheckStaffGroup(ctx, projectGroupID)
+	if role > model.RoleOwner {
+		return "", response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此数据",
+		)
+	}
 
 	project, namespace, err := s.getConfigProjectAndNamespace(ctx, projectID, namespaceID)
 	if err != nil {
