@@ -55,6 +55,7 @@ steps:
       - git config --global user.name drone.robot
       - git config --global user.email hyy-yu@qq.com
       - git clone https://$GIT_USERNAME:$GIT_PASSWORD@git.hyy-yu.space/yufeng/${DRONE_STAGE_NAME}.chart.git
+      - git checkout feng
       - cd ${DRONE_STAGE_NAME}.chart
       - current_version=$(cat Chart.yaml | grep "version" | awk '{ print $2 }' | sed 's/-dev[a-z,0-9]*//')
       - 'echo "Current chart version: $current_version"'
@@ -64,7 +65,7 @@ steps:
       - cp /tmp/Chart.yaml.patched Chart.yaml
       - git add --all
       - git commit -m "Automated deployment of chart version $chart_version"
-      - git push origin main
+      - git push origin feng
     when:
       ref:
         - refs/tags/v*
@@ -91,13 +92,14 @@ steps:
     commands:
       # 请修改git地址，以对应不同项目
       - git clone https://git.hyy-yu.space/yufeng/sail.chart.git .
+      - git checkout feng
   - name: deploy_production
     image: pelotech/drone-helm3
     settings:
       helm_command: upgrade
       chart: ./
       # 请修改release，以对应不同项目
-      release: sail-release
+      release: sail-demo
       api_server: https://kubernetes.default.svc.cluster.local
       namespace: default
       kube_token:

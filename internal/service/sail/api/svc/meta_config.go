@@ -100,13 +100,6 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 	ctx := sctx.Context()
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
 	mgr.WithPrepareStmt()
-	_, role := s.CheckStaffGroup(ctx, projectGroupID)
-	if role > model.RoleOwner {
-		return "", response.NewErrorWithStatusOk(
-			response.AuthorizationError,
-			"没有权限访问此数据",
-		)
-	}
 
 	project, namespace, err := s.getConfigProjectAndNamespace(ctx, projectID, namespaceID)
 	if err != nil {
@@ -114,6 +107,16 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 			http.StatusInternalServerError,
 			response.ServerError,
 		).WithErr(err)
+	}
+	if len(namespace.SecretKey) > 0 {
+		// 如果有秘钥，则要求 Owner 才能访问
+		_, role := s.CheckStaffGroup(ctx, projectGroupID)
+		if role > model.RoleOwner {
+			return "", response.NewErrorWithStatusOk(
+				response.AuthorizationError,
+				"此命名空间您无权访问",
+			)
+		}
 	}
 
 	metaConfig := &MetaConfig{
