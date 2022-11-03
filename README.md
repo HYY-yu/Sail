@@ -25,7 +25,8 @@ Sail 是一款企业级的配置中心，在基本的配置文件管理的基础
 
 ### 安装指南
 
+请至 [官方文档页/安装指南](https://sail.hyy-yu.space/docs/prologue/install/local/)
 
 ### 快速上手
 
-
+请至 [官方文档页/快速上手](https://sail.hyy-yu.space/docs/prologue/quick/)
