@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"html/template"
-	"io/fs"
 	"net/http"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/HYY-yu/seckill.pkg/pkg/jaeger"
 	"github.com/HYY-yu/seckill.pkg/pkg/metrics"
 	"github.com/gin-gonic/gin"
+	"github.com/vearutop/statigz"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -157,12 +157,7 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 	}
 	staticEngine.SetHTMLTemplate(templateHTML)
 
-	fads, err := fs.Sub(ui.StaticFs, "static")
-	if err != nil {
-		panic(err)
-	}
-
-	staticEngine.StaticFS("/static", http.FS(fads))
+	fServer := statigz.FileServer(ui.StaticFs)
 
 	// Route
 	s.Route(c, engine)
@@ -170,8 +165,12 @@ func NewApiServer(logger *zap.Logger) (*Server, error) {
 
 	server := &http.Server{
 		Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			if strings.HasPrefix(request.URL.Path, "/static") ||
-				strings.HasPrefix(request.URL.Path, "/ui") {
+			if strings.HasPrefix(request.URL.Path, "/static") {
+				// 缓存控制+压缩控制
+				//Serve existing static resource.
+				fServer.ServeHTTP(writer, request)
+				return
+			} else if strings.HasPrefix(request.URL.Path, "/ui") {
 				staticEngine.ServeHTTP(writer, request)
 				return
 			}
