@@ -91,7 +91,7 @@ steps:
     image: alpine/git:v2.32.0
     commands:
       # 请修改git地址，以对应不同项目
-      - git clone https://git.hyy-yu.space/yufeng/sail.chart.git .
+      - git clone https://git.hyy-yu.space/yufeng/sail.chart.git sail.chart
       - cd sail.chart
       - git checkout feng
   - name: deploy_production
