@@ -3,6 +3,7 @@ package svc
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -328,7 +329,9 @@ func (s *ConfigSvc) History(sctx core.SvcContext, configID int) ([]model.ConfigH
 	}
 
 	var ch []model.ConfigHistory
-	err = historyMgr.WithOptions(historyMgr.WithConfigID(configID)).Order(model.ConfigHistoryColumns.ID + " desc").Find(&ch).Error
+	err = historyMgr.WithOptions(historyMgr.WithConfigID(configID)).
+		Order(model.ConfigHistoryColumns.Reversion + " desc").
+		Limit(int(config.Get().Server.HistoryListLen)).Find(&ch).Error
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -631,7 +634,8 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 		return err
 	}
 
-	err = historyMgr.WithOptions(historyMgr.WithConfigID(configID)).Delete(&model.ConfigHistory{}).Error
+	err = historyMgr.WithOptions(historyMgr.WithConfigID(configID)).
+		Delete(&model.ConfigHistory{}).Error
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -640,7 +644,8 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 	}
 
 	if !cfg.IsPublic {
-		err = linkMgr.WithOptions(linkMgr.WithConfigID(configID)).Delete(&model.ConfigLink{}).Error
+		err = linkMgr.WithOptions(linkMgr.WithConfigID(configID)).
+			Delete(&model.ConfigLink{}).Error
 		if err != nil {
 			return response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -883,20 +888,16 @@ func (s *ConfigSvc) addConfigHistory(ctx context.Context, db *gorm.DB, configID 
 	}
 
 	// 检查历史长度
-	var cf model.ConfigHistory
-	err = hMgr.
-		WithOptions(hMgr.WithConfigID(configID)).
-		WithSelects(model.ConfigHistoryColumns.ID, model.ConfigHistoryColumns.ConfigID).
-		Order(model.ConfigHistoryColumns.ID + " DESC").
-		Offset(int(config.Get().Server.HistoryListLen)).
-		Limit(1).
-		Find(&cf).Error
+	cfCount, err := hMgr.
+		WithOptions(hMgr.WithConfigID(configID)).Count()
 	if err != nil {
 		return nil
 	}
-
-	if cf.ID > 0 {
-		hMgr.WithOptions(hMgr.WithID(cf.ID, " <= ?")).Delete(&model.ConfigHistory{})
+	if cfCount > config.Get().Server.HistoryListLen+rand.Int63n(5) {
+		// 删除
+		deta := cfCount - config.Get().Server.HistoryListLen
+		hMgr.WithOptions(hMgr.WithConfigID(configID)).
+			Order(model.ConfigHistoryColumns.Reversion).Limit(int(deta)).Delete(&model.ConfigHistory{})
 	}
 	return nil
 }

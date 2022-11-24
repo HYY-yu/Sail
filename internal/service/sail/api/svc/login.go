@@ -13,6 +13,7 @@ import (
 	"github.com/HYY-yu/seckill.pkg/pkg/token"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm/clause"
 
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/config"
@@ -209,21 +210,69 @@ func (l loginSystemRefreshToken) TokenCancel(ctx context.Context, token string) 
 }
 
 func (l loginSystemRefreshToken) RefreshToken(ctx context.Context, oldToken string) (*modellogin.LoginResponse, error) {
-	cliaims, err := token.New(l.cfg.Secret).JwtParse(oldToken)
+	claims, err := token.New(l.cfg.Secret).JwtParse(oldToken)
 	if err != nil {
 		return nil, err
 	}
-	userId, userName := int(cliaims.UserID), cliaims.UserName
+	userId, userName := int(claims.UserID), claims.UserName
 
 	// 检查数据库
-	mgr := l.r.Mgr(ctx, l.d.GetDb())
-	staff, _ := mgr.WithOptions(mgr.WithID(userId)).WithSelects(model.StaffColumns.ID, model.StaffColumns.RefreshToken).
-		Get()
+	tx := l.d.GetDb().Begin()
+	defer tx.Rollback()
+	mgr := l.r.Mgr(ctx, tx)
+
+	var staff *model.Staff
+	mgr.WithOptions(mgr.WithID(userId)).WithSelects(model.StaffColumns.ID, model.StaffColumns.RefreshToken).
+		Clauses(clause.Locking{Strength: "UPDATE"}).Find(&staff)
+	if staff.ID == 0 {
+		return nil, gerror.New("Not this user. ")
+	}
+	if len(staff.RefreshToken) == 0 {
+		// 禁止
+		return nil, gerror.New("refresh token not have. ")
+	}
+	accessToken, err := token.New(l.cfg.Secret).JwtSign(int64(userId), userName, l.cfg.ExpireDuration)
+	if err != nil {
+		return nil, err
+	}
+	refreshToken, err := token.New(l.cfg.Secret).JwtSign(int64(userId), userName, l.cfg.RefreshDuration)
+	if err != nil {
+		return nil, err
+	}
 	if staff.RefreshToken != oldToken {
+		// 允许 oldToken 有一定的宽限期(10s)
+		// 这是因为当 access_token 过期，可能前端会短时间发出多个 refresh_token 的请求
+		// 我们让其中一个请求更新 refresh token ，剩余请求在宽限期内共享这个 token。
+		refreshTokenClaims, _ := token.New(l.cfg.Secret).JwtParse(staff.RefreshToken)
+		refreshTokenCreateAt := time.Unix(refreshTokenClaims.IssuedAt, 0)
+		if time.Since(refreshTokenCreateAt) <= time.Second*10 {
+			return &modellogin.LoginResponse{
+				Token: &loginResponseByRefreshToken{
+					AccessToken:  accessToken,
+					RefreshToken: staff.RefreshToken,
+				},
+			}, nil
+		}
 		return nil, gerror.New("token invalid. ")
 	}
 
-	return l.GenerateToken(ctx, userId, userName)
+	// refreshToken 存到用户信息中
+	err = mgr.WithOptions(mgr.WithID(userId)).
+		Update(model.StaffColumns.RefreshToken, refreshToken).Error
+	if err != nil {
+		return nil, gerror.Wrap(err, "Update")
+	}
+	tx.Commit()
+
+	return &modellogin.LoginResponse{
+		Token: &loginResponseByRefreshToken{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		},
+	}, nil
+
+	// DELETE GenerateToken 需要把对 RefreshToken的操作串加锁
+	//return l.GenerateToken(ctx, userId, userName)
 }
 
 func NewByRefreshToken(cfg *refreshTokenConfig, r repo.StaffRepo, d db.Repo) login.LoginTokenSystem {
