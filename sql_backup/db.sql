@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS `sail`.`project`
     `name`             varchar(50)        NOT NULL,
     `create_time`      timestamp          NOT NULL,
     `create_by`        int                NOT NULL,
-    `delete_time`      int                NOT NULL DEFAULT 0
+    `delete_time`      int                NOT NULL DEFAULT 0,
+    INDEX (`project_group_id`)
 );
 
 CREATE TABLE IF NOT EXISTS `sail`.`namespace`
@@ -46,9 +47,9 @@ CREATE TABLE IF NOT EXISTS `sail`.`staff`
 CREATE TABLE IF NOT EXISTS `sail`.`staff_group_rel`
 (
     `id`               int PRIMARY KEY AUTO_INCREMENT,
-    `project_group_id` int NOT NULL,
-    `staff_id`         int NOT NULL,
-    `role_type`        int NOT NULL COMMENT '权限角色',
+    `project_group_id` int     NOT NULL,
+    `staff_id`         int     NOT NULL,
+    `role_type`        tinyint NOT NULL COMMENT '权限角色',
     INDEX (`project_group_id`),
     INDEX (`staff_id`)
 );
@@ -81,30 +82,52 @@ CREATE TABLE IF NOT EXISTS `sail`.`config_history`
     `id`          int PRIMARY KEY AUTO_INCREMENT,
     `config_id`   int       NOT NULL,
     `reversion`   int       NOT NULL,
-    `op_type`     int       NOT NULL,
+    `op_type`     tinyint   NOT NULL,
     `create_time` timestamp NOT NULL,
     `create_by`   int       NOT NULL,
     UNIQUE KEY (`config_id`, `reversion`)
 );
 
+CREATE TABLE IF NOT EXISTS `sail`.`publish`
+(
+    `id`           int PRIMARY KEY AUTO_INCREMENT,
+    `project_id`   int       NOT NULL,
+    `namespace_id` int       NOT NULL,
+    `status`       tinyint   NOT NULL,
+    `create_time`  timestamp NOT NULL Default CURRENT_TIMESTAMP,
+    `update_time`  timestamp NOT NULL Default CURRENT_TIMESTAMP,
+    INDEX (`project_id`, `namespace_id`, `status`)
+);
+
 CREATE TABLE IF NOT EXISTS `sail`.`publish_config`
 (
-    `id`                 int PRIMARY KEY AUTO_INCREMENT,
-    `project_id`         int          NOT NULL,
-    `namespace_id`       int          NOT NULL,
-    `publish_type`       int          NOT NULL COMMENT '发布方式',
-    `publish_data`       varchar(20)  NOT NULL COMMENT '发布数据',
-    `publish_config_ids` varchar(100) NOT NULL,
-    `status`             int          NOT NULL,
-    `create_time`        timestamp    NOT NULL Default CURRENT_TIMESTAMP,
-    `update_time`        timestamp    NOT NULL Default CURRENT_TIMESTAMP,
-    INDEX (`project_id`),
-    INDEX (`namespace_id`)
+    `id`                   int PRIMARY KEY AUTO_INCREMENT,
+    `publish_id`           int       NOT NULL,
+    `config_id`            int       NOT NULL,
+    `config_pre_reversion` int       NOT NULL,
+    `status`               int       NOT NULL,
+    `create_time`          timestamp NOT NULL Default CURRENT_TIMESTAMP,
+    `update_time`          timestamp NOT NULL Default CURRENT_TIMESTAMP,
+    INDEX (`publish_id`),
+    INDEX (`config_id`)
+);
+
+CREATE TABLE IF NOT EXISTS `sail`.`publish_strategy`
+(
+    `id`          int PRIMARY KEY AUTO_INCREMENT,
+    `publish_id`  int          NOT NULL,
+    `type`        tinyint      NOT NULL COMMENT '发布类型',
+    `data`        json         NOT NULL,
+    `status`      tinyint      NOT NULL,
+    `result`      varchar(500) NOT NULL,
+    `create_time` timestamp    NOT NULL Default CURRENT_TIMESTAMP,
+    `update_time` timestamp    NOT NULL Default CURRENT_TIMESTAMP,
+    INDEX (`publish_id`)
 );
 
 INSERT INTO `sail`.staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
-                                                                                 '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
-                                                                                 NOW(), 1);
+                                                                             '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
+                                                                             NOW(), 1);
 
 INSERT INTO `sail`.staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
 
