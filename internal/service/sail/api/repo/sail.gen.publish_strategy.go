@@ -11,20 +11,20 @@ import (
 
 // 非线程安全
 
-type _PublishConfigMgr struct {
+type _PublishStrategyMgr struct {
 	*_BaseMgr
 }
 
-// PublishConfigMgr open func
-func PublishConfigMgr(ctx context.Context, db *gorm.DB) *_PublishConfigMgr {
+// PublishStrategyMgr open func
+func PublishStrategyMgr(ctx context.Context, db *gorm.DB) *_PublishStrategyMgr {
 	if db == nil {
-		panic(fmt.Errorf("PublishConfigMgr need init by db"))
+		panic(fmt.Errorf("PublishStrategyMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_PublishConfigMgr{_BaseMgr: &_BaseMgr{DB: db.Table("publish_config").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
+	return &_PublishStrategyMgr{_BaseMgr: &_BaseMgr{DB: db.Table("publish_strategy").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
-func (obj *_PublishConfigMgr) WithSelects(idName string, selects ...string) *_PublishConfigMgr {
+func (obj *_PublishStrategyMgr) WithSelects(idName string, selects ...string) *_PublishStrategyMgr {
 	if len(idName) > 0 {
 		selects = append(selects, idName)
 	}
@@ -48,7 +48,7 @@ func (obj *_PublishConfigMgr) WithSelects(idName string, selects ...string) *_Pu
 	return obj
 }
 
-func (obj *_PublishConfigMgr) WithOptions(opts ...Option) *_PublishConfigMgr {
+func (obj *_PublishStrategyMgr) WithOptions(opts ...Option) *_PublishStrategyMgr {
 	obj.Reset()
 
 	options := options{
@@ -68,56 +68,56 @@ func (obj *_PublishConfigMgr) WithOptions(opts ...Option) *_PublishConfigMgr {
 }
 
 // GetTableName get sql table name.获取表名字
-func (obj *_PublishConfigMgr) GetTableName() string {
-	return "publish_config"
+func (obj *_PublishStrategyMgr) GetTableName() string {
+	return "publish_strategy"
 }
 
 // Tx 开启事务会话
-func (obj *_PublishConfigMgr) Tx(tx *gorm.DB) *_PublishConfigMgr {
+func (obj *_PublishStrategyMgr) Tx(tx *gorm.DB) *_PublishStrategyMgr {
 	obj.DB = tx.Table(obj.GetTableName()).WithContext(obj.ctx)
 	return obj
 }
 
 // WithPrepareStmt 开启语句 PrepareStmt 功能
 // 接下来执行的SQL将会是PrepareStmt的
-func (obj *_PublishConfigMgr) WithPrepareStmt() {
+func (obj *_PublishStrategyMgr) WithPrepareStmt() {
 	obj.DB = obj.DB.Session(&gorm.Session{Context: obj.ctx, PrepareStmt: true})
 }
 
 // Reset 重置gorm会话
-func (obj *_PublishConfigMgr) Reset() *_PublishConfigMgr {
+func (obj *_PublishStrategyMgr) Reset() *_PublishStrategyMgr {
 	obj.DB = obj.DB.Session(&gorm.Session{NewDB: true, Context: obj.ctx}).Table(obj.GetTableName())
 	return obj
 }
 
 // Get 获取
-func (obj *_PublishConfigMgr) Get() (result model.PublishConfig, err error) {
+func (obj *_PublishStrategyMgr) Get() (result model.PublishStrategy, err error) {
 	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_PublishConfigMgr) Gets() (results []model.PublishConfig, err error) {
+func (obj *_PublishStrategyMgr) Gets() (results []model.PublishStrategy, err error) {
 	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 // Catch 必须获取结果（单条）
-func (obj *_PublishConfigMgr) Catch() (results model.PublishConfig, err error) {
+func (obj *_PublishStrategyMgr) Catch() (results model.PublishStrategy, err error) {
 	err = obj.DB.Take(&results).Error
 
 	return
 }
 
-func (obj *_PublishConfigMgr) Count() (count int64, err error) {
+func (obj *_PublishStrategyMgr) Count() (count int64, err error) {
 	err = obj.DB.Count(&count).Error
 
 	return
 }
 
-func (obj *_PublishConfigMgr) HasRecord() (bool, error) {
+func (obj *_PublishStrategyMgr) HasRecord() (bool, error) {
 	count, err := obj.Count()
 	if err != nil {
 		return false, err
@@ -126,7 +126,7 @@ func (obj *_PublishConfigMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_PublishConfigMgr) WithID(id interface{}, cond ...string) Option {
+func (obj *_PublishStrategyMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -139,7 +139,7 @@ func (obj *_PublishConfigMgr) WithID(id interface{}, cond ...string) Option {
 }
 
 // WithPublishID publish_id获取
-func (obj *_PublishConfigMgr) WithPublishID(publishID interface{}, cond ...string) Option {
+func (obj *_PublishStrategyMgr) WithPublishID(publishID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -151,34 +151,34 @@ func (obj *_PublishConfigMgr) WithPublishID(publishID interface{}, cond ...strin
 	})
 }
 
-// WithConfigID config_id获取
-func (obj *_PublishConfigMgr) WithConfigID(configID interface{}, cond ...string) Option {
+// WithType type获取 发布类型
+func (obj *_PublishStrategyMgr) WithType(_type interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
 		}
-		o.query["config_id"] = queryData{
+		o.query["type"] = queryData{
 			cond: cond[0],
-			data: configID,
+			data: _type,
 		}
 	})
 }
 
-// WithConfigPreReversion config_pre_reversion获取
-func (obj *_PublishConfigMgr) WithConfigPreReversion(configPreReversion interface{}, cond ...string) Option {
+// WithData data获取
+func (obj *_PublishStrategyMgr) WithData(data interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
 		}
-		o.query["config_pre_reversion"] = queryData{
+		o.query["data"] = queryData{
 			cond: cond[0],
-			data: configPreReversion,
+			data: data,
 		}
 	})
 }
 
 // WithStatus status获取
-func (obj *_PublishConfigMgr) WithStatus(status interface{}, cond ...string) Option {
+func (obj *_PublishStrategyMgr) WithStatus(status interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -190,8 +190,21 @@ func (obj *_PublishConfigMgr) WithStatus(status interface{}, cond ...string) Opt
 	})
 }
 
+// WithResult result获取
+func (obj *_PublishStrategyMgr) WithResult(result interface{}, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["result"] = queryData{
+			cond: cond[0],
+			data: result,
+		}
+	})
+}
+
 // WithCreateTime create_time获取
-func (obj *_PublishConfigMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
+func (obj *_PublishStrategyMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -204,7 +217,7 @@ func (obj *_PublishConfigMgr) WithCreateTime(createTime interface{}, cond ...str
 }
 
 // WithUpdateTime update_time获取
-func (obj *_PublishConfigMgr) WithUpdateTime(updateTime interface{}, cond ...string) Option {
+func (obj *_PublishStrategyMgr) WithUpdateTime(updateTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -216,34 +229,27 @@ func (obj *_PublishConfigMgr) WithUpdateTime(updateTime interface{}, cond ...str
 	})
 }
 
-func (obj *_PublishConfigMgr) CreatePublishConfig(bean *model.PublishConfig) (err error) {
+func (obj *_PublishStrategyMgr) CreatePublishStrategy(bean *model.PublishStrategy) (err error) {
 	err = obj.DB.Create(bean).Error
 
 	return
 }
 
-func (obj *_PublishConfigMgr) UpdatePublishConfig(bean *model.PublishConfig) (err error) {
+func (obj *_PublishStrategyMgr) UpdatePublishStrategy(bean *model.PublishStrategy) (err error) {
 	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
-func (obj *_PublishConfigMgr) DeletePublishConfig(bean *model.PublishConfig) (err error) {
+func (obj *_PublishStrategyMgr) DeletePublishStrategy(bean *model.PublishStrategy) (err error) {
 	err = obj.DB.Delete(bean).Error
 
 	return
 }
 
 // FetchIndexByPublishID  获取多个内容
-func (obj *_PublishConfigMgr) FetchIndexByPublishID(publishID int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`publish_id` = ?", publishID).Find(&results).Error
-
-	return
-}
-
-// FetchIndexByConfigID  获取多个内容
-func (obj *_PublishConfigMgr) FetchIndexByConfigID(configID int) (results []*model.PublishConfig, err error) {
-	err = obj.DB.WithContext(obj.ctx).Model(model.PublishConfig{}).Where("`config_id` = ?", configID).Find(&results).Error
+func (obj *_PublishStrategyMgr) FetchIndexByPublishID(publishID int) (results []*model.PublishStrategy, err error) {
+	err = obj.DB.WithContext(obj.ctx).Model(model.PublishStrategy{}).Where("`publish_id` = ?", publishID).Find(&results).Error
 
 	return
 }

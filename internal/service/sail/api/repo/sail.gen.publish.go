@@ -11,20 +11,20 @@ import (
 
 // 非线程安全
 
-type _ProjectGroupMgr struct {
+type _PublishMgr struct {
 	*_BaseMgr
 }
 
-// ProjectGroupMgr open func
-func ProjectGroupMgr(ctx context.Context, db *gorm.DB) *_ProjectGroupMgr {
+// PublishMgr open func
+func PublishMgr(ctx context.Context, db *gorm.DB) *_PublishMgr {
 	if db == nil {
-		panic(fmt.Errorf("ProjectGroupMgr need init by db"))
+		panic(fmt.Errorf("PublishMgr need init by db"))
 	}
 	ctx, cancel := context.WithCancel(ctx)
-	return &_ProjectGroupMgr{_BaseMgr: &_BaseMgr{DB: db.Table("project_group").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
+	return &_PublishMgr{_BaseMgr: &_BaseMgr{DB: db.Table("publish").WithContext(ctx), isRelated: globalIsRelated, ctx: ctx, cancel: cancel}}
 }
 
-func (obj *_ProjectGroupMgr) WithSelects(idName string, selects ...string) *_ProjectGroupMgr {
+func (obj *_PublishMgr) WithSelects(idName string, selects ...string) *_PublishMgr {
 	if len(idName) > 0 {
 		selects = append(selects, idName)
 	}
@@ -48,7 +48,7 @@ func (obj *_ProjectGroupMgr) WithSelects(idName string, selects ...string) *_Pro
 	return obj
 }
 
-func (obj *_ProjectGroupMgr) WithOptions(opts ...Option) *_ProjectGroupMgr {
+func (obj *_PublishMgr) WithOptions(opts ...Option) *_PublishMgr {
 	obj.Reset()
 
 	options := options{
@@ -68,56 +68,56 @@ func (obj *_ProjectGroupMgr) WithOptions(opts ...Option) *_ProjectGroupMgr {
 }
 
 // GetTableName get sql table name.获取表名字
-func (obj *_ProjectGroupMgr) GetTableName() string {
-	return "project_group"
+func (obj *_PublishMgr) GetTableName() string {
+	return "publish"
 }
 
 // Tx 开启事务会话
-func (obj *_ProjectGroupMgr) Tx(tx *gorm.DB) *_ProjectGroupMgr {
+func (obj *_PublishMgr) Tx(tx *gorm.DB) *_PublishMgr {
 	obj.DB = tx.Table(obj.GetTableName()).WithContext(obj.ctx)
 	return obj
 }
 
 // WithPrepareStmt 开启语句 PrepareStmt 功能
 // 接下来执行的SQL将会是PrepareStmt的
-func (obj *_ProjectGroupMgr) WithPrepareStmt() {
+func (obj *_PublishMgr) WithPrepareStmt() {
 	obj.DB = obj.DB.Session(&gorm.Session{Context: obj.ctx, PrepareStmt: true})
 }
 
 // Reset 重置gorm会话
-func (obj *_ProjectGroupMgr) Reset() *_ProjectGroupMgr {
+func (obj *_PublishMgr) Reset() *_PublishMgr {
 	obj.DB = obj.DB.Session(&gorm.Session{NewDB: true, Context: obj.ctx}).Table(obj.GetTableName())
 	return obj
 }
 
 // Get 获取
-func (obj *_ProjectGroupMgr) Get() (result model.ProjectGroup, err error) {
+func (obj *_PublishMgr) Get() (result model.Publish, err error) {
 	err = obj.DB.Find(&result).Error
 
 	return
 }
 
 // Gets 获取批量结果
-func (obj *_ProjectGroupMgr) Gets() (results []model.ProjectGroup, err error) {
+func (obj *_PublishMgr) Gets() (results []model.Publish, err error) {
 	err = obj.DB.Find(&results).Error
 
 	return
 }
 
 // Catch 必须获取结果（单条）
-func (obj *_ProjectGroupMgr) Catch() (results model.ProjectGroup, err error) {
+func (obj *_PublishMgr) Catch() (results model.Publish, err error) {
 	err = obj.DB.Take(&results).Error
 
 	return
 }
 
-func (obj *_ProjectGroupMgr) Count() (count int64, err error) {
+func (obj *_PublishMgr) Count() (count int64, err error) {
 	err = obj.DB.Count(&count).Error
 
 	return
 }
 
-func (obj *_ProjectGroupMgr) HasRecord() (bool, error) {
+func (obj *_PublishMgr) HasRecord() (bool, error) {
 	count, err := obj.Count()
 	if err != nil {
 		return false, err
@@ -126,7 +126,7 @@ func (obj *_ProjectGroupMgr) HasRecord() (bool, error) {
 }
 
 // WithID id获取
-func (obj *_ProjectGroupMgr) WithID(id interface{}, cond ...string) Option {
+func (obj *_PublishMgr) WithID(id interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -138,21 +138,47 @@ func (obj *_ProjectGroupMgr) WithID(id interface{}, cond ...string) Option {
 	})
 }
 
-// WithName name获取
-func (obj *_ProjectGroupMgr) WithName(name interface{}, cond ...string) Option {
+// WithProjectID project_id获取
+func (obj *_PublishMgr) WithProjectID(projectID interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
 		}
-		o.query["name"] = queryData{
+		o.query["project_id"] = queryData{
 			cond: cond[0],
-			data: name,
+			data: projectID,
+		}
+	})
+}
+
+// WithNamespaceID namespace_id获取
+func (obj *_PublishMgr) WithNamespaceID(namespaceID interface{}, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["namespace_id"] = queryData{
+			cond: cond[0],
+			data: namespaceID,
+		}
+	})
+}
+
+// WithStatus status获取
+func (obj *_PublishMgr) WithStatus(status interface{}, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["status"] = queryData{
+			cond: cond[0],
+			data: status,
 		}
 	})
 }
 
 // WithCreateTime create_time获取
-func (obj *_ProjectGroupMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
+func (obj *_PublishMgr) WithCreateTime(createTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
@@ -164,46 +190,40 @@ func (obj *_ProjectGroupMgr) WithCreateTime(createTime interface{}, cond ...stri
 	})
 }
 
-// WithCreateBy create_by获取
-func (obj *_ProjectGroupMgr) WithCreateBy(createBy interface{}, cond ...string) Option {
+// WithUpdateTime update_time获取
+func (obj *_PublishMgr) WithUpdateTime(updateTime interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {
 		if len(cond) == 0 {
 			cond = []string{" = ? "}
 		}
-		o.query["create_by"] = queryData{
+		o.query["update_time"] = queryData{
 			cond: cond[0],
-			data: createBy,
+			data: updateTime,
 		}
 	})
 }
 
-// WithDeleteTime delete_time获取
-func (obj *_ProjectGroupMgr) WithDeleteTime(deleteTime interface{}, cond ...string) Option {
-	return optionFunc(func(o *options) {
-		if len(cond) == 0 {
-			cond = []string{" = ? "}
-		}
-		o.query["delete_time"] = queryData{
-			cond: cond[0],
-			data: deleteTime,
-		}
-	})
-}
-
-func (obj *_ProjectGroupMgr) CreateProjectGroup(bean *model.ProjectGroup) (err error) {
+func (obj *_PublishMgr) CreatePublish(bean *model.Publish) (err error) {
 	err = obj.DB.Create(bean).Error
 
 	return
 }
 
-func (obj *_ProjectGroupMgr) UpdateProjectGroup(bean *model.ProjectGroup) (err error) {
+func (obj *_PublishMgr) UpdatePublish(bean *model.Publish) (err error) {
 	err = obj.DB.Updates(bean).Error
 
 	return
 }
 
-func (obj *_ProjectGroupMgr) DeleteProjectGroup(bean *model.ProjectGroup) (err error) {
+func (obj *_PublishMgr) DeletePublish(bean *model.Publish) (err error) {
 	err = obj.DB.Delete(bean).Error
+
+	return
+}
+
+// FetchIndexByProjectID  获取多个内容
+func (obj *_PublishMgr) FetchIndexByProjectID(projectID int, namespaceID int, status int8) (results []*model.Publish, err error) {
+	err = obj.DB.WithContext(obj.ctx).Model(model.Publish{}).Where("`project_id` = ? AND `namespace_id` = ? AND `status` = ?", projectID, namespaceID, status).Find(&results).Error
 
 	return
 }
