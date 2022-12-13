@@ -309,7 +309,7 @@ func (s *StaffSvc) Grant(sctx core.SvcContext, param *model.GrantStaff) error {
 	bean := &model.StaffGroupRel{
 		ProjectGroupID: param.ProjectGroupID,
 		StaffID:        param.StaffID,
-		RoleType:       int(param.Role),
+		RoleType:       int8(param.Role),
 	}
 
 	err = sgMgr.CreateStaffGroupRel(bean)

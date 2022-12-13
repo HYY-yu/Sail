@@ -1,5 +1,10 @@
 package svc_publish
 
+import (
+	"github.com/HYY-yu/sail/internal/service/sail/storage"
+	"github.com/HYY-yu/seckill.pkg/db"
+)
+
 // PublishSystem 发布系统
 type PublishSystem interface {
 	// EnterPublish
@@ -21,4 +26,9 @@ type ConfigSystem interface {
 	// 做一个配置覆盖编辑，如果是回滚，则用发布前版本覆盖
 	// 如果是全量发布，则用发布内容覆盖
 	ConfigEdit()
+}
+
+type PublishSvc struct {
+	DB    db.Repo
+	Store storage.Repo
 }

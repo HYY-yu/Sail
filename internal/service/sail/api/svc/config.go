@@ -347,7 +347,7 @@ func (s *ConfigSvc) History(sctx core.SvcContext, configID int) ([]model.ConfigH
 			CreateByName: s.GetCreateByName(ctx, s.DB, s.StaffRepo, e.CreateBy),
 			CreateTime:   e.CreateTime.Unix(),
 			Reversion:    e.Reversion,
-			OpType:       e.OpType,
+			OpType:       int(e.OpType),
 			OpTypeStr:    model.ConfigHistoryOpType(e.OpType).String(),
 		}
 		result[i] = b
@@ -878,7 +878,7 @@ func (s *ConfigSvc) addConfigHistory(ctx context.Context, db *gorm.DB, configID 
 		Reversion:  revision,
 		CreateTime: time.Now(),
 		CreateBy:   userId,
-		OpType:     int(opType),
+		OpType:     int8(opType),
 	}
 
 	hMgr := s.ConfigHistoryRepo.Mgr(ctx, db)
