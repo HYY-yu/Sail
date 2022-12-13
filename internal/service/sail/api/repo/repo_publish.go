@@ -2,36 +2,35 @@ package repo
 
 import (
 	"context"
-
-	"gorm.io/gorm"
-
 	"github.com/HYY-yu/sail/internal/service/sail/model"
+	"gorm.io/gorm"
 )
 
-type PublishConfigRepo interface {
-	Mgr(ctx context.Context, db *gorm.DB) *_PublishConfigMgr
+type PublishRepo interface {
+	Mgr(ctx context.Context, db *gorm.DB) *_PublishMgr
 }
 
-type publishConfigRepo struct {
+type publishRepo struct {
 }
 
-func NewPublishConfigRepo() PublishConfigRepo {
-	return &publishConfigRepo{}
+func NewPublishRepo() PublishRepo {
+	return &publishRepo{}
 }
 
-func (*publishConfigRepo) Mgr(ctx context.Context, db *gorm.DB) *_PublishConfigMgr {
-	mgr := PublishConfigMgr(ctx, db)
+func (*publishRepo) Mgr(ctx context.Context, db *gorm.DB) *_PublishMgr {
+	mgr := PublishMgr(ctx, db)
 	return mgr
 }
 
 // ------- 自定义方法 -------
 
-func (obj *_PublishConfigMgr) ListPublishConfig(
+func (obj *_PublishMgr) ListPublish(
 	limit, offset int,
 	sort string,
-) (result []model.PublishConfig, err error) {
+) (result []model.Publish, err error) {
 	err = obj.
-		sort(sort, model.PublishConfigColumns.ID+" desc").
+		sort(sort, model.PublishColumns.ID+" desc").
+		WithContext(obj.ctx).
 		Limit(limit).
 		Offset(offset).
 		Find(&result).Error
