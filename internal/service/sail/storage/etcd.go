@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"go.etcd.io/etcd/client/v3/concurrency"
 	"time"
 
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -16,7 +17,7 @@ type ETCDConfig struct {
 	Password             string
 }
 
-func New(cfg *ETCDConfig) (*etcdRepo, error) {
+func New(cfg *ETCDConfig) (Repo, error) {
 	client, err := etcdConnect(cfg)
 	if err != nil {
 		return nil, err
@@ -55,6 +56,34 @@ func (e *etcdRepo) Set(ctx context.Context, key string, value string) SetRespons
 	result.Revision = int(revision)
 
 	return result
+}
+
+const ConcurrentSet = "/SAIL/ConcurrentSet"
+
+// ConcurrentSet 保证同时写入只有一个能写入成功
+// TODO 待单元测试
+func (e *etcdRepo) ConcurrentSet(ctx context.Context, key string, value string) SetResponse {
+	session, _ := concurrency.NewSession(e.client, concurrency.WithTTL(5))
+	mux := concurrency.NewMutex(session, ConcurrentSet)
+
+	ctx, c := context.WithTimeout(ctx, time.Second*5)
+	_ = c // 消除警告
+	err := mux.TryLock(ctx)
+
+	res := SetResponse{}
+	defer func() {
+		_ = mux.Unlock(ctx)
+	}()
+
+	if err != nil {
+		res.Err = err
+		if err == concurrency.ErrLocked {
+			// 如果 err 是 Locked，外部调用通过判断 res.Err 得知自己是否更新成功
+		}
+		return res
+	}
+
+	return e.Set(ctx, key, value)
 }
 
 func (e *etcdRepo) Get(ctx context.Context, key string) GetResponse {

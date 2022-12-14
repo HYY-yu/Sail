@@ -7,6 +7,7 @@ import (
 type Repo interface {
 	Set(ctx context.Context, key string, value string) SetResponse
 	Get(ctx context.Context, key string) GetResponse
+	ConcurrentSet(ctx context.Context, key string, value string) SetResponse
 	GetWithReversion(ctx context.Context, key string, reversion int) GetResponse
 	Del(ctx context.Context, key string) error
 	Close() error
