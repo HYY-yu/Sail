@@ -1,6 +1,7 @@
 package svc_publish
 
 import (
+	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
 	"github.com/HYY-yu/seckill.pkg/db"
 )
@@ -14,7 +15,7 @@ type PublishSystem interface {
 	// 如果 config 已加入，则更新 config 内容
 	// 如果 config 未加入，则加入
 	// 如果 config 已被锁定，则返回无法进入
-	EnterPublish(projectID, namespaceID, configID int, content string)
+	EnterPublish(projectID, namespaceID, configID int, content string) error
 
 	// QueryPublish 查询配置的状态
 	QueryPublish(configID int)
@@ -31,4 +32,42 @@ type ConfigSystem interface {
 type PublishSvc struct {
 	DB    db.Repo
 	Store storage.Repo
+
+	ConfigRepo    repo.ConfigRepo
+	ProjectRepo   repo.ProjectRepo
+	NamespaceRepo repo.NamespaceRepo
+}
+
+func NewPublishSvc(
+	db db.Repo,
+	store storage.Repo,
+	cr repo.ConfigRepo,
+	pr repo.ProjectRepo,
+	nr repo.NamespaceRepo,
+) *PublishSvc {
+	svc := &PublishSvc{
+		DB:            db,
+		Store:         store,
+		ConfigRepo:    cr,
+		ProjectRepo:   pr,
+		NamespaceRepo: nr,
+	}
+	return svc
+}
+
+func (p *PublishSvc) EnterPublish(projectID, namespaceID, configID int, content string) error {
+
+	return nil
+}
+
+func (p *PublishSvc) QueryPublish(configID int) {
+
+}
+
+func (p *PublishSvc) initPublish() {
+
+}
+
+func (p *PublishSvc) queryPublish() {
+
 }
