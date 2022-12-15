@@ -1,9 +1,11 @@
 package svc_publish
 
 import (
+	"fmt"
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
 	"github.com/HYY-yu/seckill.pkg/db"
+	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
 )
 
 // PublishSystem 发布系统
@@ -64,10 +66,19 @@ func (p *PublishSvc) QueryPublish(configID int) {
 
 }
 
+// initPublish 进入发布期
+// 1. 生成 token
+// 2. 写入 token
+// 3. 加密配置，设计加密字符串
+// 4. 写入数据库，发布状态为发布期
 func (p *PublishSvc) initPublish() {
 
 }
 
 func (p *PublishSvc) queryPublish() {
 
+}
+
+func generatePublishToken(projectID, namespaceID int) string {
+	return encrypt.SHA256WithEncoding(fmt.Sprintf("%d-%d-%s", projectID, namespaceID, encrypt.Nonce(5)), encrypt.NewBase32Human())
 }

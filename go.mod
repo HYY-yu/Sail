@@ -9,6 +9,7 @@ require (
 	github.com/gogf/gf/v2 v2.1.2
 	github.com/google/wire v0.5.0
 	github.com/spf13/viper v1.12.0
+	github.com/stretchr/testify v1.7.1
 	github.com/swaggo/swag v1.7.9
 	github.com/vearutop/statigz v1.2.0
 	go.etcd.io/etcd/api/v3 v3.5.4
@@ -32,6 +33,7 @@ require (
 	github.com/clbanning/mxj/v2 v2.5.5 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gin-contrib/pprof v1.3.0 // indirect
@@ -73,6 +75,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect

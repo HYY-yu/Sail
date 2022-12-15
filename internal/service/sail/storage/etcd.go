@@ -61,7 +61,6 @@ func (e *etcdRepo) Set(ctx context.Context, key string, value string) SetRespons
 const ConcurrentSet = "/SAIL/ConcurrentSet"
 
 // ConcurrentSet 保证同时写入只有一个能写入成功
-// TODO 待单元测试
 func (e *etcdRepo) ConcurrentSet(ctx context.Context, key string, value string) SetResponse {
 	session, _ := concurrency.NewSession(e.client, concurrency.WithTTL(5))
 	mux := concurrency.NewMutex(session, ConcurrentSet)
