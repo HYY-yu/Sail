@@ -164,6 +164,19 @@ func (obj *_PublishMgr) WithNamespaceID(namespaceID interface{}, cond ...string)
 	})
 }
 
+// WithPublishToken publish_token获取
+func (obj *_PublishMgr) WithPublishToken(publishToken interface{}, cond ...string) Option {
+	return optionFunc(func(o *options) {
+		if len(cond) == 0 {
+			cond = []string{" = ? "}
+		}
+		o.query["publish_token"] = queryData{
+			cond: cond[0],
+			data: publishToken,
+		}
+	})
+}
+
 // WithStatus status获取
 func (obj *_PublishMgr) WithStatus(status interface{}, cond ...string) Option {
 	return optionFunc(func(o *options) {

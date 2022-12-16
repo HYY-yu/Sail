@@ -977,7 +977,6 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 		return 0, 0, gerror.Wrap(sresp.Err, "addConfig")
 	}
 
-	return bean.ID, sresp.Revision, nil
 }
 
 func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
@@ -986,6 +985,7 @@ func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID 
 	pMgr.WithPrepareStmt()
 	nMgr.WithPrepareStmt()
 
+	// projectID 有可能为 0，用 Get 而不是 Catch
 	project, err := pMgr.WithOptions(pMgr.WithID(projectID)).
 		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name, model.ProjectColumns.Key).Get()
 	if err != nil {

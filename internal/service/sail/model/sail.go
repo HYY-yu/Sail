@@ -175,29 +175,32 @@ var ProjectGroupColumns = struct {
 
 // Publish [...]
 type Publish struct {
-	ID          int       `gorm:"primaryKey;column:id;type:int(11);not null"`
-	ProjectID   int       `gorm:"index:project_id;column:project_id;type:int(11);not null"`
-	NamespaceID int       `gorm:"index:project_id;column:namespace_id;type:int(11);not null"`
-	Status      int8      `gorm:"index:project_id;column:status;type:tinyint(4);not null"`
-	CreateTime  time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
-	UpdateTime  time.Time `gorm:"column:update_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	ID           int       `gorm:"primaryKey;column:id;type:int(11);not null"`
+	ProjectID    int       `gorm:"index:project_id;column:project_id;type:int(11);not null"`
+	NamespaceID  int       `gorm:"index:project_id;column:namespace_id;type:int(11);not null"`
+	PublishToken string    `gorm:"column:publish_token;type:varchar(50);not null"`
+	Status       int8      `gorm:"index:project_id;column:status;type:tinyint(4);not null"`
+	CreateTime   time.Time `gorm:"column:create_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
+	UpdateTime   time.Time `gorm:"column:update_time;type:timestamp;not null;default:CURRENT_TIMESTAMP"`
 }
 
 // PublishColumns get sql column name.获取数据库列名
 var PublishColumns = struct {
-	ID          string
-	ProjectID   string
-	NamespaceID string
-	Status      string
-	CreateTime  string
-	UpdateTime  string
+	ID           string
+	ProjectID    string
+	NamespaceID  string
+	PublishToken string
+	Status       string
+	CreateTime   string
+	UpdateTime   string
 }{
-	ID:          "id",
-	ProjectID:   "project_id",
-	NamespaceID: "namespace_id",
-	Status:      "status",
-	CreateTime:  "create_time",
-	UpdateTime:  "update_time",
+	ID:           "id",
+	ProjectID:    "project_id",
+	NamespaceID:  "namespace_id",
+	PublishToken: "publish_token",
+	Status:       "status",
+	CreateTime:   "create_time",
+	UpdateTime:   "update_time",
 }
 
 // PublishConfig [...]
