@@ -30,3 +30,9 @@ type AddPublish struct {
 	PublishType int    `json:"publish_type"`
 	PublishData string `json:"publish_data"`
 }
+
+const (
+	PublishStatusRelease = iota + 1
+	PublishStatusLock
+	PublishStatusEnd
+)
