@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `sail`.`publish_config`
     `status`               int       NOT NULL,
     `create_time`          timestamp NOT NULL Default CURRENT_TIMESTAMP,
     `update_time`          timestamp NOT NULL Default CURRENT_TIMESTAMP,
-    INDEX (`publish_id`),
+    UNIQUE INDEX (`publish_id`, `config_id`),
     INDEX (`config_id`)
 );
 

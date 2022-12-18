@@ -977,6 +977,7 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 		return 0, 0, gerror.Wrap(sresp.Err, "addConfig")
 	}
 
+	return bean.ID, sresp.Revision, nil
 }
 
 func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
