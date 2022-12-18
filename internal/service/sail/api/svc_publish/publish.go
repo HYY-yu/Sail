@@ -3,15 +3,19 @@ package svc_publish
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/HYY-yu/seckill.pkg/db"
+	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
+	"github.com/HYY-yu/seckill.pkg/pkg/mysqlerr_helper"
+	"github.com/gogf/gf/v2/errors/gerror"
+	"go.etcd.io/etcd/client/v3/concurrency"
+
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
-	"github.com/HYY-yu/seckill.pkg/db"
-	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
-	"github.com/gogf/gf/v2/errors/gerror"
-	"go.etcd.io/etcd/client/v3/concurrency"
-	"strings"
-	"time"
 )
 
 // PublishSystem 发布系统
@@ -30,11 +34,15 @@ type ConfigSystem interface {
 	// 做一个配置覆盖编辑，如果是回滚，则用发布前版本覆盖
 	// 如果是全量发布，则用发布内容覆盖
 	ConfigEdit()
+
+	// ConfigKey 获取配置 key 格式
+	ConfigKey(isPublic bool, projectGroupID int, projectKey string, namespaceName string, configName string, configType model.ConfigType) string
 }
 
 type PublishSvc struct {
-	DB    db.Repo
-	Store storage.Repo
+	DB           db.Repo
+	Store        storage.Repo
+	configSystem ConfigSystem
 
 	ConfigRepo        repo.ConfigRepo
 	ProjectRepo       repo.ProjectRepo
@@ -46,6 +54,7 @@ type PublishSvc struct {
 func NewPublishSvc(
 	db db.Repo,
 	store storage.Repo,
+	cs ConfigSystem,
 	cr repo.ConfigRepo,
 	pr repo.ProjectRepo,
 	nr repo.NamespaceRepo,
@@ -55,6 +64,7 @@ func NewPublishSvc(
 	svc := &PublishSvc{
 		DB:                db,
 		Store:             store,
+		configSystem:      cs,
 		ConfigRepo:        cr,
 		ProjectRepo:       pr,
 		NamespaceRepo:     nr,
@@ -64,7 +74,7 @@ func NewPublishSvc(
 	return svc
 }
 
-// EnterPublish
+// EnterPublish 并发安全
 // 进入发布，如果namespace尚未处于发布期，则自动进入发布期
 // 将 config 加入 namespace 的发布期
 // 如果 config 已加入，则更新 config 内容
@@ -92,10 +102,81 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 			return err
 		}
 	}
+	if publish.Status > model.PublishStatusRelease {
+		return gerror.Newf("publish status wrong with publish_id %d", publish.ID)
+	}
 
-	pucMgr := p.PublishConfigRepo.Mgr(ctx, p.DB.GetDb())
-	pucMgr.WithOptions(pucMgr.WithConfigID(configID)).Get()
+	tx := p.DB.GetDb().Begin()
+	defer tx.Rollback()
+	pucMgr := p.PublishConfigRepo.Mgr(ctx, tx)
+	// BEGIN
 
+	// SELECT * FROM publish_config WHERE publish_id = ? AND config_id = ?;
+	publishConfig, err := pucMgr.WithOptions(pucMgr.WithPublishID(publish.ID), pucMgr.WithConfigID(configID)).
+		Get()
+	if err != nil {
+		return err
+	}
+	project, namespace, err := p.getProjectAndNamespace(ctx, projectID, namespaceID)
+	if err != nil {
+		return err
+	}
+	cmgr := p.ConfigRepo.Mgr(ctx, tx)
+	config, err := cmgr.WithOptions(cmgr.WithID(configID)).Catch()
+	if err != nil {
+		return err
+	}
+	configKey := p.configSystem.ConfigKey(
+		config.IsPublic,
+		config.ProjectGroupID,
+		project.Key,
+		namespace.Name,
+		config.Name,
+		model.ConfigType(config.ConfigType),
+	)
+
+	if publishConfig.ID == 0 {
+		// INSERT with unique key
+		gresp := p.Store.Get(ctx, configKey)
+		if gresp.Err != nil {
+			return err
+		}
+		if len(gresp.Value) == 0 {
+			return gerror.New("not found key: " + configKey)
+		}
+
+		now := time.Now()
+		publishConfig = model.PublishConfig{
+			PublishID:          publish.ID,
+			ConfigID:           configID,
+			ConfigPreReversion: gresp.Revision,
+			Status:             model.PublishStatusRelease,
+			CreateTime:         now,
+			UpdateTime:         now,
+		}
+		err := pucMgr.CreatePublishConfig(&publishConfig)
+		if err != nil {
+			// 已经插入则不管，继续流程
+			if !mysqlerr_helper.IsMysqlDupEntryError(err) {
+				return err
+			}
+		}
+	} else {
+		if publishConfig.Status > model.PublishStatusRelease {
+			return gerror.Newf("publish status wrong with config_id %d", configID)
+		}
+	}
+
+	// Update ETCD
+	encryptContent := generatePublishContent(publishToken, publishConfig.ConfigPreReversion, content)
+
+	sresp := p.Store.Set(ctx, configKey, encryptContent)
+	if sresp.Err != nil {
+		return sresp.Err
+	}
+
+	// Commit
+	tx.Commit()
 	return nil
 }
 
@@ -115,7 +196,7 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 		return "", err
 	}
 
-	publishKey := publishConfigKey(project.Key, namespace.Name)
+	publishKey := publishTokenKey(project.Key, namespace.Name)
 
 	gresp := p.Store.Get(ctx, publishKey)
 	if gresp.Err != nil {
@@ -178,10 +259,6 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 	return "", gerror.New("Read failed. ")
 }
 
-func (p *PublishSvc) queryPublish() {
-
-}
-
 func (p *PublishSvc) getProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
 	pMgr := p.ProjectRepo.Mgr(ctx, p.DB.GetDb())
 	nMgr := p.NamespaceRepo.Mgr(ctx, p.DB.GetDb())
@@ -204,7 +281,7 @@ func (p *PublishSvc) getProjectAndNamespace(ctx context.Context, projectID int, 
 
 // /conf/projectKey/namespaceName/publish/token
 // 锁定期删除
-func publishConfigKey(projectKey, namespaceName string) string {
+func publishTokenKey(projectKey, namespaceName string) string {
 	builder := strings.Builder{}
 	builder.WriteString("/conf")
 
@@ -225,4 +302,26 @@ func publishConfigKey(projectKey, namespaceName string) string {
 
 func generatePublishToken(projectID, namespaceID int) string {
 	return encrypt.SHA256WithEncoding(fmt.Sprintf("%d-%d-%s", projectID, namespaceID, encrypt.Nonce(5)), encrypt.NewBase32Human())
+}
+
+// PUBLISH&publishToken{6}&pre-reversion&EncryptContent
+func generatePublishContent(publishToken string, preReversion int, content string) string {
+	builder := strings.Builder{}
+	builder.WriteString("PUBLISH")
+	builder.WriteByte('&')
+
+	builder.WriteString(publishToken[:7])
+	builder.WriteByte('&')
+	builder.WriteString(strconv.Itoa(preReversion))
+
+	goAES := encrypt.NewGoAES(publishToken, encrypt.AES192)
+	encryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Encrypt(content)
+	if err != nil {
+		// 不可能为 err
+		return ""
+	}
+	builder.WriteByte('&')
+	builder.WriteString(encryptContent)
+
+	return builder.String()
 }
