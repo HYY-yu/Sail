@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"time"
 
@@ -56,6 +57,28 @@ func (e *etcdRepo) Set(ctx context.Context, key string, value string) SetRespons
 	result.Revision = int(revision)
 
 	return result
+}
+
+// AtomicBatchSet
+// TODO 待单测
+func (e *etcdRepo) AtomicBatchSet(ctx context.Context, key []string, value []string) SetResponse {
+	if len(key) != len(value) {
+		return SetResponse{
+			Err: errors.New("key len must equal value len"),
+		}
+	}
+	txRes, err := concurrency.NewSTM(e.client, func(stm concurrency.STM) error {
+		for i, k := range key {
+			v := value[i]
+			stm.Put(k, v)
+		}
+		return nil
+	})
+
+	return SetResponse{
+		Err:      err,
+		Revision: int(txRes.Header.GetRevision()),
+	}
 }
 
 const ConcurrentSet = "/SAIL/ConcurrentSet"
