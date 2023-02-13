@@ -3,6 +3,18 @@ kind: pipeline
 type: kubernetes
 name: sail
 
+services:
+  - name: etcd
+    image: quay.io/coreos/etcd:v3.5.0
+    commands:
+      - "/usr/local/bin/etcd"
+      - "--name=node"
+      - "--initial-advertise-peer-urls=http://127.0.0.1:2380"
+      - "--listen-peer-urls=http://0.0.0.0:2380"
+      - "--advertise-client-urls=http://127.0.0.1:2379"
+      - "--listen-client-urls=http://0.0.0.0:2379"
+      - "--initial-cluster=node=http://127.0.0.1:2380"
+
 steps:
   - name: test
     image: golang:1.16.15
@@ -12,6 +24,7 @@ steps:
       - name: deps
         path: /go
     commands:
+      - curl 127.0.0.1:2379/health # 检查 ETCD
       - go get -d -t ./...
       - go test -v ./...
   - name: build
