@@ -9,8 +9,6 @@ services:
     environment:
       ALLOW_NONE_AUTHENTICATION: yes
       ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
-    ports:
-      2379:2379
 
 steps:
   - name: test
@@ -82,6 +80,7 @@ steps:
 volumes:
   - name: deps
     temp: {}
+
 trigger:
   event:
     - push
