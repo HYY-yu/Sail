@@ -12,7 +12,7 @@ services:
 
 steps:
   - name: test
-    image: golang:1.16.15
+    image: golang:1.18
     environment:
       GOPROXY: https://goproxy.cn,direct
     volumes:
