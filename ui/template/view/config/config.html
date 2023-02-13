@@ -78,8 +78,8 @@
 <script src="../../../static/component/codemirror5/addon/search.js"></script>
 <script src="../../../static/component/codemirror5/addon/searchcursor.js"></script>
 <script src="../../../static/component/codemirror5/lint/lint.js"></script>
-<script src="https://unpkg.com/jsonlint@1.6.3/web/jsonlint.js"></script>
-<script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<script src="../../../static/component/codemirror5/lint/jsonlint.js"></script>
+<script src="../../../static/component/codemirror5/lint/js-yaml.min.js"></script>
 <script src="../../../static/component/codemirror5/lint/json-lint.js"></script>
 <script src="../../../static/component/codemirror5/lint/yaml-lint.js"></script>
 <script src="../../../static/component/codemirror5/mode/javascript.js"></script>
@@ -147,6 +147,9 @@
                             $('#changeCopy').html('转为副本');
                         } else {
                             $('#changeCopy').html('重新链接到公共配置');
+                        }
+                        if (resp.data.is_encrypt) {
+                            ckstr += ' 🔐'
                         }
                         $('#textConfigID').html(ckstr);
 
