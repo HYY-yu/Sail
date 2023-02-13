@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"go.etcd.io/etcd/client/v3/concurrency"
 	"time"
 
@@ -59,9 +60,8 @@ func (e *etcdRepo) Set(ctx context.Context, key string, value string) SetRespons
 	return result
 }
 
-// AtomicBatchSet
-// TODO 待单测
-func (e *etcdRepo) AtomicBatchSet(ctx context.Context, key []string, value []string) SetResponse {
+// AtomicBatchSet 保证 kv 数组写入是事务的
+func (e *etcdRepo) AtomicBatchSet(ctx context.Context, key []string, value []string, callback ...func()) SetResponse {
 	if len(key) != len(value) {
 		return SetResponse{
 			Err: errors.New("key len must equal value len"),
@@ -69,16 +69,30 @@ func (e *etcdRepo) AtomicBatchSet(ctx context.Context, key []string, value []str
 	}
 	txRes, err := concurrency.NewSTM(e.client, func(stm concurrency.STM) error {
 		for i, k := range key {
+			select {
+			case <-ctx.Done():
+				// ctx 到期，事务中断
+				return gerror.New("ctx is done, end stm. ")
+			default:
+			}
+
 			v := value[i]
 			stm.Put(k, v)
+
+			if len(callback) > 0 {
+				callback[0]()
+			}
 		}
 		return nil
 	})
 
-	return SetResponse{
-		Err:      err,
-		Revision: int(txRes.Header.GetRevision()),
+	sr := SetResponse{
+		Err: err,
 	}
+	if txRes != nil && txRes.Header != nil {
+		sr.Revision = int(txRes.Header.GetRevision())
+	}
+	return sr
 }
 
 const ConcurrentSet = "/SAIL/ConcurrentSet"

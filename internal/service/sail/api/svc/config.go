@@ -705,6 +705,7 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 
 // Edit
 // 改公共配置，需要把Link的配置全部改掉
+// 要保证这个操作的原子性
 func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 	ctx := sctx.Context()
 	userId := int(sctx.UserId())
