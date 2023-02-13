@@ -10,9 +10,9 @@ services:
       - "/usr/local/bin/etcd"
       - "--name=node"
       - "--initial-advertise-peer-urls=http://127.0.0.1:2380"
-      - "--listen-peer-urls=http://0.0.0.0:2380"
+      - "--listen-peer-urls=http://127.0.0.1:2380"
       - "--advertise-client-urls=http://127.0.0.1:2379"
-      - "--listen-client-urls=http://0.0.0.0:2379"
+      - "--listen-client-urls=http://127.0.0.1:2379"
       - "--initial-cluster=node=http://127.0.0.1:2380"
 
 steps:
@@ -24,7 +24,6 @@ steps:
       - name: deps
         path: /go
     commands:
-      - curl -m 10 --retry 5 -fsS 127.0.0.1:2379/health # 检查 ETCD
       - go get -d -t ./...
       - go test -v ./...
   - name: build
