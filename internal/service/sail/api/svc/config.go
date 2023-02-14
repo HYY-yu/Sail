@@ -705,6 +705,7 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 
 // Edit
 // 改公共配置，需要把Link的配置全部改掉
+// 要保证这个操作的原子性
 func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 	ctx := sctx.Context()
 	userId := int(sctx.UserId())
@@ -748,8 +749,9 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 
 	tx := s.DB.GetDb().Begin()
 	defer tx.Rollback()
+	paramContent := string(param.Content)
 
-	rollback, err := s.editConfig(ctx, userId, tx, string(param.Content), &cfg, project, namespace)
+	_, err = s.editConfig(ctx, userId, tx, paramContent, &cfg, project, namespace)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -761,11 +763,11 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 		// 更新ConfigLink涉及的配置
 		configLinkMgr := s.ConfigLinkRepo.Mgr(ctx, s.DB.GetDb())
 		cl, _ := configLinkMgr.WithOptions(configLinkMgr.WithPublicConfigID(cfg.ID)).Gets()
-
-		rollbacks := append([]func(s storage.Repo){}, rollback)
-		isRoll := false
+		updateKeys := make([]string, 0)
+		updateValues := make([]string, 0)
 		var bErr error
 
+		// 通过 ETCD 事务保证更新的原子性
 		for _, e := range cl {
 			cfg, _ := mgr.WithOptions(mgr.WithID(e.ConfigID)).Get()
 			if cfg.ID == 0 {
@@ -775,25 +777,40 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 				continue
 			}
 			project, namespace, _ := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
-			rb, err := s.editConfig(ctx, userId, tx, string(param.Content), &cfg, project, namespace)
-			if err != nil {
-				bErr = err
-				isRoll = true
-				break
+			configKey := s.ConfigKey(
+				cfg.IsPublic,
+				cfg.ProjectGroupID,
+				project.Key,
+				namespace.Name,
+				cfg.Name,
+				model.ConfigType(cfg.ConfigType),
+			)
+			updateKeys = append(updateKeys, configKey)
+
+			if cfg.IsEncrypt {
+				encryptContent, err := s.EncryptConfigContent(paramContent, namespace.SecretKey)
+				if err != nil {
+					bErr = err
+					break
+				}
+				paramContent = encryptContent
 			}
-			rollbacks = append(rollbacks, rb)
+			updateValues = append(updateValues, paramContent)
 		}
 
-		if isRoll {
-			for _, f := range rollbacks {
-				f(s.Store)
-			}
-			if bErr != nil {
-				return response.NewErrorAutoMsg(
-					http.StatusInternalServerError,
-					response.ServerError,
-				).WithErr(bErr)
-			}
+		if bErr != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(bErr)
+		}
+
+		setResp := s.Store.AtomicBatchSet(ctx, updateKeys, updateValues)
+		if setResp.Err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(setResp.Err)
 		}
 	}
 

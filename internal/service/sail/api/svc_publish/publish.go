@@ -3,6 +3,10 @@ package svc_publish
 import (
 	"context"
 	"fmt"
+<<<<<<< HEAD
+=======
+	"github.com/HYY-yu/seckill.pkg/core"
+>>>>>>> origin-feng/master
 	"strconv"
 	"strings"
 	"time"
@@ -24,8 +28,8 @@ type PublishSystem interface {
 	// ConfigSystem 判断本次更新配置是否需要进入发布系统（判断条件：编辑的命名空间是否需要发布），进入发布系统则不走原来的配置编辑逻辑。
 	EnterPublish(ctx context.Context, projectID, namespaceID, configID int, content string) error
 
-	// QueryPublish 查询配置的状态
-	QueryPublish(ctx context.Context, configID int)
+	// QueryPublishConfig 查询配置的状态
+	QueryPublishConfig(ctx context.Context, configID int) (model.PublishConfig, string, error)
 }
 
 // ConfigSystem 配置系统
@@ -180,7 +184,19 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 	return nil
 }
 
-func (p *PublishSvc) QueryPublish(ctx context.Context, configID int) {
+func (p *PublishSvc) QueryPublishConfig(ctx context.Context, configID int) (model.PublishConfig, string, error) {
+	return model.PublishConfig{}, "", nil
+}
+
+func (p *PublishSvc) LockPublish(ctx core.SvcContext, publishID int) {
+
+}
+
+func (p *PublishSvc) ListPublish() {
+
+}
+
+func (p *PublishSvc) RollbackPublish(ctx core.SvcContext) {
 
 }
 

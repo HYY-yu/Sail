@@ -3,9 +3,16 @@ kind: pipeline
 type: kubernetes
 name: sail
 
+services:
+  - name: etcd
+    image: bitnami/etcd:3.5
+    environment:
+      ALLOW_NONE_AUTHENTICATION: yes
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd:2379
+
 steps:
   - name: test
-    image: golang:1.16.15
+    image: golang:1.18
     environment:
       GOPROXY: https://goproxy.cn,direct
     volumes:
@@ -15,13 +22,14 @@ steps:
       - go get -d -t ./...
       - go test -v ./...
   - name: build
-    image: golang:1.16.15-alpine3.15
+    image: golang:1.18-alpine3.15
     environment:
       GOPROXY: https://goproxy.cn,direct
     volumes:
       - name: deps
         path: /go
     commands:
+      - go mod tidy
       - CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o service ./internal/service/${DRONE_STAGE_NAME}/cmd/main.go
   - name: publishDocker
     image: plugins/docker
@@ -73,6 +81,7 @@ steps:
 volumes:
   - name: deps
     temp: {}
+
 trigger:
   event:
     - push

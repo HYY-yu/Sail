@@ -79,7 +79,7 @@ func (s *ProjectSvc) List(sctx core.SvcContext, pr *page.PageRequest) (*page.Pag
 		if v, ok := pr.Filter["project_group_id"]; ok && util.IsNotZero(v) {
 			f := false
 			for _, a := range projectGroupArr {
-				if a == v {
+				if a == gconv.Int(v) {
 					f = true
 				}
 			}
