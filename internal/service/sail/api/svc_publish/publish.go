@@ -3,10 +3,7 @@ package svc_publish
 import (
 	"context"
 	"fmt"
-<<<<<<< HEAD
-=======
 	"github.com/HYY-yu/seckill.pkg/core"
->>>>>>> origin-feng/master
 	"strconv"
 	"strings"
 	"time"
