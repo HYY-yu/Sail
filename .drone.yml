@@ -22,13 +22,14 @@ steps:
       - go get -d -t ./...
       - go test -v ./...
   - name: build
-    image: golang:1.16.15-alpine3.15
+    image: golang:1.18-alpine3.15
     environment:
       GOPROXY: https://goproxy.cn,direct
     volumes:
       - name: deps
         path: /go
     commands:
+      - go mod tidy
       - CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o service ./internal/service/${DRONE_STAGE_NAME}/cmd/main.go
   - name: publishDocker
     image: plugins/docker
