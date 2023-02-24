@@ -36,8 +36,14 @@ type ConfigSystem interface {
 	// 如果是全量发布，则用发布内容覆盖
 	ConfigEdit()
 
+	// GetConfig 根据 configID 获取 config
+	GetConfig(ctx context.Context, configID int) (*model.Config, error)
+
 	// ConfigKey 获取配置 key 格式
 	ConfigKey(isPublic bool, projectGroupID int, projectKey string, namespaceName string, configName string, configType model.ConfigType) string
+
+	// GetConfigProjectAndNamespace 获取 project 和 namespace 的关键信息
+	GetConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error)
 }
 
 type PublishSvc struct {
@@ -45,9 +51,6 @@ type PublishSvc struct {
 	Store        storage.Repo
 	configSystem ConfigSystem
 
-	ConfigRepo        repo.ConfigRepo
-	ProjectRepo       repo.ProjectRepo
-	NamespaceRepo     repo.NamespaceRepo
 	PublishRepo       repo.PublishRepo
 	PublishConfigRepo repo.PublishConfigRepo
 }
@@ -56,9 +59,6 @@ func NewPublishSvc(
 	db db.Repo,
 	store storage.Repo,
 	cs ConfigSystem,
-	cr repo.ConfigRepo,
-	pr repo.ProjectRepo,
-	nr repo.NamespaceRepo,
 	pur repo.PublishRepo,
 	puc repo.PublishConfigRepo,
 ) *PublishSvc {
@@ -66,9 +66,6 @@ func NewPublishSvc(
 		DB:                db,
 		Store:             store,
 		configSystem:      cs,
-		ConfigRepo:        cr,
-		ProjectRepo:       pr,
-		NamespaceRepo:     nr,
 		PublishRepo:       pur,
 		PublishConfigRepo: puc,
 	}
@@ -91,7 +88,7 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 
 	publish, err := puMgr.WithOptions(puMgr.WithPublishToken(publishToken)).Catch()
 	if err != nil {
-		// 过会儿再读一下，为写冲突的 goroutine 准备的逻辑
+		// 过会儿再读一下，为写冲突的 goroutine 准备，防止此时数据尚未写入数据库
 		for i := 0; i < 3; i++ {
 			time.Sleep(10 * time.Millisecond)
 			publish, err = puMgr.WithOptions(puMgr.WithPublishToken(publishToken)).Catch()
@@ -118,12 +115,11 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 	if err != nil {
 		return err
 	}
-	project, namespace, err := p.getProjectAndNamespace(ctx, projectID, namespaceID)
+	project, namespace, err := p.configSystem.GetConfigProjectAndNamespace(ctx, projectID, namespaceID)
 	if err != nil {
 		return err
 	}
-	cmgr := p.ConfigRepo.Mgr(ctx, tx)
-	config, err := cmgr.WithOptions(cmgr.WithID(configID)).Catch()
+	config, err := p.configSystem.GetConfig(ctx, configID)
 	if err != nil {
 		return err
 	}
@@ -204,7 +200,7 @@ func (p *PublishSvc) RollbackPublish(ctx core.SvcContext) {
 // 3. 写入发布表
 // 幂等，可重入
 func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int) (string, error) {
-	project, namespace, err := p.getProjectAndNamespace(ctx, projectID, namespaceID)
+	project, namespace, err := p.configSystem.GetConfigProjectAndNamespace(ctx, projectID, namespaceID)
 	if err != nil {
 		return "", err
 	}
@@ -270,26 +266,6 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 		time.Sleep(10 * time.Millisecond)
 	}
 	return "", gerror.New("Read failed. ")
-}
-
-func (p *PublishSvc) getProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
-	pMgr := p.ProjectRepo.Mgr(ctx, p.DB.GetDb())
-	nMgr := p.NamespaceRepo.Mgr(ctx, p.DB.GetDb())
-	pMgr.WithPrepareStmt()
-	nMgr.WithPrepareStmt()
-
-	project, err := pMgr.WithOptions(pMgr.WithID(projectID)).
-		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name).Catch()
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "getConfigProjectAndNamespace")
-	}
-	namespace, err := nMgr.WithOptions(pMgr.WithID(namespaceID)).
-		WithSelects(model.NamespaceColumns.ID, model.NamespaceColumns.Name).Catch()
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "getConfigProjectAndNamespace")
-	}
-
-	return &project, &namespace, nil
 }
 
 // /conf/projectKey/namespaceName/publish/token

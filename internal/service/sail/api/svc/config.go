@@ -997,6 +997,10 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 	return bean.ID, sresp.Revision, nil
 }
 
+func (s *ConfigSvc) GetConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
+	return s.getConfigProjectAndNamespace(ctx, projectID, namespaceID)
+}
+
 func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
 	pMgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 	nMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
