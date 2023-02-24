@@ -6,10 +6,9 @@ import (
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
-	"github.com/agiledragon/gomonkey/v2"
+	"github.com/HYY-yu/seckill.pkg/db"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 	"sync"
 	"testing"
 )
@@ -19,23 +18,22 @@ func TestPublishSvc_initPublish(t *testing.T) {
 		Endpoints: []string{"127.0.0.1:2379"},
 	})
 	assert.NoError(t, err)
-	mockRepo := repo.NewMockPublishRepo()
 	ctrl := gomock.NewController(t)
 	cs := NewMockConfigSystem(ctrl)
+	publishMgr := repo.NewMockPublishMgrInter(ctrl)
+	publishMgr.EXPECT().CreatePublish(gomock.Any()).Return(nil).AnyTimes()
+
+	publishRepo := repo.NewMockPublishRepo(ctrl)
+	publishRepo.EXPECT().Mgr(gomock.Any(), gomock.Any()).Return(publishMgr).AnyTimes()
 
 	// 替换 ConfigSystem
 	cs.EXPECT().GetConfigProjectAndNamespace(context.Background(), gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
 			return &model.Project{ID: projectID, ProjectGroupID: 1, Key: fmt.Sprintf("TEST%d", projectID), Name: "TEST"},
 				&model.Namespace{ID: namespaceID, ProjectGroupID: 1, Name: fmt.Sprintf("TEST%d", namespaceID), SecretKey: fmt.Sprintf("TEST%d", namespaceID)}, nil
-		})
+		}).AnyTimes()
 
-	// 替换 pm
-	pm := mockRepo.Mgr(context.Background(), &gorm.DB{})
-	gomonkey.ApplyMethodFunc(pm, "CreatePublish", func(bean *model.Publish) (err error) {
-		t.Log("Save Config Success!! ")
-		return nil
-	})
+	dbRepo := db.MockRepo{}
 
 	type args struct {
 		projectID   int
@@ -96,8 +94,9 @@ func TestPublishSvc_initPublish(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			publishSvc := &PublishSvc{
+				DB:           dbRepo,
 				Store:        etcdStorage,
-				PublishRepo:  mockRepo,
+				PublishRepo:  publishRepo,
 				configSystem: cs,
 			}
 			tokens := make([]string, 0)
@@ -117,8 +116,9 @@ func TestPublishSvc_initPublish(t *testing.T) {
 				}
 
 				wg.Wait()
-				for token := range tokenChan {
-					tokens = append(tokens, token)
+				for i := range tt.args {
+					tokens = append(tokens, <-tokenChan)
+					_ = i
 				}
 			} else {
 				for i := range tt.args {
@@ -127,7 +127,13 @@ func TestPublishSvc_initPublish(t *testing.T) {
 					tokens = append(tokens, token)
 				}
 			}
+			t.Log(tokens)
 			assert.Equal(t, tt.wantSame, isSame(tokens))
+			// Clear
+			for i := range tt.args {
+				err := publishSvc.deletePublish(context.Background(), tt.args[i].projectID, tt.args[i].namespaceID)
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

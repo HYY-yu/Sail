@@ -239,9 +239,9 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 		})
 		if err != nil {
 			// 写入失败，删除这个 Token
-			er := p.Store.Del(ctx, publishKey)
-			if er != nil {
-				return "", gerror.Wrap(err, "store err "+er.Error())
+			err2 := p.Store.Del(ctx, publishKey)
+			if err2 != nil {
+				return "", gerror.Wrap(err, "store err "+err2.Error())
 			}
 			return "", err
 		}
@@ -266,6 +266,20 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 		time.Sleep(10 * time.Millisecond)
 	}
 	return "", gerror.New("Read failed. ")
+}
+
+func (p *PublishSvc) deletePublish(ctx context.Context, projectID, namespaceID int) error {
+	project, namespace, err := p.configSystem.GetConfigProjectAndNamespace(ctx, projectID, namespaceID)
+	if err != nil {
+		return err
+	}
+
+	publishKey := publishTokenKey(project.Key, namespace.Name)
+	err = p.Store.Del(ctx, publishKey)
+	if err != nil {
+		return gerror.Wrap(err, "store err "+err.Error())
+	}
+	return nil
 }
 
 // /conf/projectKey/namespaceName/publish/token
