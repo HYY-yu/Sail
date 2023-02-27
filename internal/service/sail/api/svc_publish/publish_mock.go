@@ -12,59 +12,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockPublishSystem is a mock of PublishSystem interface.
-type MockPublishSystem struct {
-	ctrl     *gomock.Controller
-	recorder *MockPublishSystemMockRecorder
-}
-
-// MockPublishSystemMockRecorder is the mock recorder for MockPublishSystem.
-type MockPublishSystemMockRecorder struct {
-	mock *MockPublishSystem
-}
-
-// NewMockPublishSystem creates a new mock instance.
-func NewMockPublishSystem(ctrl *gomock.Controller) *MockPublishSystem {
-	mock := &MockPublishSystem{ctrl: ctrl}
-	mock.recorder = &MockPublishSystemMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockPublishSystem) EXPECT() *MockPublishSystemMockRecorder {
-	return m.recorder
-}
-
-// EnterPublish mocks base method.
-func (m *MockPublishSystem) EnterPublish(ctx context.Context, projectID, namespaceID, configID int, content string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnterPublish", ctx, projectID, namespaceID, configID, content)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// EnterPublish indicates an expected call of EnterPublish.
-func (mr *MockPublishSystemMockRecorder) EnterPublish(ctx, projectID, namespaceID, configID, content interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterPublish", reflect.TypeOf((*MockPublishSystem)(nil).EnterPublish), ctx, projectID, namespaceID, configID, content)
-}
-
-// QueryPublishConfig mocks base method.
-func (m *MockPublishSystem) QueryPublishConfig(ctx context.Context, configID int) (model.PublishConfig, string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "QueryPublishConfig", ctx, configID)
-	ret0, _ := ret[0].(model.PublishConfig)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// QueryPublishConfig indicates an expected call of QueryPublishConfig.
-func (mr *MockPublishSystemMockRecorder) QueryPublishConfig(ctx, configID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryPublishConfig", reflect.TypeOf((*MockPublishSystem)(nil).QueryPublishConfig), ctx, configID)
-}
-
 // MockConfigSystem is a mock of ConfigSystem interface.
 type MockConfigSystem struct {
 	ctrl     *gomock.Controller

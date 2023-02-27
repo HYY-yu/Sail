@@ -95,6 +95,7 @@ func main() {
 				}
 			}
 		},
+
 		// 关闭 Trace
 		func() {
 			if s.Trace != nil {

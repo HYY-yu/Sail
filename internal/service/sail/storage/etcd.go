@@ -156,12 +156,13 @@ func (e *etcdRepo) GetWithReversion(ctx context.Context, key string, reversion i
 	return result
 }
 
-func (e *etcdRepo) Del(ctx context.Context, key string) error {
-	_, err := e.client.Delete(ctx, key)
+func (e *etcdRepo) Del(ctx context.Context, key string) (bool, error) {
+	dResp, err := e.client.Delete(ctx, key)
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+
+	return dResp.Deleted == 1, nil
 }
 
 func (e *etcdRepo) Close() error {

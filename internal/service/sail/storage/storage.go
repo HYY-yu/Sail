@@ -10,7 +10,7 @@ type Repo interface {
 	Get(ctx context.Context, key string) GetResponse
 	ConcurrentSet(ctx context.Context, key string, value string) SetResponse
 	GetWithReversion(ctx context.Context, key string, reversion int) GetResponse
-	Del(ctx context.Context, key string) error
+	Del(ctx context.Context, key string) (bool, error)
 	Close() error
 }
 type SetResponse struct {

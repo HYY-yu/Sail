@@ -59,7 +59,7 @@ func Test_etcdRepo_ConcurrentSet(t *testing.T) {
 			assert.Equal(t, strconv.Itoa(r), gr.Value)
 
 			// 清理
-			err = e.Del(context.Background(), tt.args.key)
+			_, err = e.Del(context.Background(), tt.args.key)
 			assert.NoError(t, err)
 		})
 	}
@@ -124,7 +124,7 @@ func Test_etcdRepo_AtomicBatchSet(t *testing.T) {
 
 			// 清理
 			for _, key := range tt.args.keys {
-				err := e.Del(context.Background(), key)
+				_, err := e.Del(context.Background(), key)
 				assert.NoError(t, err)
 			}
 		})

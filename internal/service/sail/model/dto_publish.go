@@ -32,7 +32,7 @@ type AddPublish struct {
 }
 
 const (
-	PublishStatusRelease = iota + 1
-	PublishStatusLock
-	PublishStatusEnd
+	PublishStatusRelease = iota + 1 // 发布期
+	PublishStatusLock               // 锁定期
+	PublishStatusEnd                // 已结束
 )

@@ -3,7 +3,6 @@ package svc_publish
 import (
 	"context"
 	"fmt"
-	"github.com/HYY-yu/seckill.pkg/core"
 	"strconv"
 	"strings"
 	"time"
@@ -25,8 +24,9 @@ type PublishSystem interface {
 	// ConfigSystem 判断本次更新配置是否需要进入发布系统（判断条件：编辑的命名空间是否需要发布），进入发布系统则不走原来的配置编辑逻辑。
 	EnterPublish(ctx context.Context, projectID, namespaceID, configID int, content string) error
 
-	// QueryPublishConfig 查询配置的状态
-	QueryPublishConfig(ctx context.Context, configID int) (model.PublishConfig, string, error)
+	ListPublishConfig(ctx context.Context, projectID, namespaceID int) ([]model.PublishConfig, string, error)
+
+	DeletePublish(ctx context.Context, projectID, namespaceID int, newStatus int) error
 }
 
 // ConfigSystem 配置系统
@@ -177,20 +177,45 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 	return nil
 }
 
-func (p *PublishSvc) QueryPublishConfig(ctx context.Context, configID int) (model.PublishConfig, string, error) {
-	return model.PublishConfig{}, "", nil
+// DeletePublish 将 PublishToken 从 ETCD 中删除
+// 并且设置 Publish 为 newStatus。
+func (p *PublishSvc) DeletePublish(ctx context.Context, projectID, namespaceID int, newStatus int) error {
+	isDelete, err := p.deletePublish(ctx, projectID, namespaceID)
+	if err != nil {
+		return err
+	}
+	if isDelete {
+		pMgr := p.PublishRepo.Mgr(ctx, p.DB.GetDb())
+		err = pMgr.WithOptions(pMgr.WithProjectID(projectID), pMgr.WithNamespaceID(namespaceID)).
+			Update(model.PublishColumns.Status, newStatus).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (p *PublishSvc) LockPublish(ctx core.SvcContext, publishID int) {
+// ListPublishConfig 获取命名空间下所有的处于发布期的配置
+// 如果命名空间没有处于发布期，则返回错误
+// 如果命名空间处于发布期，则返回旗下待发布的配置列表
+func (p *PublishSvc) ListPublishConfig(ctx context.Context, projectID, namespaceID int) ([]model.PublishConfig, string, error) {
+	puMgr := p.PublishRepo.Mgr(ctx, p.DB.GetDb())
+	publish, err := puMgr.WithOptions(
+		puMgr.WithProjectID(projectID),
+		puMgr.WithNamespaceID(namespaceID),
+		puMgr.WithStatus(model.PublishStatusRelease),
+	).
+		Catch()
+	if err != nil {
+		return nil, "", err
+	}
 
-}
-
-func (p *PublishSvc) ListPublish() {
-
-}
-
-func (p *PublishSvc) RollbackPublish(ctx core.SvcContext) {
-
+	pcfgMgr := p.PublishConfigRepo.Mgr(ctx, p.DB.GetDb())
+	publishConfigs, err := pcfgMgr.WithOptions(pcfgMgr.WithID(publish.ID)).Gets()
+	if err != nil {
+		return nil, "", err
+	}
+	return publishConfigs, publish.PublishToken, nil
 }
 
 // initPublish 进入发布期
@@ -239,7 +264,7 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 		})
 		if err != nil {
 			// 写入失败，删除这个 Token
-			err2 := p.Store.Del(ctx, publishKey)
+			_, err2 := p.Store.Del(ctx, publishKey)
 			if err2 != nil {
 				return "", gerror.Wrap(err, "store err "+err2.Error())
 			}
@@ -268,22 +293,20 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 	return "", gerror.New("Read failed. ")
 }
 
-func (p *PublishSvc) deletePublish(ctx context.Context, projectID, namespaceID int) error {
+// deletePublish 退出发布期
+// 幂等，可重入
+func (p *PublishSvc) deletePublish(ctx context.Context, projectID, namespaceID int) (bool, error) {
 	project, namespace, err := p.configSystem.GetConfigProjectAndNamespace(ctx, projectID, namespaceID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	publishKey := publishTokenKey(project.Key, namespace.Name)
-	err = p.Store.Del(ctx, publishKey)
-	if err != nil {
-		return gerror.Wrap(err, "store err "+err.Error())
-	}
-	return nil
+	return p.Store.Del(ctx, publishKey)
 }
 
 // /conf/projectKey/namespaceName/publish/token
-// 锁定期删除
+// 写入 ETCD，当发布期结束则删除
 func publishTokenKey(projectKey, namespaceName string) string {
 	builder := strings.Builder{}
 	builder.WriteString("/conf")

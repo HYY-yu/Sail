@@ -683,7 +683,7 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 	}
 
 	configKey := s.ConfigKey(cfg.IsPublic, cfg.ProjectGroupID, project.Key, namespace.Name, cfg.Name, model.ConfigType(cfg.ConfigType))
-	err = s.Store.Del(ctx, configKey)
+	_, err = s.Store.Del(ctx, configKey)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
