@@ -2,6 +2,8 @@ package api
 
 import (
 	"errors"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc_interface"
 	"html/template"
 	"net/http"
 	"strings"
@@ -42,7 +44,10 @@ func NewHandlers(
 	namespaceHandler *handler.NamespaceHandler,
 	configHandler *handler.ConfigHandler,
 	indexHandler *handler.IndexHandler,
+	publishSystem svc_interface.PublishSystem,
+	configSvc *svc.ConfigSvc,
 ) *Handlers {
+	configSvc.SetPublishSystem(publishSystem)
 	return &Handlers{
 		projectGroupHandler: projectGroupHandler,
 		staffHandler:        staffHandler,

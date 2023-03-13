@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc_interface"
 	"github.com/HYY-yu/sail/internal/service/sail/model"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
 	"github.com/HYY-yu/seckill.pkg/db"
@@ -19,7 +20,7 @@ func TestPublishSvc_initPublish(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	ctrl := gomock.NewController(t)
-	cs := NewMockConfigSystem(ctrl)
+	cs := svc_interface.NewMockConfigSystem(ctrl)
 	publishMgr := repo.NewMockPublishMgrInter(ctrl)
 	publishMgr.EXPECT().CreatePublish(gomock.Any()).Return(nil).AnyTimes()
 
@@ -131,7 +132,7 @@ func TestPublishSvc_initPublish(t *testing.T) {
 			assert.Equal(t, tt.wantSame, isSame(tokens))
 			// Clear
 			for i := range tt.args {
-				err := publishSvc.deletePublish(context.Background(), tt.args[i].projectID, tt.args[i].namespaceID)
+				_, err := publishSvc.deletePublish(context.Background(), tt.args[i].projectID, tt.args[i].namespaceID)
 				assert.NoError(t, err)
 			}
 		})

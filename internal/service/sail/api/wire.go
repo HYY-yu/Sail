@@ -5,6 +5,8 @@
 package api
 
 import (
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc_interface"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc_publish"
 	"github.com/HYY-yu/seckill.pkg/cache"
 	"github.com/HYY-yu/seckill.pkg/db"
 	"github.com/google/wire"
@@ -26,12 +28,17 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 		repo.NewConfigRepo,
 		repo.NewConfigLinkRepo,
 		repo.NewConfigHistoryRepo,
+		repo.NewPublishRepo,
+		repo.NewPublishConfigRepo,
 		svc.NewProjectGroupSvc,
 		svc.NewStaffSvc,
 		svc.NewLoginSvc,
 		svc.NewProjectSvc,
 		svc.NewNamespaceSvc,
 		svc.NewConfigSvc,
+		svc_publish.NewPublishSvc,
+		wire.Bind(new(svc_interface.PublishSystem), new(*svc_publish.PublishSvc)),
+		wire.Bind(new(svc_interface.ConfigSystem), new(*svc.ConfigSvc)),
 		handler.NewProjectGroupHandler,
 		handler.NewStaffHandler,
 		handler.NewLoginHandler,

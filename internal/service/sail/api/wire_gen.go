@@ -10,6 +10,7 @@ import (
 	"github.com/HYY-yu/sail/internal/service/sail/api/handler"
 	"github.com/HYY-yu/sail/internal/service/sail/api/repo"
 	"github.com/HYY-yu/sail/internal/service/sail/api/svc"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc_publish"
 	"github.com/HYY-yu/sail/internal/service/sail/storage"
 	"github.com/HYY-yu/seckill.pkg/cache"
 	"github.com/HYY-yu/seckill.pkg/db"
@@ -40,6 +41,9 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 	configSvc := svc.NewConfigSvc(d, store, configRepo, configHistoryRepo, configLinkRepo, projectRepo, namespaceRepo, staffRepo)
 	configHandler := handler.NewConfigHandler(configSvc)
 	indexHandler := handler.NewIndexHandler(projectGroupSvc, namespaceSvc, configSvc)
-	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler, indexHandler)
+	publishRepo := repo.NewPublishRepo()
+	publishConfigRepo := repo.NewPublishConfigRepo()
+	publishSvc := svc_publish.NewPublishSvc(d, store, configSvc, publishRepo, publishConfigRepo)
+	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler, indexHandler, publishSvc, configSvc)
 	return handlers, nil
 }

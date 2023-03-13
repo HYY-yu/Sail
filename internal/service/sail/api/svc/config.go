@@ -3,6 +3,7 @@ package svc
 import (
 	"context"
 	"errors"
+	"github.com/HYY-yu/sail/internal/service/sail/api/svc_interface"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -28,6 +29,8 @@ type ConfigSvc struct {
 	BaseSvc
 	DB    db.Repo
 	Store storage.Repo
+
+	publishSystem svc_interface.PublishSystem
 
 	ConfigRepo        repo.ConfigRepo
 	ConfigHistoryRepo repo.ConfigHistoryRepo
@@ -997,10 +1000,6 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 	return bean.ID, sresp.Revision, nil
 }
 
-func (s *ConfigSvc) GetConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
-	return s.getConfigProjectAndNamespace(ctx, projectID, namespaceID)
-}
-
 func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
 	pMgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 	nMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
@@ -1047,6 +1046,38 @@ func (s *ConfigSvc) roleCheck(cfg *model.Config, role model.Role) error {
 	return nil
 }
 
+// 实现 ConfigSystem
+
+func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (string, error) {
+	if namespaceKey == "" {
+		return "", model.ErrNotEncryptNamespace
+	}
+
+	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
+	encryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Encrypt(content)
+	if err != nil {
+		return "", err
+	}
+	return encryptContent, nil
+}
+
+func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (string, error) {
+	if namespaceKey == "" {
+		return "", model.ErrNotEncryptNamespace
+	}
+
+	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
+	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)
+	if err != nil {
+		return "", err
+	}
+	return decryptContent, nil
+}
+
+func (s *ConfigSvc) SetPublishSystem(ps svc_interface.PublishSystem) {
+	s.publishSystem = ps
+}
+
 // ConfigKey
 // NormalConfigKey : /conf/project_key/namespace_name/config_name.config.type
 // PublicConfigKey : /conf/1-public/namespace_name/config_name.config.type
@@ -1075,28 +1106,23 @@ func (s *ConfigSvc) ConfigKey(isPublic bool, projectGroupID int, projectKey stri
 	return builder.String()
 }
 
-func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (string, error) {
-	if namespaceKey == "" {
-		return "", model.ErrNotEncryptNamespace
+func (s *ConfigSvc) GetConfig(ctx context.Context, configID int) (*model.Config, error) {
+	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+	cfg, err := mgr.WithOptions(mgr.WithID(configID)).Catch()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
 	}
 
-	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
-	encryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Encrypt(content)
-	if err != nil {
-		return "", err
-	}
-	return encryptContent, nil
+	return &cfg, nil
 }
 
-func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (string, error) {
-	if namespaceKey == "" {
-		return "", model.ErrNotEncryptNamespace
-	}
+func (s *ConfigSvc) ConfigEdit() {
 
-	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
-	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)
-	if err != nil {
-		return "", err
-	}
-	return decryptContent, nil
+}
+
+func (s *ConfigSvc) GetConfigProjectAndNamespace(ctx context.Context, projectID int, namespaceID int) (*model.Project, *model.Namespace, error) {
+	return s.getConfigProjectAndNamespace(ctx, projectID, namespaceID)
 }
