@@ -192,6 +192,21 @@ func (p *PublishSvc) ListPublishConfig(ctx context.Context, projectID, namespace
 	return publishConfigs, publish.PublishToken, nil
 }
 
+func (p *PublishSvc) getPublishToken(ctx context.Context, projectKey, namespaceName string) (string, error) {
+	publishKey := publishTokenKey(projectKey, namespaceName)
+
+	gresp := p.Store.Get(ctx, publishKey)
+	if gresp.Err != nil {
+		return "", gresp.Err
+	}
+
+	if len(gresp.Value) != 0 {
+		return gresp.Value, nil
+	} else {
+		return "", gerror.New("namespace is not in publish. ")
+	}
+}
+
 // initPublish 进入发布期
 // 0. 检查 token
 // 1. 生成 token
@@ -208,14 +223,14 @@ func (p *PublishSvc) initPublish(ctx context.Context, projectID, namespaceID int
 
 	gresp := p.Store.Get(ctx, publishKey)
 	if gresp.Err != nil {
-		return "", err
+		return "", gresp.Err
 	}
 
 	if len(gresp.Value) != 0 {
 		return gresp.Value, nil
 	}
 
-	publishToken := generatePublishToken(projectID, namespaceID)
+	publishToken := generatePublishToken(projectID, namespaceID, namespace.SecretKey)
 
 	sresp := p.Store.ConcurrentSet(ctx, publishKey, publishToken)
 	if sresp.Err != nil {
@@ -300,8 +315,8 @@ func publishTokenKey(projectKey, namespaceName string) string {
 	return builder.String()
 }
 
-func generatePublishToken(projectID, namespaceID int) string {
-	return encrypt.SHA256WithEncoding(fmt.Sprintf("%d-%d-%s", projectID, namespaceID, encrypt.Nonce(5)), encrypt.NewBase32Human())
+func generatePublishToken(projectID, namespaceID int, namespaceKey string) string {
+	return encrypt.SHA256WithEncoding(fmt.Sprintf("%d-%d-%s-%d", projectID, namespaceID, namespaceKey, time.Now().Unix()), encrypt.NewBase32Human())
 }
 
 // PUBLISH&publishToken{6}&pre-reversion&EncryptContent

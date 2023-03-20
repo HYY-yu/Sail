@@ -26,9 +26,6 @@ type ConfigSystem interface {
 	// GetConfig 根据 configID 获取 config
 	GetConfig(ctx context.Context, configID int) (*model.Config, error)
 
-	EncryptConfigContent(content string, namespaceKey string) (string, error)
-	DecryptConfigContent(content string, namespaceKey string) (string, error)
-
 	// ConfigKey 获取配置 key 格式
 	ConfigKey(isPublic bool, projectGroupID int, projectKey string, namespaceName string, configName string, configType model.ConfigType) string
 

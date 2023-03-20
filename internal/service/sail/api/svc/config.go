@@ -36,6 +36,8 @@ type ConfigSvc struct {
 	ConfigHistoryRepo repo.ConfigHistoryRepo
 	ConfigLinkRepo    repo.ConfigLinkRepo
 
+	PublishConfigRepo repo.PublishConfigRepo
+
 	ProjectRepo   repo.ProjectRepo
 	NamespaceRepo repo.NamespaceRepo
 	StaffRepo     repo.StaffRepo
@@ -50,6 +52,7 @@ func NewConfigSvc(
 	pr repo.ProjectRepo,
 	nr repo.NamespaceRepo,
 	sr repo.StaffRepo,
+	pcr repo.PublishConfigRepo,
 ) *ConfigSvc {
 	svc := &ConfigSvc{
 		DB:                db,
@@ -60,6 +63,7 @@ func NewConfigSvc(
 		ProjectRepo:       pr,
 		NamespaceRepo:     nr,
 		StaffRepo:         sr,
+		PublishConfigRepo: pcr,
 	}
 	return svc
 }
@@ -228,7 +232,7 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 	info.Content = gresp.Value
 	// 如果是owner，则自动解密
 	if cfg.IsEncrypt && role <= model.RoleOwner {
-		decrypt, err := s.DecryptConfigContent(info.Content, namespace.SecretKey)
+		decrypt, err := s.decryptConfigContent(info.Content, namespace.SecretKey)
 		if err != nil {
 			return nil, response.NewError(
 				http.StatusInternalServerError,
@@ -399,7 +403,7 @@ func (s *ConfigSvc) HistoryInfo(sctx core.SvcContext, configID int, reversion in
 
 	// 解密
 	if cfg.IsEncrypt && role <= model.RoleOwner {
-		decrypt, err := s.DecryptConfigContent(gresp.Value, namespace.SecretKey)
+		decrypt, err := s.decryptConfigContent(gresp.Value, namespace.SecretKey)
 		if err != nil {
 			return "", response.NewError(
 				http.StatusInternalServerError,
@@ -427,6 +431,21 @@ func (s *ConfigSvc) Rollback(sctx core.SvcContext, param *model.RollbackConfig) 
 	_, role := s.CheckStaffGroup(ctx, cfg.ProjectGroupID)
 	if err := s.roleCheck(&cfg, role); err != nil {
 		return err
+	}
+
+	ok, err := s.isConfigInPublish(ctx, cfg.ID)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	if ok {
+		return response.NewErrorWithStatusOk(
+			response.ServerError,
+			"此记录处于发布状态，无法回滚",
+		)
 	}
 
 	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
@@ -537,6 +556,21 @@ func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
 		isLink = false
 	case 2:
 		// 转为公共配置
+		// 如果此配置正处于发布期或者锁定期，则不能操作
+		ok, err := s.isConfigInPublish(ctx, cfg.ID)
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		if ok {
+			// 只有存在 publish config 才判断
+			return response.NewErrorWithStatusOk(
+				response.ServerError,
+				"此记录处于发布状态，请结束发布再试",
+			)
+		}
 		isLink = true
 		// 重新关联需要用公共配置内容做一次覆盖
 		publicConfig, err := mgr.WithOptions(mgr.WithID(link.PublicConfigID)).WithSelects(
@@ -647,6 +681,21 @@ func (s *ConfigSvc) Del(sctx core.SvcContext, configID int) error {
 	}
 
 	if !cfg.IsPublic {
+		ok, err := s.isConfigInPublish(ctx, cfg.ID)
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+
+		if ok {
+			return response.NewErrorWithStatusOk(
+				response.ServerError,
+				"此记录处于发布状态，无法回滚",
+			)
+		}
+
 		err = linkMgr.WithOptions(linkMgr.WithConfigID(configID)).
 			Delete(&model.ConfigLink{}).Error
 		if err != nil {
@@ -741,6 +790,7 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			"此配置关联到公共配置，无法编辑",
 		)
 	}
+	paramContent := string(param.Content)
 
 	project, namespace, err := s.getConfigProjectAndNamespace(ctx, cfg.ProjectID, cfg.NamespaceID)
 	if err != nil {
@@ -749,10 +799,20 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			response.ServerError,
 		).WithErr(err)
 	}
+	if namespace.RealTime && !cfg.IsPublic {
+		// 需发布的命名空间，编辑由 PublishSystem 接管
+		err = s.publishSystem.EnterPublish(ctx, cfg.ProjectID, cfg.NamespaceID, cfg.ID, paramContent)
+		if err != nil {
+			return response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		return nil
+	}
 
 	tx := s.DB.GetDb().Begin()
 	defer tx.Rollback()
-	paramContent := string(param.Content)
 
 	_, err = s.editConfig(ctx, userId, tx, paramContent, &cfg, project, namespace)
 	if err != nil {
@@ -790,14 +850,18 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			)
 			updateKeys = append(updateKeys, configKey)
 
-			if cfg.IsEncrypt {
-				encryptContent, err := s.EncryptConfigContent(paramContent, namespace.SecretKey)
+			if namespace.RealTime && !cfg.IsPublic {
+				// TODO 加密需要 PUBLISH 系统提供
+
+			} else if cfg.IsEncrypt {
+				encryptContent, err := s.encryptConfigContent(paramContent, namespace.SecretKey)
 				if err != nil {
 					bErr = err
 					break
 				}
 				paramContent = encryptContent
 			}
+
 			updateValues = append(updateValues, paramContent)
 		}
 
@@ -850,7 +914,7 @@ func (s *ConfigSvc) editConfig(
 		s.Set(ctx, configKey, gresp.Value)
 	}
 	if config.IsEncrypt {
-		encryptContent, err := s.EncryptConfigContent(newContent, namespace.SecretKey)
+		encryptContent, err := s.encryptConfigContent(newContent, namespace.SecretKey)
 		if err != nil {
 			return nil, errors.New("encryptContent: " + configKey)
 		}
@@ -941,7 +1005,7 @@ func (s *ConfigSvc) addConfig(ctx context.Context, db *gorm.DB, param *model.Add
 	}
 
 	if param.IsEncrypt {
-		encryptContent, err := s.EncryptConfigContent(string(param.Content), namespace.SecretKey)
+		encryptContent, err := s.encryptConfigContent(string(param.Content), namespace.SecretKey)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -1013,7 +1077,7 @@ func (s *ConfigSvc) getConfigProjectAndNamespace(ctx context.Context, projectID 
 		return nil, nil, gerror.Wrap(err, "getConfigProjectAndNamespace")
 	}
 	namespace, err := nMgr.WithOptions(pMgr.WithID(namespaceID)).
-		WithSelects(model.NamespaceColumns.ID, model.NamespaceColumns.Name, model.NamespaceColumns.SecretKey).Catch()
+		WithSelects(model.NamespaceColumns.ID, model.NamespaceColumns.Name, model.NamespaceColumns.RealTime, model.NamespaceColumns.SecretKey).Catch()
 	if err != nil {
 		return nil, nil, gerror.Wrap(err, "getConfigProjectAndNamespace")
 	}
@@ -1046,9 +1110,21 @@ func (s *ConfigSvc) roleCheck(cfg *model.Config, role model.Role) error {
 	return nil
 }
 
-// 实现 ConfigSystem
+func (s *ConfigSvc) isConfigInPublish(ctx context.Context, configId int) (bool, error) {
+	pConfigMgr := s.PublishConfigRepo.Mgr(ctx, s.DB.GetDb())
+	pConfigStatus, err := pConfigMgr.WithOptions(pConfigMgr.WithConfigID(configId)).WithSelects(
+		model.PublishConfigColumns.ID, model.PublishConfigColumns.Status).Get()
+	if err != nil {
+		return false, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
 
-func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (string, error) {
+	return pConfigStatus.ID > 0 && pConfigStatus.Status < model.PublishStatusEnd, nil
+}
+
+func (s *ConfigSvc) encryptConfigContent(content string, namespaceKey string) (string, error) {
 	if namespaceKey == "" {
 		return "", model.ErrNotEncryptNamespace
 	}
@@ -1061,10 +1137,12 @@ func (s *ConfigSvc) EncryptConfigContent(content string, namespaceKey string) (s
 	return encryptContent, nil
 }
 
-func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (string, error) {
+func (s *ConfigSvc) decryptConfigContent(content string, namespaceKey string) (string, error) {
 	if namespaceKey == "" {
 		return "", model.ErrNotEncryptNamespace
 	}
+
+	// TODO 如果密文是 PUBLISH 系统的，则交给 PUBLISH 系统解密
 
 	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
 	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)
@@ -1073,6 +1151,8 @@ func (s *ConfigSvc) DecryptConfigContent(content string, namespaceKey string) (s
 	}
 	return decryptContent, nil
 }
+
+// 实现 ConfigSystem
 
 func (s *ConfigSvc) SetPublishSystem(ps svc_interface.PublishSystem) {
 	s.publishSystem = ps
