@@ -91,12 +91,12 @@ CREATE TABLE IF NOT EXISTS `sail`.`config_history`
 CREATE TABLE IF NOT EXISTS `sail`.`publish`
 (
     `id`            int PRIMARY KEY AUTO_INCREMENT,
-    `project_id`    int         NOT NULL,
-    `namespace_id`  int         NOT NULL,
-    `status`        tinyint     NOT NULL,
-    `publish_token` varchar(50) NOT NULL,
-    `create_time`   timestamp   NOT NULL Default CURRENT_TIMESTAMP,
-    `update_time`   timestamp   NOT NULL Default CURRENT_TIMESTAMP,
+    `project_id`    int       NOT NULL,
+    `namespace_id`  int       NOT NULL,
+    `status`        tinyint   NOT NULL,
+    `publish_token` char(52)  NOT NULL,
+    `create_time`   timestamp NOT NULL Default CURRENT_TIMESTAMP,
+    `update_time`   timestamp NOT NULL Default CURRENT_TIMESTAMP,
     INDEX (`project_id`, `namespace_id`, `status`),
     UNIQUE INDEX (`publish_token`)
 );
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `sail`.`publish_config`
     `publish_id`           int       NOT NULL,
     `config_id`            int       NOT NULL,
     `config_pre_reversion` int       NOT NULL,
-    `status`               int       NOT NULL,
+    `status`               tinyint   NOT NULL,
     `create_time`          timestamp NOT NULL Default CURRENT_TIMESTAMP,
     `update_time`          timestamp NOT NULL Default CURRENT_TIMESTAMP,
     UNIQUE INDEX (`publish_id`, `config_id`),

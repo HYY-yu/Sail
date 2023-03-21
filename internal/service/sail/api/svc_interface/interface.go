@@ -11,6 +11,10 @@ type PublishSystem interface {
 	// ConfigSystem 判断本次更新配置是否需要进入发布系统（判断条件：编辑的命名空间是否需要发布），进入发布系统则不走原来的配置编辑逻辑。
 	EnterPublish(ctx context.Context, projectID, namespaceID, configID int, content string) error
 
+	IsInPublish(ctx context.Context, projectKey, namespaceName string) (bool, error)
+
+	DecryptPublishContent(ctx context.Context, pContent string) string
+
 	ListPublishConfig(ctx context.Context, projectID, namespaceID int) ([]model.PublishConfig, string, error)
 
 	DeletePublish(ctx context.Context, projectID, namespaceID int, newStatus int) error

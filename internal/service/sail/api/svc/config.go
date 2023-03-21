@@ -98,6 +98,8 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 	ctx := sctx.Context()
 	namespaceMgr := s.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 	namespaceMgr.WithPrepareStmt()
+	projectMgr := s.ProjectRepo.Mgr(ctx, s.DB.GetDb())
+	projectMgr.WithPrepareStmt()
 	mgr := s.ConfigRepo.Mgr(ctx, s.DB.GetDb())
 	mgr.WithPrepareStmt()
 
@@ -110,6 +112,14 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 	}
 	if projectID == 0 && role > model.RoleOwner {
 		// projectID == 0 说明在访问公共配置，此时需要Owner权限
+		return nil, response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此数据",
+		)
+	}
+	project, err := projectMgr.WithOptions(projectMgr.WithID(projectID)).
+		WithSelects(model.ProjectColumns.ID, model.ProjectColumns.Name, model.ProjectColumns.Key).Get()
+	if err != nil {
 		return nil, response.NewErrorWithStatusOk(
 			response.AuthorizationError,
 			"没有权限访问此数据",
@@ -156,13 +166,25 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 	tree := make([]model.ProjectTree, len(namespaceList))
 	for i, e := range namespaceList {
 		title := e.Name
+
+		// 检测是否发布期
+		ok, err := s.publishSystem.IsInPublish(ctx, project.Key, e.SecretKey)
+		if err != nil {
+			return nil, response.NewErrorAutoMsg(
+				http.StatusInternalServerError,
+				response.ServerError,
+			).WithErr(err)
+		}
+		if ok {
+			title += "(发布期)"
+		}
+
 		if !e.RealTime {
 			title += " 📣 "
 		}
 		if len(e.SecretKey) > 0 {
 			title += " 🔐 "
 		}
-		// TODO 检测待发布状态
 
 		b := model.ProjectTree{
 			NamespaceID: e.ID,
@@ -220,16 +242,23 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 		IsLinkPublic: cfg.IsLinkPublic,
 		IsEncrypt:    cfg.IsEncrypt,
 	}
+	// TODO 指示这个配置的 Publish 状态（若有的话）
 
 	gresp := s.Store.Get(ctx, configKey)
 	if gresp.Err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,
-		).WithErr(err)
+		).WithErr(gresp.Err)
 	}
 
 	info.Content = gresp.Value
+	// 如果密文是 PUBLISH 系统的，则交给 PUBLISH 系统解密
+	newContent := s.publishSystem.DecryptPublishContent(context.Background(), info.Content)
+	if len(newContent) > 0 {
+		info.Content = newContent
+	}
+
 	// 如果是owner，则自动解密
 	if cfg.IsEncrypt && role <= model.RoleOwner {
 		decrypt, err := s.decryptConfigContent(info.Content, namespace.SecretKey)
@@ -402,6 +431,12 @@ func (s *ConfigSvc) HistoryInfo(sctx core.SvcContext, configID int, reversion in
 	}
 
 	// 解密
+	// 如果密文是 PUBLISH 系统的，则交给 PUBLISH 系统解密
+	newContent := s.publishSystem.DecryptPublishContent(context.Background(), gresp.Value)
+	if len(newContent) > 0 {
+		gresp.Value = newContent
+	}
+
 	if cfg.IsEncrypt && role <= model.RoleOwner {
 		decrypt, err := s.decryptConfigContent(gresp.Value, namespace.SecretKey)
 		if err != nil {
@@ -799,7 +834,7 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			response.ServerError,
 		).WithErr(err)
 	}
-	if namespace.RealTime && !cfg.IsPublic {
+	if !namespace.RealTime && !cfg.IsPublic {
 		// 需发布的命名空间，编辑由 PublishSystem 接管
 		err = s.publishSystem.EnterPublish(ctx, cfg.ProjectID, cfg.NamespaceID, cfg.ID, paramContent)
 		if err != nil {
@@ -850,9 +885,14 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 			)
 			updateKeys = append(updateKeys, configKey)
 
-			if namespace.RealTime && !cfg.IsPublic {
-				// TODO 加密需要 PUBLISH 系统提供
-
+			if !namespace.RealTime && !cfg.IsPublic {
+				// 需发布的命名空间，编辑由 PublishSystem 接管
+				err = s.publishSystem.EnterPublish(ctx, cfg.ProjectID, cfg.NamespaceID, cfg.ID, paramContent)
+				if err != nil && !strings.Contains(err.Error(), "publish status wrong") {
+					bErr = err
+					break
+				}
+				continue
 			} else if cfg.IsEncrypt {
 				encryptContent, err := s.encryptConfigContent(paramContent, namespace.SecretKey)
 				if err != nil {
@@ -861,7 +901,6 @@ func (s *ConfigSvc) Edit(sctx core.SvcContext, param *model.EditConfig) error {
 				}
 				paramContent = encryptContent
 			}
-
 			updateValues = append(updateValues, paramContent)
 		}
 
@@ -1141,8 +1180,6 @@ func (s *ConfigSvc) decryptConfigContent(content string, namespaceKey string) (s
 	if namespaceKey == "" {
 		return "", model.ErrNotEncryptNamespace
 	}
-
-	// TODO 如果密文是 PUBLISH 系统的，则交给 PUBLISH 系统解密
 
 	goAES := encrypt.NewGoAES(namespaceKey, encrypt.AES192)
 	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(content)

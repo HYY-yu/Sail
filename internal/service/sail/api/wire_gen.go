@@ -38,11 +38,11 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 	configRepo := repo.NewConfigRepo()
 	configHistoryRepo := repo.NewConfigHistoryRepo()
 	configLinkRepo := repo.NewConfigLinkRepo()
-	configSvc := svc.NewConfigSvc(d, store, configRepo, configHistoryRepo, configLinkRepo, projectRepo, namespaceRepo, staffRepo)
+	publishConfigRepo := repo.NewPublishConfigRepo()
+	configSvc := svc.NewConfigSvc(d, store, configRepo, configHistoryRepo, configLinkRepo, projectRepo, namespaceRepo, staffRepo, publishConfigRepo)
 	configHandler := handler.NewConfigHandler(configSvc)
 	indexHandler := handler.NewIndexHandler(projectGroupSvc, namespaceSvc, configSvc)
 	publishRepo := repo.NewPublishRepo()
-	publishConfigRepo := repo.NewPublishConfigRepo()
 	publishSvc := svc_publish.NewPublishSvc(d, store, configSvc, publishRepo, publishConfigRepo)
 	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler, indexHandler, publishSvc, configSvc)
 	return handlers, nil

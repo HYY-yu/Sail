@@ -39,6 +39,8 @@ type ConfigInfo struct {
 	IsPublic     bool   `json:"is_public"`
 	IsLinkPublic bool   `json:"is_link_public"`
 	IsEncrypt    bool   `json:"is_encrypt"`
+
+	PublishStatus string `json:"publish_status"` // 发布状态
 }
 
 type AddConfig struct {

@@ -109,7 +109,7 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 		// INSERT with unique key
 		gresp := p.Store.Get(ctx, configKey)
 		if gresp.Err != nil {
-			return err
+			return gresp.Err
 		}
 		if len(gresp.Value) == 0 {
 			return gerror.New("not found key: " + configKey)
@@ -139,7 +139,7 @@ func (p *PublishSvc) EnterPublish(ctx context.Context, projectID, namespaceID, c
 
 	// Update ETCD
 	// 这个 content 一定是解密的，加密的是无法编辑的。
-	encryptContent := generatePublishContent(publishToken, publishConfig.ConfigPreReversion, content)
+	encryptContent := generatePublishContent(publishToken, publish.ID, publishConfig.ConfigPreReversion, content)
 
 	sresp := p.Store.Set(ctx, configKey, encryptContent)
 	if sresp.Err != nil {
@@ -190,6 +190,17 @@ func (p *PublishSvc) ListPublishConfig(ctx context.Context, projectID, namespace
 		return nil, "", err
 	}
 	return publishConfigs, publish.PublishToken, nil
+}
+
+func (p *PublishSvc) IsInPublish(ctx context.Context, projectKey, namespaceName string) (bool, error) {
+	token, err := p.getPublishToken(ctx, projectKey, namespaceName)
+	if err != nil {
+		if strings.Contains(err.Error(), "namespace is not in publish") {
+			return false, nil
+		}
+		return false, err
+	}
+	return token != "", err
 }
 
 func (p *PublishSvc) getPublishToken(ctx context.Context, projectKey, namespaceName string) (string, error) {
@@ -319,13 +330,15 @@ func generatePublishToken(projectID, namespaceID int, namespaceKey string) strin
 	return encrypt.SHA256WithEncoding(fmt.Sprintf("%d-%d-%s-%d", projectID, namespaceID, namespaceKey, time.Now().Unix()), encrypt.NewBase32Human())
 }
 
-// PUBLISH&publishToken{6}&pre-reversion&EncryptContent
-func generatePublishContent(publishToken string, preReversion int, content string) string {
+// PUBLISH&publishToken{6}&publishID&pre-reversion&EncryptContent
+func generatePublishContent(publishToken string, publishID int, preReversion int, content string) string {
 	builder := strings.Builder{}
-	builder.WriteString("PUBLISH")
+	builder.WriteString(PUBLISH)
 	builder.WriteByte('&')
 
 	builder.WriteString(publishToken[:7])
+	builder.WriteByte('&')
+	builder.WriteString(strconv.Itoa(publishID))
 	builder.WriteByte('&')
 	builder.WriteString(strconv.Itoa(preReversion))
 
@@ -339,4 +352,34 @@ func generatePublishContent(publishToken string, preReversion int, content strin
 	builder.WriteString(encryptContent)
 
 	return builder.String()
+}
+
+const PUBLISH = "PUBLISH"
+
+func (p *PublishSvc) DecryptPublishContent(ctx context.Context, pContent string) string {
+	puMgr := p.PublishRepo.Mgr(ctx, p.DB.GetDb())
+
+	contents := strings.Split(pContent, "&")
+	if len(contents) != 5 {
+		return ""
+	}
+
+	if contents[0] != PUBLISH {
+		return ""
+	}
+	publishID, err := strconv.Atoi(contents[2])
+	if err != nil {
+		return ""
+	}
+
+	publish, err := puMgr.WithOptions(puMgr.WithID(publishID)).Catch()
+	if err != nil {
+		return ""
+	}
+	goAES := encrypt.NewGoAES(publish.PublishToken, encrypt.AES192)
+	decryptContent, err := goAES.WithModel(encrypt.ECB).WithEncoding(encrypt.NewBase64Encoding()).Decrypt(contents[4])
+	if err != nil {
+		return ""
+	}
+	return decryptContent
 }
