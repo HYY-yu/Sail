@@ -36,3 +36,10 @@ const (
 	PublishStatusLock               // 锁定期
 	PublishStatusEnd                // 已结束
 )
+
+var PublishStatusText = map[int]string{
+	0:                    "",
+	PublishStatusRelease: "待发布",
+	PublishStatusLock:    "锁定中",
+	PublishStatusEnd:     "发布结束",
+}

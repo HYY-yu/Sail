@@ -148,7 +148,12 @@
                 type: 'get',
                 success: function (result) {
                     sail.checkSuccess(result, function (resp) {
-                        $('#textConfigID').html(resp.data.name + '.' + resp.data.type);
+                        let ckstr = resp.data.name + '.' + resp.data.type
+
+                        if (resp.data.is_encrypt) {
+                            ckstr += ' 🔐'
+                        }
+                        $('#textConfigID').html(ckstr);
                         // 渲染编辑框
                         let typeConfig = resp.data.type;
                         cm.setOption("mode", sail.setCMType(typeConfig));

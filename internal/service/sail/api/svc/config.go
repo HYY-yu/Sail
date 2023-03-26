@@ -168,7 +168,7 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 		title := e.Name
 
 		// 检测是否发布期
-		ok, err := s.publishSystem.IsInPublish(ctx, project.Key, e.SecretKey)
+		ok, err := s.publishSystem.IsInPublish(ctx, project.Key, e.Name)
 		if err != nil {
 			return nil, response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -176,7 +176,7 @@ func (s *ConfigSvc) Tree(sctx core.SvcContext, projectID int, projectGroupID int
 			).WithErr(err)
 		}
 		if ok {
-			title += "(发布期)"
+			title += "(待发布)"
 		}
 
 		if !e.RealTime {
@@ -242,7 +242,18 @@ func (s *ConfigSvc) Info(sctx core.SvcContext, configID int) (*model.ConfigInfo,
 		IsLinkPublic: cfg.IsLinkPublic,
 		IsEncrypt:    cfg.IsEncrypt,
 	}
-	// TODO 指示这个配置的 Publish 状态（若有的话）
+	// 指示这个配置的 Publish 状态（若有的话）
+	pConfigMgr := s.PublishConfigRepo.Mgr(ctx, s.DB.GetDb())
+	pConfigStatus, err := pConfigMgr.WithOptions(pConfigMgr.WithConfigID(info.ConfigID)).WithSelects(
+		model.PublishConfigColumns.ID, model.PublishConfigColumns.Status).Get()
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	info.PublishStatus = model.PublishStatusText[pConfigStatus.Status]
 
 	gresp := s.Store.Get(ctx, configKey)
 	if gresp.Err != nil {

@@ -151,6 +151,9 @@
                         if (resp.data.is_encrypt) {
                             ckstr += ' 🔐'
                         }
+                        if (resp.data.publish_status){
+                            ckstr += ' '+ resp.data.publish_status;
+                        }
                         $('#textConfigID').html(ckstr);
 
                         // 渲染编辑框
