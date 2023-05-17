@@ -20,7 +20,7 @@ import (
 // - 总之，Reconclier把对 ConfigMap 的管理全部委托给 ConfigServer。
 type ConfigServer interface {
 	// InitAndWatch 用于从配置系统获取配置，写入到 ConfigMap，并 Watch 配置保证配置是最新的
-	InitAndWatch()
+	InitAndWatch(ctx context.Context) error
 
 	// Get 检查配置是否成功下载到 ConfigMap，Watch 连接是否正常
 	Get()
@@ -66,7 +66,7 @@ func (c *configServer) etcdConnect() (*clientv3.Client, error) {
 	return clientv3.New(*v3cfg)
 }
 
-func (c *configServer) Start(ctx context.Context) error {
+func (c *configServer) Start(_ context.Context) error {
 	etcdClient, err := c.etcdConnect()
 	if err != nil {
 		return err
@@ -83,9 +83,9 @@ func (c *configServer) Start(ctx context.Context) error {
 	return nil
 }
 
-func (c *configServer) InitAndWatch() {
-	//TODO implement me
-	panic("implement me")
+func (c *configServer) InitAndWatch(ctx context.Context) error {
+
+	return nil
 }
 
 func (c *configServer) Get() {

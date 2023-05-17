@@ -1,0 +1,54 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-cmr-sail-hyy-yu-space-v1beta1-configmaprequest
+  failurePolicy: Fail
+  name: mconfigmaprequest.kb.io
+  rules:
+  - apiGroups:
+    - cmr.sail.hyy-yu.space
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - configmaprequests
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-cmr-sail-hyy-yu-space-v1beta1-configmaprequest
+  failurePolicy: Fail
+  name: vconfigmaprequest.kb.io
+  rules:
+  - apiGroups:
+    - cmr.sail.hyy-yu.space
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - configmaprequests
+  sideEffects: None

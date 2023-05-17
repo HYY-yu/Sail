@@ -1,0 +1,132 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: configmaprequests.cmr.sail.hyy-yu.space
+spec:
+  group: cmr.sail.hyy-yu.space
+  names:
+    kind: ConfigMapRequest
+    listKind: ConfigMapRequestList
+    plural: configmaprequests
+    shortNames:
+    - cmr
+    singular: configmaprequest
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.active_config
+      name: Active
+      type: integer
+    - jsonPath: .status.total_config
+      name: Total
+      type: integer
+    - jsonPath: .status.last_update_time
+      name: LastUpdateTIme
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: ConfigMapRequest is the Schema for the configmaprequests API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ConfigMapRequestSpec defines the desired state of ConfigMapRequest
+            properties:
+              configs:
+                description: Configs 可选的配置文件列表，不传则获取对应命名空间所有的配置
+                items:
+                  type: string
+                type: array
+              merge_format:
+                description: MergeFormat 可选配置，默认聚合到一个格式为 toml 的 ConfigMap，可以在这里配置其它格式：(yaml\json等)
+                enum:
+                - toml
+                - yaml
+                - json
+                - ini
+                - properties
+                - custom
+                type: string
+              merged:
+                description: Merged 可选配置，默认为 False，当 True 时，会把所有配置聚合成一个配置 注意：如果 Merged
+                  是 True，则无法再更改为 False，反之亦然。
+                type: boolean
+              namespace:
+                description: Namespace 项目的命名空间，指定获取哪一个命名空间
+                type: string
+              namespace_key_in_secret:
+                description: 'NamespaceKey 项目的命名空间秘钥 为了安全起见，NamespaceKey不能直接提供，需要提供一个
+                  Secret 其中保存了NamespaceKey。 格式：namespaceKey: secret-namespace-key-name'
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
+              project_key:
+                description: ProjectKey 配置中心的项目 Key，用于规定从哪个项目取得配置
+                type: string
+              watched:
+                description: Watched 可选配置，默认为 True，代表当配置发生变化时，自动更新。
+                type: boolean
+            required:
+            - namespace
+            - project_key
+            type: object
+          status:
+            description: ConfigMapRequestStatus defines the observed state of ConfigMapRequest
+            properties:
+              active_config:
+                description: ActiveConfig 已经下载并生成 ConfigMap 的数量
+                type: integer
+              last_update_time:
+                description: LastUpdateTime 最近一次的配置更新的时间（如果有多个配置更新，取离当前时间最近的配置更新时间）
+                format: date-time
+                type: string
+              managed_config_list:
+                description: ManagedConfigList 配置文件的管理列表
+                items:
+                  description: ManagedConfig 配置文件实体
+                  properties:
+                    config_file_name:
+                      description: ConfigFileName 配置文件名
+                      type: string
+                    last_update_time:
+                      description: LastUpdateTime 这个配置最后更新时间
+                      format: date-time
+                      type: string
+                    watched:
+                      description: Watched 是否在监听它的配置变更
+                      type: boolean
+                  required:
+                  - config_file_name
+                  - watched
+                  type: object
+                type: array
+              total_config:
+                description: TotalConfig 这个 CMR 下管理的配置文件总数
+                type: integer
+            required:
+            - managed_config_list
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

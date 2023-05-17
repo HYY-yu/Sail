@@ -7,4 +7,18 @@ layout:
 - go.kubebuilder.io/v4
 projectName: operator
 repo: github.com/HYY-yu/sail/operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: sail.hyy-yu.space
+  group: cmr
+  kind: ConfigMapRequest
+  path: github.com/HYY-yu/sail/operator/api/v1beta1
+  version: v1beta1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"
