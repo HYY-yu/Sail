@@ -48,6 +48,9 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var namespace string
+
+	flag.StringVar(&namespace, "namespace", "default", "The namespace for manager to managed. ")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -79,6 +82,7 @@ func main() {
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
 		// LeaderElectionReleaseOnCancel: true,
+		Namespace: namespace, // 限制 Controller-manager 在 namespace 下运行，这样可以降低它的管理压力。
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

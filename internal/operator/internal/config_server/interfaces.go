@@ -5,6 +5,8 @@ import (
 	"github.com/go-logr/logr"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"strings"
 	"time"
 )
@@ -25,21 +27,29 @@ type ConfigServer interface {
 }
 
 type configServer struct {
-	L logr.Logger
+	L         logr.Logger
+	namespace string
+
+	etcdClient *clientv3.Client
+	clientSet  *kubernetes.Clientset
 
 	metaConfig MetaConfig
+	restConfig *rest.Config
 }
 
-func NewConfigServer(l logr.Logger, metaConfig MetaConfig) ConfigServer {
+func NewConfigServer(l logr.Logger, restConfig *rest.Config, metaConfig MetaConfig) ConfigServer {
 	return &configServer{
-		L:          l.WithName("ConfigServer"),
+		L: l.WithName("ConfigServer"),
+
 		metaConfig: metaConfig,
+		namespace:  metaConfig.Namespace,
+		restConfig: restConfig,
 	}
 }
 
-func (s *configServer) etcdConnect() (*clientv3.Client, error) {
-	s.L.V(1).Info("start to connect etcd. ")
-	etcdEndpoints := strings.Split(s.metaConfig.ETCDEndpoints, ";")
+func (c *configServer) etcdConnect() (*clientv3.Client, error) {
+	c.L.V(1).Info("start to connect etcd. ")
+	etcdEndpoints := strings.Split(c.metaConfig.ETCDEndpoints, ";")
 
 	v3cfg := &clientv3.Config{
 		Endpoints:            etcdEndpoints,
@@ -47,8 +57,8 @@ func (s *configServer) etcdConnect() (*clientv3.Client, error) {
 		DialTimeout:          10 * time.Second,
 		DialKeepAliveTime:    10 * time.Second,
 		DialKeepAliveTimeout: 20 * time.Second,
-		Username:             s.metaConfig.ETCDUsername,
-		Password:             s.metaConfig.ETCDPassword,
+		Username:             c.metaConfig.ETCDUsername,
+		Password:             c.metaConfig.ETCDPassword,
 		PermitWithoutStream:  true,
 		DialOptions:          []grpc.DialOption{grpc.WithBlock()},
 	}
@@ -57,8 +67,20 @@ func (s *configServer) etcdConnect() (*clientv3.Client, error) {
 }
 
 func (c *configServer) Start(ctx context.Context) error {
-	//TODO implement me
-	panic("implement me")
+	etcdClient, err := c.etcdConnect()
+	if err != nil {
+		return err
+	}
+	c.etcdClient = etcdClient
+
+	// Connect Kubernetes
+	cs, err := kubernetes.NewForConfig(c.restConfig)
+	if err != nil {
+		return err
+	}
+
+	c.clientSet = cs
+	return nil
 }
 
 func (c *configServer) InitAndWatch() {
