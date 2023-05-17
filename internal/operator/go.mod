@@ -1,4 +1,4 @@
-module github.com/HYY-yu/sail/operator
+module github.com/HYY-yu/sail/internal/operator
 
 go 1.20
 
