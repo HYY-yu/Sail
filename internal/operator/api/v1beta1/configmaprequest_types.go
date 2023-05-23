@@ -85,6 +85,10 @@ type ManagedConfig struct {
 
 	// Watched 是否在监听它的配置变更
 	Watched bool `json:"watched"`
+
+	// IsDeleted 指示此配置是否已经被删除
+	// 为 true 的配置
+	IsDeleted bool `json:"is_deleted"`
 }
 
 //+kubebuilder:object:root=true

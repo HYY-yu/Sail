@@ -29,7 +29,7 @@ type ConfigServer interface {
 	InitAndWatch(ctx context.Context, namespaceSecretKey string, resp *v1beta1.ConfigMapRequestSpec) error
 
 	// Get 检查配置是否成功下载到 ConfigMap，Watch 连接是否正常
-	Get()
+	Get(ctx context.Context, spec *v1beta1.ConfigMapRequestSpec)
 }
 
 type configServer struct {
@@ -95,11 +95,16 @@ func (c *configServer) InitAndWatch(ctx context.Context, namespaceSecretKey stri
 		return err
 	}
 
-	c.l.V(1).Info("start to watch config. ")
 	_ = etcdConfigMap // TODO
 
-	NewWatcher(ctx, c, namespaceSecretKey, spec).Run()
+	// 写入 kubernetes
 
+	c.clientSet.CoreV1().ConfigMaps(c.namespace).Create()
+
+	if *spec.Watched {
+		c.l.V(1).Info("start to watch config. ")
+		NewWatcher(ctx, c, namespaceSecretKey, spec).Run()
+	}
 	return nil
 }
 
@@ -131,10 +136,10 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 		// 还是没有 config，直接退出
 		return nil, fmt.Errorf("no config found. ")
 	}
-	formKey := spec.Configs[0]
+	fromKey := spec.Configs[0]
 
 	getResp, err := c.etcdClient.Get(ctx,
-		keyPrefix+formKey,
+		keyPrefix+fromKey,
 		clientv3.WithFromKey(),
 		clientv3.WithLimit(int64(len(spec.Configs))),
 	)
@@ -213,9 +218,13 @@ func (c *configServer) readFromReversion(ctx context.Context, etcdKey []byte, re
 	return getResp.Kvs[0].Value, nil
 }
 
-func (c *configServer) Get() {
-	//TODO implement me
-	panic("implement me")
+func (c *configServer) Get(ctx context.Context, spec *v1beta1.ConfigMapRequestSpec) {
+	// configs 和 ConfigMap 一一对应
+	// merged: true 全部的 configs 对应一个 ConfigMap
+
+	// 先检查 ConfigMap 是否存在
+
+	//
 }
 
 // /conf/{project_key}/namespace/config_name.config.type

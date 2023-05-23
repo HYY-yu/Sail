@@ -245,6 +245,6 @@ type mockKV struct {
 	response *clientv3.GetResponse
 }
 
-func (kv *mockKV) Get(ctx context.Context, key string, opts ...clientv3.OpOption) (*clientv3.GetResponse, error) {
+func (kv *mockKV) Get(_ context.Context, _ string, _ ...clientv3.OpOption) (*clientv3.GetResponse, error) {
 	return kv.response, nil
 }

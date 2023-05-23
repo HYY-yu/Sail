@@ -58,7 +58,7 @@ func (e *etcdWatcher) Run() {
 
 						e.dealETCDMsg(string(ev.Kv.Key), ev.Kv.Value)
 					case mvccpb.DELETE:
-						//do nothing with delete event
+
 					}
 				}
 			case <-e.ctx.Done():
