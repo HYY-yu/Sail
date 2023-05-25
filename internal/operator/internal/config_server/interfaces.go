@@ -292,10 +292,6 @@ func getETCDKeyPrefix(spec *v1beta1.ConfigMapRequestSpec) string {
 	return b.String()
 }
 
-func getETCDKey(keyPrefix string, configFile string) string {
-	return keyPrefix + "/" + configFile
-}
-
 func getConfigFileKeyFrom(etcdKey string) ConfigKey {
 	_, result := filepath.Split(etcdKey)
 	return ConfigKey(result)
