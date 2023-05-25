@@ -11,9 +11,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -21,15 +23,18 @@ import (
 // 它负责保持与 ETCD 服务器的连接，从 ETCD 获取指定的配置以及持续监听这个配置
 // 当配置发生变更，它将自动更新到 ConfigMap。
 // 它会在本地维护 ConfigMap 和 ETCD 配置间的关系，以及一份配置缓存，以便 Get 重复获取。
-// - 对于 Reconclier 来说，它只需要启动 InitAndWatch 向 ConfigServer 请求相关配置即可。
-// - Reconclier 也可以 Get 配置检查是否下载成功，是否正在 Watch，并且检查配置和 ConfigMap 是否对应。
+// - 对于 Reconclier 来说，它只需要启动 InitOrUpdate 向 ConfigServer 请求相关配置即可。
+// - Reconclier 也可以 Get 配置检查是否下载成功，是否正在 Watch。
 // - 总之，Reconclier把对 ConfigMap 的管理全部委托给 ConfigServer。
 type ConfigServer interface {
-	// InitAndWatch 用于从配置系统获取配置，写入到 ConfigMap，并 Watch 配置保证配置是最新的
-	InitAndWatch(ctx context.Context, namespaceSecretKey string, resp *v1beta1.ConfigMapRequestSpec) error
+	// InitOrUpdate 用于从配置系统获取配置，写入到 ConfigMap，并 Watch 配置保证配置是最新的
+	InitOrUpdate(ctx context.Context, namespaceSecretKey string, resp *v1beta1.ConfigMapRequestSpec) error
 
 	// Get 检查配置是否成功下载到 ConfigMap，Watch 连接是否正常
+	// 用于更新 CMR 的状态
 	Get(ctx context.Context, spec *v1beta1.ConfigMapRequestSpec)
+
+	// Delete 当 CMR 被删除时，联动删除 ConfigMap
 }
 
 type configServer struct {
@@ -41,15 +46,20 @@ type configServer struct {
 
 	metaConfig MetaConfig
 	restConfig *rest.Config
+
+	configCaches map[SpecUniqueKey]*EtcdWatcher
+	rwLock       sync.RWMutex
 }
 
 func NewConfigServer(l logr.Logger, restConfig *rest.Config, metaConfig MetaConfig) ConfigServer {
 	return &configServer{
 		l: l.WithName("ConfigServer"),
 
-		metaConfig: metaConfig,
-		namespace:  metaConfig.Namespace,
-		restConfig: restConfig,
+		metaConfig:   metaConfig,
+		namespace:    metaConfig.Namespace,
+		restConfig:   restConfig,
+		configCaches: make(map[SpecUniqueKey]*EtcdWatcher),
+		rwLock:       sync.RWMutex{},
 	}
 }
 
@@ -89,33 +99,9 @@ func (c *configServer) Start(_ context.Context) error {
 	return nil
 }
 
-func (c *configServer) InitAndWatch(ctx context.Context, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) error {
-	etcdConfigMap, err := c.pullETCDConfig(ctx, namespaceSecretKey, spec)
-	if err != nil {
-		return err
-	}
-
-	_ = etcdConfigMap // TODO
-
-	// 写入 kubernetes
-
-	c.clientSet.CoreV1().ConfigMaps(c.namespace).Create()
-
-	if *spec.Watched {
-		c.l.V(1).Info("start to watch config. ")
-		NewWatcher(ctx, c, namespaceSecretKey, spec).Run()
-	}
-	return nil
-}
-
-type ConfigKey string
-type ConfigValue []byte
-
-func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) (map[ConfigKey]ConfigValue, error) {
-	keyPrefix := getETCDKeyPrefix(spec)
-	c.l.V(1).Info("pull config key", "keys", spec.Configs)
-
+func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) error {
 	if len(spec.Configs) == 0 {
+		keyPrefix := getETCDKeyPrefix(spec)
 		// 取所有 config
 		getResp, err := c.etcdClient.Get(ctx,
 			keyPrefix,
@@ -123,15 +109,73 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 			clientv3.WithKeysOnly(),
 		)
 		if err != nil {
-			return nil, fmt.Errorf("read config from etcd err: %w ", err)
+			return fmt.Errorf("read config from etcd err: %w ", err)
 		}
-		etcdKeys := make([]string, 0, len(getResp.Kvs))
 		for _, e := range getResp.Kvs {
-			etcdKeys = append(etcdKeys, getConfigFileKeyFrom(string(e.Key)))
+			spec.Configs = append(spec.Configs, string(getConfigFileKeyFrom(string(e.Key))))
 		}
-		spec.Configs = etcdKeys
 	}
 	sort.Strings(spec.Configs)
+
+	c.rwLock.RLock()
+	if v, ok := c.configCaches[NewSpecUniqueKey(spec)]; ok {
+		c.rwLock.Unlock()
+		if *spec.Watch != v.Watching() {
+			v.ShouldWatch(*spec.Watch)
+		}
+
+		if !reflect.DeepEqual(spec.Configs, v.ManagedConfigs()) {
+			// 如果 spec.Configs 变动过，则重新拉取这个 spec
+			c.rwLock.Lock()
+			v.ShouldWatch(false) // 关闭 Watch
+			delete(c.configCaches, NewSpecUniqueKey(spec))
+			c.rwLock.Unlock()
+			return c.InitOrUpdate(ctx, namespaceSecretKey, spec)
+		}
+		return nil
+	}
+	c.rwLock.Unlock()
+	// 拉取配置并设置更新
+
+	etcdConfigMap, err := c.pullETCDConfig(ctx, namespaceSecretKey, spec)
+	if err != nil {
+		return err
+	}
+
+	// 写入 kubernetes 检查 merge
+
+	// Watcher 启动后，是否 Watch 配置取决于 Spec.Watch
+	w := NewWatcher(
+		ctx,
+		c,
+		namespaceSecretKey,
+		spec,
+		etcdConfigMap,
+	)
+	c.rwLock.Lock()
+	c.configCaches[NewSpecUniqueKey(spec)] = w
+	c.rwLock.Unlock()
+	return nil
+}
+
+type SpecUniqueKey string
+
+func NewSpecUniqueKey(spec *v1beta1.ConfigMapRequestSpec) SpecUniqueKey {
+	return SpecUniqueKey(fmt.Sprintf("%s-%s-%v-%s", spec.Namespace, spec.ProjectKey, *spec.Merge, *spec.MergeFormat))
+}
+
+type ConfigKey string
+
+func (c ConfigKey) String() string {
+	return string(c)
+}
+
+type ConfigValue []byte
+
+func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) (map[ConfigKey]ConfigValue, error) {
+	keyPrefix := getETCDKeyPrefix(spec)
+	c.l.V(1).Info("pull config key", "keys", spec.Configs)
+
 	if len(spec.Configs) == 0 {
 		// 还是没有 config，直接退出
 		return nil, fmt.Errorf("no config found. ")
@@ -146,7 +190,7 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 	if err != nil {
 		return nil, fmt.Errorf("read config from etcd err: %w ", err)
 	}
-	etcdKeys := make([]string, 0, len(spec.Configs))
+	etcdKeys := make([]ConfigKey, 0, len(spec.Configs))
 	for _, e := range getResp.Kvs {
 		etcdKeys = append(etcdKeys, getConfigFileKeyFrom(string(e.Key)))
 	}
@@ -157,9 +201,14 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 	// insETCDKeys 取 etcdKeys 和 spec.Configs 的交集
 	// 这是因为 etcdKeys 可能会有些配置被删除了，这时 CMR 尚未更新
 	// 我们需要处理这种情况
-	insETCDKeys := intersectionSortStringArr(etcdKeys, spec.Configs)
+	specConfigKeys := make([]ConfigKey, len(spec.Configs))
+	for i, e := range spec.Configs {
+		specConfigKeys[i] = ConfigKey(e)
+	}
+
+	insETCDKeys := intersectionSortStringArr(etcdKeys, specConfigKeys)
 	c.l.V(1).Info("real config key", "keys", insETCDKeys)
-	insETCDKeyMap := make(map[string]struct{})
+	insETCDKeyMap := make(map[ConfigKey]struct{})
 	for _, e := range insETCDKeys {
 		insETCDKeyMap[e] = struct{}{}
 	}
@@ -181,7 +230,7 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 			newValue := c.tryDecryptConfigContent(string(e.Value), namespaceSecretKey)
 
 			// Add ConfigKey and Value
-			result[ConfigKey(configFileKey)] = ConfigValue(newValue)
+			result[configFileKey] = ConfigValue(newValue)
 		}
 	}
 	return result, nil
@@ -247,17 +296,17 @@ func getETCDKey(keyPrefix string, configFile string) string {
 	return keyPrefix + "/" + configFile
 }
 
-func getConfigFileKeyFrom(etcdKey string) string {
+func getConfigFileKeyFrom(etcdKey string) ConfigKey {
 	_, result := filepath.Split(etcdKey)
-	return result
+	return ConfigKey(result)
 }
 
-func intersectionSortStringArr(a []string, b []string) []string {
+func intersectionSortStringArr(a []ConfigKey, b []ConfigKey) []ConfigKey {
 	if (len(a) == 0) || (len(b) == 0) {
-		return []string{}
+		return []ConfigKey{}
 	}
 
-	result := make([]string, 0, len(a))
+	result := make([]ConfigKey, 0, len(a))
 	i, j := 0, 0
 	for i != len(a) && j != len(b) {
 		if a[i] > b[j] {

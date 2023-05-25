@@ -42,10 +42,10 @@ type ConfigMapRequestSpec struct {
 	// +optional
 	Configs []string `json:"configs,omitempty"`
 
-	// Merged 可选配置，默认为 False，当 True 时，会把所有配置聚合成一个配置
-	// 注意：如果 Merged 是 True，则无法再更改为 False，反之亦然。
+	// Merge 可选配置，默认为 False，当 True 时，会把所有配置聚合成一个配置: 名字是 config
+	// 注意：如果 Merge 是 True，则无法再更改为 False，反之亦然。
 	// +optional
-	Merged *bool `json:"merged,omitempty"`
+	Merge *bool `json:"merge,omitempty"`
 
 	// +kubebuilder:validation:Enum=toml;yaml;json;ini;properties;custom
 
@@ -53,9 +53,9 @@ type ConfigMapRequestSpec struct {
 	// +optional
 	MergeFormat *string `json:"merge_format,omitempty"`
 
-	// Watched 可选配置，默认为 True，代表当配置发生变化时，自动更新。
+	// Watch 可选配置，默认为 True，代表当配置发生变化时，自动更新。
 	// +optional
-	Watched *bool `json:"watched,omitempty"`
+	Watch *bool `json:"watch,omitempty"`
 }
 
 // ConfigMapRequestStatus defines the observed state of ConfigMapRequest

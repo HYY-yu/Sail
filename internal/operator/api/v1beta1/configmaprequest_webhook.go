@@ -41,9 +41,23 @@ var _ webhook.Defaulter = &ConfigMapRequest{}
 func (r *ConfigMapRequest) Default() {
 	configmaprequestlog.Info("default", "name", r.Name)
 
-	if r.Spec.Watched == nil {
-		r.Spec.Watched = new(bool)
-		*r.Spec.Watched = true
+	if r.Spec.Watch == nil {
+		r.Spec.Watch = new(bool)
+		*r.Spec.Watch = true
+	}
+
+	if r.Spec.Merge != nil {
+		if *r.Spec.Merge {
+			// default MergeConfig is: config.toml
+
+			if r.Spec.MergeFormat == nil {
+				r.Spec.MergeFormat = new(string)
+				*r.Spec.MergeFormat = "toml"
+			}
+
+			defaultConfig := "config" + *r.Spec.MergeFormat
+			r.Spec.Configs = append(r.Spec.Configs, defaultConfig)
+		}
 	}
 }
 
@@ -71,8 +85,8 @@ func (r *ConfigMapRequest) ValidateUpdate(old runtime.Object) error {
 	}
 
 	// 不能修改 merged 后的配置，对已创建的 ConfigMap 合并或者拆分，可能会影响到使用它的 Pod。
-	if r.Spec.Merged != old.(*ConfigMapRequest).Spec.Merged {
-		return errors.New("merged config can't update, because it's hard to split. ")
+	if r.Spec.Merge != old.(*ConfigMapRequest).Spec.Merge {
+		return errors.New("merge config can't update, because it's hard to split. ")
 	}
 	if r.Spec.MergeFormat != old.(*ConfigMapRequest).Spec.MergeFormat {
 		return errors.New("merge format can't update, because it's hard to split. ")

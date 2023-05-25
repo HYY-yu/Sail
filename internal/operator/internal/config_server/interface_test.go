@@ -13,45 +13,45 @@ import (
 
 func Test_intersectionSortStringArr(t *testing.T) {
 	type args struct {
-		a []string
-		b []string
+		a []ConfigKey
+		b []ConfigKey
 	}
 	tests := []struct {
 		name string
 		args args
-		want []string
+		want []ConfigKey
 	}{
 		{
 			name: "test1",
 			args: args{
-				a: []string{"mysql.toml", "redis.yaml"},
-				b: []string{"cfg.json", "mysql.toml", "redis.yaml"},
+				a: []ConfigKey{"mysql.toml", "redis.yaml"},
+				b: []ConfigKey{"cfg.json", "mysql.toml", "redis.yaml"},
 			},
-			want: []string{"mysql.toml", "redis.yaml"},
+			want: []ConfigKey{"mysql.toml", "redis.yaml"},
 		},
 		{
 			name: "test2",
 			args: args{
-				a: []string{"mysql.toml", "redis.yaml"},
-				b: []string{},
+				a: []ConfigKey{"mysql.toml", "redis.yaml"},
+				b: []ConfigKey{},
 			},
-			want: []string{},
+			want: []ConfigKey{},
 		},
 		{
 			name: "test3",
 			args: args{
-				a: []string{"mysql.toml", "redis.yaml"},
-				b: []string{"ca.cert"},
+				a: []ConfigKey{"mysql.toml", "redis.yaml"},
+				b: []ConfigKey{"ca.cert"},
 			},
-			want: []string{},
+			want: []ConfigKey{},
 		},
 		{
 			name: "test4",
 			args: args{
-				a: []string{".bachrc", "mysql.toml", "redis.yaml"},
-				b: []string{"mysql.toml", "redis.yaml"},
+				a: []ConfigKey{".bachrc", "mysql.toml", "redis.yaml"},
+				b: []ConfigKey{"mysql.toml", "redis.yaml"},
 			},
-			want: []string{"mysql.toml", "redis.yaml"},
+			want: []ConfigKey{"mysql.toml", "redis.yaml"},
 		},
 	}
 	for _, tt := range tests {
@@ -99,7 +99,7 @@ func Test_getConfigFileKeyFrom(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want ConfigKey
 	}{
 		{
 			name: "Test",
