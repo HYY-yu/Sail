@@ -1,15 +1,20 @@
 package config_server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/HYY-yu/sail/internal/operator/api/v1beta1"
 	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
 	"github.com/go-logr/logr"
+	"github.com/spf13/viper"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"google.golang.org/grpc"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -118,7 +123,7 @@ func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey stri
 	sort.Strings(spec.Configs)
 
 	c.rwLock.RLock()
-	if v, ok := c.configCaches[NewSpecUniqueKey(spec)]; ok {
+	if v, ok := c.configCaches[newSpecUniqueKey(spec)]; ok {
 		c.rwLock.Unlock()
 		if *spec.Watch != v.Watching() {
 			v.ShouldWatch(*spec.Watch)
@@ -128,7 +133,7 @@ func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey stri
 			// 如果 spec.Configs 变动过，则重新拉取这个 spec
 			c.rwLock.Lock()
 			v.ShouldWatch(false) // 关闭 Watch
-			delete(c.configCaches, NewSpecUniqueKey(spec))
+			delete(c.configCaches, newSpecUniqueKey(spec))
 			c.rwLock.Unlock()
 			return c.InitOrUpdate(ctx, namespaceSecretKey, spec)
 		}
@@ -142,7 +147,35 @@ func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey stri
 		return err
 	}
 
-	// 写入 kubernetes 检查 merge
+	configMapData := make(map[string]string)
+	// 写入 kubernetes，处理 MergeConfig
+	if *spec.Merge {
+		cm, err := mergeConfig(etcdConfigMap, *spec.MergeConfigFile)
+		if err != nil {
+			return err
+		}
+
+		configMapData = cm
+	} else {
+		for k, v := range etcdConfigMap {
+			configMapData[k.String()] = v.String()
+		}
+	}
+
+	configMapName := getConfigMapName(spec)
+	// TODO meta.Annotations
+	configMap := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configMapName,
+		},
+		Data: configMapData,
+	}
+
+	_, err = c.clientSet.CoreV1().ConfigMaps(c.namespace).Create(ctx, configMap, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("create configmap err, "+
+			"please check the configmap:%s in cluster. Error is: %w", configMapName, err)
+	}
 
 	// Watcher 启动后，是否 Watch 配置取决于 Spec.Watch
 	w := NewWatcher(
@@ -153,15 +186,19 @@ func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey stri
 		etcdConfigMap,
 	)
 	c.rwLock.Lock()
-	c.configCaches[NewSpecUniqueKey(spec)] = w
+	c.configCaches[newSpecUniqueKey(spec)] = w
 	c.rwLock.Unlock()
 	return nil
 }
 
+func getConfigMapName(spec *v1beta1.ConfigMapRequestSpec) string {
+	return fmt.Sprintf("%s-%s", spec.ProjectKey, spec.Namespace)
+}
+
 type SpecUniqueKey string
 
-func NewSpecUniqueKey(spec *v1beta1.ConfigMapRequestSpec) SpecUniqueKey {
-	return SpecUniqueKey(fmt.Sprintf("%s-%s-%v-%s", spec.Namespace, spec.ProjectKey, *spec.Merge, *spec.MergeFormat))
+func newSpecUniqueKey(spec *v1beta1.ConfigMapRequestSpec) SpecUniqueKey {
+	return SpecUniqueKey(fmt.Sprintf("%s-%s", spec.Namespace, spec.ProjectKey))
 }
 
 type ConfigKey string
@@ -171,6 +208,54 @@ func (c ConfigKey) String() string {
 }
 
 type ConfigValue []byte
+
+func (v ConfigValue) String() string {
+	return string(v)
+}
+
+func mergeConfig(etcdConfigMap map[ConfigKey]ConfigValue, mergeConfigFile string) (map[string]string, error) {
+	cm := make(map[string]string)
+	var err error
+	viperMap := make(map[string]*viper.Viper)
+
+	for k, v := range etcdConfigMap {
+		viperMap[k.String()], err = newViperWithETCDValue(k, v)
+		if err != nil {
+			return nil, err
+		}
+	}
+	mergedViper := viper.New()
+
+	// merge viperMap
+	for k, v := range viperMap {
+		dataMap := v.AllSettings()
+
+		err := mergedViper.MergeConfigMap(map[string]interface{}{
+			k: dataMap,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("merge viper fail: %w ", err)
+		}
+	}
+
+	mergeConfigKey := mergeConfigFile
+	mergeConfigType := strings.TrimPrefix(filepath.Ext(mergeConfigKey), ".")
+	if len(mergeConfigType) == 0 {
+		return nil, fmt.Errorf("MergeConfigFile is wrong: %s", mergeConfigKey)
+	}
+
+	tempFile, _ := os.CreateTemp("", "*."+mergeConfigType)
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(tempFile.Name())
+	_ = tempFile.Close()
+
+	_ = mergedViper.WriteConfigAs(tempFile.Name())
+	fileContent, _ := os.ReadFile(tempFile.Name())
+
+	cm[mergeConfigKey] = string(fileContent)
+	return cm, nil
+}
 
 func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) (map[ConfigKey]ConfigValue, error) {
 	keyPrefix := getETCDKeyPrefix(spec)
@@ -227,13 +312,30 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 			}
 
 			// 尝试解密内容
-			newValue := c.tryDecryptConfigContent(string(e.Value), namespaceSecretKey)
+			newValue := tryDecryptConfigContent(string(e.Value), namespaceSecretKey)
 
 			// Add ConfigKey and Value
 			result[configFileKey] = ConfigValue(newValue)
 		}
 	}
 	return result, nil
+}
+
+func newViperWithETCDValue(ck ConfigKey, cv ConfigValue) (*viper.Viper, error) {
+	viperETCD := viper.New()
+	configType := strings.TrimPrefix(filepath.Ext(ck.String()), ".")
+	valueReader := bytes.NewBuffer(cv)
+
+	if configType == "custom" {
+		viperETCD.Set(ck.String(), valueReader.String())
+	} else {
+		viperETCD.SetConfigType(configType)
+		err := viperETCD.ReadConfig(valueReader)
+		if err != nil {
+			return nil, fmt.Errorf("viper fail: read config from etcd err: %w ", err)
+		}
+	}
+	return viperETCD, nil
 }
 
 func checkPublish(etcdValue []byte) (isPublish bool, reversion int) {
@@ -319,7 +421,7 @@ func intersectionSortStringArr(a []ConfigKey, b []ConfigKey) []ConfigKey {
 }
 
 // tryDecryptConfigContent 只是会尝试解密内容，解密失败了就把 content 返回
-func (s *configServer) tryDecryptConfigContent(content string, namespaceSecretKey string) string {
+func tryDecryptConfigContent(content string, namespaceSecretKey string) string {
 	_, err := encrypt.NewBase64Encoding().DecodeString(content)
 	if err == nil {
 		// 能被 Base64 解码，却不能被解密，那就把 content 原样返回

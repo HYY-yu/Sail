@@ -42,16 +42,18 @@ type ConfigMapRequestSpec struct {
 	// +optional
 	Configs []string `json:"configs,omitempty"`
 
-	// Merge 可选配置，默认为 False，当 True 时，会把所有配置聚合成一个配置: 名字是 config
+	// Merge 可选配置，默认为 False，当 True 时，会把所有配置文件聚合成一个配置
+	// 配置文件的名称将成为新 Key，如：mysql.toml: {data: }
 	// 注意：如果 Merge 是 True，则无法再更改为 False，反之亦然。
 	// +optional
 	Merge *bool `json:"merge,omitempty"`
 
 	// +kubebuilder:validation:Enum=toml;yaml;json;ini;properties;custom
 
-	// MergeFormat 可选配置，默认聚合到一个格式为 toml 的 ConfigMap，可以在这里配置其它格式：(yaml\json等)
+	// MergeFormat 可选配置，默认聚合到一个格式为 config.toml 的 ConfigMap，可以在这里配置其它格式：(xx.yaml\cfg.json等)
+	// 支持 json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini"
 	// +optional
-	MergeFormat *string `json:"merge_format,omitempty"`
+	MergeConfigFile *string `json:"merge_config_file,omitempty"`
 
 	// Watch 可选配置，默认为 True，代表当配置发生变化时，自动更新。
 	// +optional

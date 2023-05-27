@@ -50,12 +50,12 @@ func (r *ConfigMapRequest) Default() {
 		if *r.Spec.Merge {
 			// default MergeConfig is: config.toml
 
-			if r.Spec.MergeFormat == nil {
-				r.Spec.MergeFormat = new(string)
-				*r.Spec.MergeFormat = "toml"
+			if r.Spec.MergeConfigFile == nil {
+				r.Spec.MergeConfigFile = new(string)
+				*r.Spec.MergeConfigFile = "config.toml"
 			}
 
-			defaultConfig := "config" + *r.Spec.MergeFormat
+			defaultConfig := *r.Spec.MergeConfigFile
 			r.Spec.Configs = append(r.Spec.Configs, defaultConfig)
 		}
 	}
@@ -88,7 +88,7 @@ func (r *ConfigMapRequest) ValidateUpdate(old runtime.Object) error {
 	if r.Spec.Merge != old.(*ConfigMapRequest).Spec.Merge {
 		return errors.New("merge config can't update, because it's hard to split. ")
 	}
-	if r.Spec.MergeFormat != old.(*ConfigMapRequest).Spec.MergeFormat {
+	if r.Spec.MergeConfigFile != old.(*ConfigMapRequest).Spec.MergeConfigFile {
 		return errors.New("merge format can't update, because it's hard to split. ")
 	}
 	return nil
