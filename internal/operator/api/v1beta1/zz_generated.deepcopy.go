@@ -98,18 +98,18 @@ func (in *ConfigMapRequestSpec) DeepCopyInto(out *ConfigMapRequestSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.Merged != nil {
-		in, out := &in.Merged, &out.Merged
+	if in.Merge != nil {
+		in, out := &in.Merge, &out.Merge
 		*out = new(bool)
 		**out = **in
 	}
-	if in.MergeFormat != nil {
-		in, out := &in.MergeFormat, &out.MergeFormat
+	if in.MergeConfigFile != nil {
+		in, out := &in.MergeConfigFile, &out.MergeConfigFile
 		*out = new(string)
 		**out = **in
 	}
-	if in.Watched != nil {
-		in, out := &in.Watched, &out.Watched
+	if in.Watch != nil {
+		in, out := &in.Watch, &out.Watch
 		*out = new(bool)
 		**out = **in
 	}

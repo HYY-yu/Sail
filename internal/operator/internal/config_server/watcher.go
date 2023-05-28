@@ -5,7 +5,10 @@ import (
 	"github.com/HYY-yu/sail/internal/operator/api/v1beta1"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sort"
+	"sync"
+	"time"
 )
 
 type EtcdWatcher struct {
@@ -20,7 +23,10 @@ type EtcdWatcher struct {
 	watching      bool
 	stopWatchChan chan struct{}
 
-	managedConfigMap map[ConfigKey]ConfigValue
+	managedConfigMap            map[ConfigKey]ConfigValue
+	managedConfigLastUpdateTime map[ConfigKey]*time.Time
+
+	rwLock sync.RWMutex
 }
 
 func NewWatcher(
@@ -32,12 +38,20 @@ func NewWatcher(
 ) *EtcdWatcher {
 
 	etcdW := &EtcdWatcher{
-		s:                s,
-		ctx:              ctx,
-		namespaceSecret:  namespaceSecret,
-		spec:             spec,
-		managedConfigMap: cm,
-		stopWatchChan:    make(chan struct{}),
+		s:                           s,
+		ctx:                         ctx,
+		namespaceSecret:             namespaceSecret,
+		spec:                        spec,
+		managedConfigMap:            cm,
+		managedConfigLastUpdateTime: make(map[ConfigKey]*time.Time),
+		stopWatchChan:               make(chan struct{}),
+		rwLock:                      sync.RWMutex{},
+	}
+
+	// init LastUpdateTime
+	nowTime := time.Now()
+	for k := range cm {
+		etcdW.managedConfigLastUpdateTime[k] = &nowTime
 	}
 
 	if *spec.Watch {
@@ -46,8 +60,11 @@ func NewWatcher(
 	return etcdW
 }
 
-func (e EtcdWatcher) ManagedConfigs() []ConfigKey {
+func (e *EtcdWatcher) ManagedConfigKeys() []ConfigKey {
 	result := make([]ConfigKey, 0)
+	e.rwLock.RLock()
+	defer e.rwLock.Unlock()
+
 	for k := range e.managedConfigMap {
 		result = append(result, k)
 	}
@@ -55,6 +72,25 @@ func (e EtcdWatcher) ManagedConfigs() []ConfigKey {
 		return result[i].String() < result[j].String()
 	})
 
+	return result
+}
+
+type ConfigManagedInfo struct {
+	Value          ConfigValue
+	LastUpdateTime *time.Time
+}
+
+func (e *EtcdWatcher) ManagedConfig() map[ConfigKey]ConfigManagedInfo {
+	result := make(map[ConfigKey]ConfigManagedInfo)
+
+	e.rwLock.RLock()
+	defer e.rwLock.Unlock()
+	for k, v := range e.managedConfigMap {
+		result[k] = ConfigManagedInfo{
+			Value:          v,
+			LastUpdateTime: e.managedConfigLastUpdateTime[k],
+		}
+	}
 	return result
 }
 
@@ -90,7 +126,7 @@ func (e *EtcdWatcher) Run() {
 
 	e.s.l.V(1).Info("start etcd watch")
 
-	managedConfigKeys := e.ManagedConfigs()
+	managedConfigKeys := e.ManagedConfigKeys()
 	keyPrefix := getETCDKeyPrefix(e.spec)
 
 	fromKey := managedConfigKeys[0]
@@ -113,9 +149,12 @@ func (e *EtcdWatcher) Run() {
 					switch ev.Type {
 					case mvccpb.PUT:
 						// 过滤不监听的 key
-						if _, ok := e.managedConfigMap[ConfigKey(getETCDKeyPrefix(e.spec)+string(ev.Kv.Key))]; !ok {
-							continue
+						e.rwLock.RLock()
+						configFileKey := getConfigKeyFrom(string(ev.Kv.Key))
+						if _, ok := e.managedConfigMap[configFileKey]; !ok {
+							return
 						}
+						e.rwLock.Unlock()
 
 						isPublish, _ := checkPublish(ev.Kv.Value)
 						if isPublish {
@@ -139,15 +178,43 @@ func (e *EtcdWatcher) Run() {
 }
 
 func (e *EtcdWatcher) dealETCDMsg(key string, value []byte) {
-	e.s.l.V(1).Info("got a event by: ", "key", key)
+	e.s.l.V(1).Info("got a event by etcd ", "key", key)
 	if len(value) == 0 {
 		return
 	}
-	// TODO 检查 K8s 是否有这个 ConfigMap的 key，没有则忽略
+	var failReturn bool
+	defer func() {
+		if failReturn {
+			e.s.l.Info("failed to deal etcd msg, will try again in next watch event. ")
+		}
+	}()
 
-	configFileKey := getConfigFileKeyFrom(key)
-	newValue := e.s.tryDecryptConfigContent(string(value), e.namespaceSecret)
+	configMapName := getConfigMapName(e.spec)
 
-	_ = configFileKey // TODO
-	_ = newValue
+	_, err := e.s.clientSet.CoreV1().ConfigMaps(e.s.namespace).Get(e.ctx, configMapName, metav1.GetOptions{})
+	if err != nil {
+		e.s.l.Error(err, "failed to get configMap")
+		failReturn = true
+		return
+	}
+
+	newValue := tryDecryptConfigContent(string(value), e.namespaceSecret)
+	configFileKey := getConfigKeyFrom(key)
+	nowTime := time.Now()
+
+	// 更新 configMap
+	e.rwLock.Lock()
+	e.managedConfigMap[configFileKey] = ConfigValue(newValue)
+	e.managedConfigLastUpdateTime[configFileKey] = &nowTime
+	e.rwLock.Unlock()
+
+	configMapData, err := makeConfigMapData(e.spec, e.managedConfigMap)
+	if err != nil {
+		e.s.l.Error(err, "failed to make configMap data")
+		failReturn = true
+		return
+	}
+	configMap := generateConfigMap(e.spec, configMapName, configMapData)
+	_, err = e.s.clientSet.CoreV1().ConfigMaps(e.s.namespace).Update(e.ctx, configMap, metav1.UpdateOptions{})
+	return
 }

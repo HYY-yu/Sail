@@ -51,7 +51,7 @@ type ConfigMapRequestSpec struct {
 	// +kubebuilder:validation:Enum=toml;yaml;json;ini;properties;custom
 
 	// MergeFormat 可选配置，默认聚合到一个格式为 config.toml 的 ConfigMap，可以在这里配置其它格式：(xx.yaml\cfg.json等)
-	// 支持 json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini"
+	// 支持 json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "dotenv", "env", "ini"
 	// +optional
 	MergeConfigFile *string `json:"merge_config_file,omitempty"`
 
@@ -66,12 +66,11 @@ type ConfigMapRequestStatus struct {
 	// +optional
 	TotalConfig int `json:"total_config,omitempty"`
 
-	// ActiveConfig 已经下载并生成 ConfigMap 的数量
-	// +optional
-	ActiveConfig int `json:"active_config,omitempty"`
-
 	// LastUpdateTime 最近一次的配置更新的时间（如果有多个配置更新，取离当前时间最近的配置更新时间）
 	LastUpdateTime *metav1.Time `json:"last_update_time,omitempty"`
+
+	// Watching 显示当前是否在监听配置变更
+	Watching bool `json:"watching"`
 
 	// ManagedConfigList 配置文件的管理列表
 	ManagedConfigList []ManagedConfig `json:"managed_config_list"`
@@ -84,13 +83,6 @@ type ManagedConfig struct {
 
 	// LastUpdateTime 这个配置最后更新时间
 	LastUpdateTime *metav1.Time `json:"last_update_time,omitempty"`
-
-	// Watched 是否在监听它的配置变更
-	Watched bool `json:"watched"`
-
-	// IsDeleted 指示此配置是否已经被删除
-	// 为 true 的配置
-	IsDeleted bool `json:"is_deleted"`
 }
 
 //+kubebuilder:object:root=true
@@ -98,9 +90,9 @@ type ManagedConfig struct {
 
 // ConfigMapRequest is the Schema for the configmaprequests API
 // +kubebuilder:resource:shortName=cmr
-// +kubebuilder:printcolumn:name="Active",type="integer",JSONPath=".status.active_config"
 // +kubebuilder:printcolumn:name="Total",type="integer",JSONPath=".status.total_config"
 // +kubebuilder:printcolumn:name="LastUpdateTIme",type="date",JSONPath=".status.last_update_time"
+// +kubebuilder:printcolumn:name="Watching",type="boolean",JSONPath=".status.watching"
 type ConfigMapRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -111,8 +111,8 @@ func Test_getConfigFileKeyFrom(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getConfigFileKeyFrom(tt.args.etcdKey); got != tt.want {
-				t.Errorf("getConfigFileKeyFrom() = %v, want %v", got, tt.want)
+			if got := getConfigKeyFrom(tt.args.etcdKey); got != tt.want {
+				t.Errorf("getConfigKeyFrom() = %v, want %v", got, tt.want)
 			}
 		})
 	}

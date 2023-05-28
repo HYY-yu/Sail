@@ -61,7 +61,7 @@ func (r *ConfigMapRequest) Default() {
 	}
 }
 
-//+kubebuilder:webhook:path=/validate-cmr-sail-hyy-yu-space-v1beta1-configmaprequest,mutating=false,failurePolicy=fail,sideEffects=None,groups=cmr.sail.hyy-yu.space,resources=configmaprequests,verbs=create;update,versions=v1beta1,name=vconfigmaprequest.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-cmr-sail-hyy-yu-space-v1beta1-configmaprequest,mutating=false,failurePolicy=fail,sideEffects=None,groups=cmr.sail.hyy-yu.space,resources=configmaprequests,verbs=create;update;delete,versions=v1beta1,name=vconfigmaprequest.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &ConfigMapRequest{}
 
@@ -98,5 +98,6 @@ func (r *ConfigMapRequest) ValidateUpdate(old runtime.Object) error {
 func (r *ConfigMapRequest) ValidateDelete() error {
 	configmaprequestlog.Info("validate delete", "name", r.Name)
 
+	configmaprequestlog.Info("Delete the CMR will delete it corresponding ConfigMap, Please careful!")
 	return nil
 }

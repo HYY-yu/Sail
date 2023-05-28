@@ -3,6 +3,7 @@ package config_server
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
 	"fmt"
 	"github.com/HYY-yu/sail/internal/operator/api/v1beta1"
 	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
@@ -28,18 +29,19 @@ import (
 // 它负责保持与 ETCD 服务器的连接，从 ETCD 获取指定的配置以及持续监听这个配置
 // 当配置发生变更，它将自动更新到 ConfigMap。
 // 它会在本地维护 ConfigMap 和 ETCD 配置间的关系，以及一份配置缓存，以便 Get 重复获取。
-// - 对于 Reconclier 来说，它只需要启动 InitOrUpdate 向 ConfigServer 请求相关配置即可。
-// - Reconclier 也可以 Get 配置检查是否下载成功，是否正在 Watch。
-// - 总之，Reconclier把对 ConfigMap 的管理全部委托给 ConfigServer。
+// - 对于 Reconciler 来说，它只需要启动 InitOrUpdate 向 ConfigServer 请求相关配置即可。
+// - Reconciler 也可以 Get 配置检查是否下载成功，是否正在 Watch。
+// - 总之，Reconciler ConfigMap 的管理全部委托给 ConfigServer。
 type ConfigServer interface {
 	// InitOrUpdate 用于从配置系统获取配置，写入到 ConfigMap，并 Watch 配置保证配置是最新的
-	InitOrUpdate(ctx context.Context, namespaceSecretKey string, resp *v1beta1.ConfigMapRequestSpec) error
+	InitOrUpdate(ctx context.Context, cmrNamespacedName string, namespaceSecretKey string, resp *v1beta1.ConfigMapRequestSpec) error
 
 	// Get 检查配置是否成功下载到 ConfigMap，Watch 连接是否正常
 	// 用于更新 CMR 的状态
-	Get(ctx context.Context, spec *v1beta1.ConfigMapRequestSpec)
+	Get(ctx context.Context, cmrNamespacedName string, spec *v1beta1.ConfigMapRequestSpec) (watching bool, managedConfig map[ConfigKey]ConfigManagedInfo, err error)
 
 	// Delete 当 CMR 被删除时，联动删除 ConfigMap
+	Delete(ctx context.Context, cmrNamespacedName string, spec *v1beta1.ConfigMapRequestSpec) error
 }
 
 type configServer struct {
@@ -104,7 +106,50 @@ func (c *configServer) Start(_ context.Context) error {
 	return nil
 }
 
-func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) error {
+func (c *configServer) Get(ctx context.Context, cmrNamespacedName string, spec *v1beta1.ConfigMapRequestSpec) (watching bool, managedConfig map[ConfigKey]ConfigManagedInfo, err error) {
+	_ = ctx
+	specUniqueKey := newSpecUniqueKey(cmrNamespacedName, spec)
+
+	c.rwLock.RLock()
+	defer c.rwLock.RUnlock()
+
+	if _, ok := c.configCaches[specUniqueKey]; !ok {
+		err = fmt.Errorf("not found the config of %s", cmrNamespacedName)
+		return
+	}
+
+	w := c.configCaches[specUniqueKey]
+	managedConfig = w.ManagedConfig()
+	watching = w.Watching()
+	return
+}
+
+func (c *configServer) Delete(ctx context.Context, cmrNamespacedName string, spec *v1beta1.ConfigMapRequestSpec) error {
+	specUniqueKey := newSpecUniqueKey(cmrNamespacedName, spec)
+
+	c.rwLock.Lock()
+	defer c.rwLock.Unlock()
+
+	if _, ok := c.configCaches[specUniqueKey]; !ok {
+		return fmt.Errorf("not found the config of %s", cmrNamespacedName)
+	}
+
+	// stop watching
+	w := c.configCaches[specUniqueKey]
+	w.ShouldWatch(false)
+	configMapName := getConfigMapName(spec)
+
+	// delete configmap
+	err := c.clientSet.CoreV1().ConfigMaps(c.namespace).Delete(ctx, configMapName, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+
+	delete(c.configCaches, specUniqueKey)
+	return nil
+}
+
+func (c *configServer) InitOrUpdate(ctx context.Context, cmrNamespacedName string, namespaceSecretKey string, spec *v1beta1.ConfigMapRequestSpec) error {
 	if len(spec.Configs) == 0 {
 		keyPrefix := getETCDKeyPrefix(spec)
 		// 取所有 config
@@ -117,67 +162,50 @@ func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey stri
 			return fmt.Errorf("read config from etcd err: %w ", err)
 		}
 		for _, e := range getResp.Kvs {
-			spec.Configs = append(spec.Configs, string(getConfigFileKeyFrom(string(e.Key))))
+			spec.Configs = append(spec.Configs, string(getConfigKeyFrom(string(e.Key))))
 		}
 	}
 	sort.Strings(spec.Configs)
+	specUniqueKey := newSpecUniqueKey(cmrNamespacedName, spec)
 
 	c.rwLock.RLock()
-	if v, ok := c.configCaches[newSpecUniqueKey(spec)]; ok {
+	if v, ok := c.configCaches[specUniqueKey]; ok {
 		c.rwLock.Unlock()
 		if *spec.Watch != v.Watching() {
 			v.ShouldWatch(*spec.Watch)
 		}
 
-		if !reflect.DeepEqual(spec.Configs, v.ManagedConfigs()) {
+		if !reflect.DeepEqual(spec.Configs, v.ManagedConfigKeys()) {
 			// 如果 spec.Configs 变动过，则重新拉取这个 spec
 			c.rwLock.Lock()
 			v.ShouldWatch(false) // 关闭 Watch
-			delete(c.configCaches, newSpecUniqueKey(spec))
+			delete(c.configCaches, specUniqueKey)
 			c.rwLock.Unlock()
-			return c.InitOrUpdate(ctx, namespaceSecretKey, spec)
+			return c.InitOrUpdate(ctx, cmrNamespacedName, namespaceSecretKey, spec)
 		}
 		return nil
 	}
 	c.rwLock.Unlock()
-	// 拉取配置并设置更新
 
 	etcdConfigMap, err := c.pullETCDConfig(ctx, namespaceSecretKey, spec)
 	if err != nil {
 		return err
 	}
 
-	configMapData := make(map[string]string)
-	// 写入 kubernetes，处理 MergeConfig
-	if *spec.Merge {
-		cm, err := mergeConfig(etcdConfigMap, *spec.MergeConfigFile)
-		if err != nil {
-			return err
-		}
-
-		configMapData = cm
-	} else {
-		for k, v := range etcdConfigMap {
-			configMapData[k.String()] = v.String()
-		}
+	configMapData, err := makeConfigMapData(spec, etcdConfigMap)
+	if err != nil {
+		return err
 	}
 
-	configMapName := getConfigMapName(spec)
-	// TODO meta.Annotations
-	configMap := &v1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName,
-		},
-		Data: configMapData,
-	}
+	configMap := generateConfigMap(spec, cmrNamespacedName, configMapData)
 
 	_, err = c.clientSet.CoreV1().ConfigMaps(c.namespace).Create(ctx, configMap, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("create configmap err, "+
-			"please check the configmap:%s in cluster. Error is: %w", configMapName, err)
+			"please check the configmap:%s in cluster. Error is: %w", configMap.Name, err)
 	}
 
-	// Watcher 启动后，是否 Watch 配置取决于 Spec.Watch
+	// Watcher 启动后，是否开始 Watch 配置取决于 Spec.Watch
 	w := NewWatcher(
 		ctx,
 		c,
@@ -186,9 +214,43 @@ func (c *configServer) InitOrUpdate(ctx context.Context, namespaceSecretKey stri
 		etcdConfigMap,
 	)
 	c.rwLock.Lock()
-	c.configCaches[newSpecUniqueKey(spec)] = w
+	c.configCaches[specUniqueKey] = w
 	c.rwLock.Unlock()
 	return nil
+}
+
+func makeConfigMapData(spec *v1beta1.ConfigMapRequestSpec, etcdConfigMap map[ConfigKey]ConfigValue) (map[string]string, error) {
+	configMapData := make(map[string]string)
+	// 写入 kubernetes，处理 MergeConfig
+	if *spec.Merge {
+		cm, err := mergeConfig(etcdConfigMap, *spec.MergeConfigFile)
+		if err != nil {
+			return nil, err
+		}
+
+		configMapData = cm
+	} else {
+		for k, v := range etcdConfigMap {
+			configMapData[k.String()] = v.String()
+		}
+	}
+	return configMapData, nil
+}
+
+func generateConfigMap(spec *v1beta1.ConfigMapRequestSpec, cmrNamespacedName string, configMapData map[string]string) *v1.ConfigMap {
+	configMapName := getConfigMapName(spec)
+	configMap := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configMapName,
+			Annotations: map[string]string{
+				BaseAnnotations + ManagedByAnnotation:      "sail",
+				BaseAnnotations + CreateFromCMRAnnotation:  cmrNamespacedName,
+				BaseAnnotations + LastUpdateTimeAnnotation: time.Now().Format(time.RFC3339),
+			},
+		},
+		Data: configMapData,
+	}
+	return configMap
 }
 
 func getConfigMapName(spec *v1beta1.ConfigMapRequestSpec) string {
@@ -197,10 +259,12 @@ func getConfigMapName(spec *v1beta1.ConfigMapRequestSpec) string {
 
 type SpecUniqueKey string
 
-func newSpecUniqueKey(spec *v1beta1.ConfigMapRequestSpec) SpecUniqueKey {
-	return SpecUniqueKey(fmt.Sprintf("%s-%s", spec.Namespace, spec.ProjectKey))
+func newSpecUniqueKey(cmrNamespacedName string, spec *v1beta1.ConfigMapRequestSpec) SpecUniqueKey {
+	h := md5.Sum([]byte(fmt.Sprintf("%s-%s-%s", cmrNamespacedName, spec.Namespace, spec.ProjectKey)))
+	return SpecUniqueKey(fmt.Sprintf("%x", h))
 }
 
+// ConfigKey is like config.toml/config.json
 type ConfigKey string
 
 func (c ConfigKey) String() string {
@@ -277,7 +341,7 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 	}
 	etcdKeys := make([]ConfigKey, 0, len(spec.Configs))
 	for _, e := range getResp.Kvs {
-		etcdKeys = append(etcdKeys, getConfigFileKeyFrom(string(e.Key)))
+		etcdKeys = append(etcdKeys, getConfigKeyFrom(string(e.Key)))
 	}
 	if len(etcdKeys) == 0 {
 		return nil, fmt.Errorf("read empty config from etcd! ")
@@ -300,7 +364,7 @@ func (c *configServer) pullETCDConfig(ctx context.Context, namespaceSecretKey st
 
 	result := make(map[ConfigKey]ConfigValue)
 	for _, e := range getResp.Kvs {
-		configFileKey := getConfigFileKeyFrom(string(e.Key))
+		configFileKey := getConfigKeyFrom(string(e.Key))
 		if _, ok := insETCDKeyMap[configFileKey]; ok {
 			isPublish, reversion := checkPublish(e.Value)
 			if isPublish {
@@ -369,15 +433,6 @@ func (c *configServer) readFromReversion(ctx context.Context, etcdKey []byte, re
 	return getResp.Kvs[0].Value, nil
 }
 
-func (c *configServer) Get(ctx context.Context, spec *v1beta1.ConfigMapRequestSpec) {
-	// configs 和 ConfigMap 一一对应
-	// merged: true 全部的 configs 对应一个 ConfigMap
-
-	// 先检查 ConfigMap 是否存在
-
-	//
-}
-
 // /conf/{project_key}/namespace/config_name.config.type
 func getETCDKeyPrefix(spec *v1beta1.ConfigMapRequestSpec) string {
 	b := strings.Builder{}
@@ -394,7 +449,7 @@ func getETCDKeyPrefix(spec *v1beta1.ConfigMapRequestSpec) string {
 	return b.String()
 }
 
-func getConfigFileKeyFrom(etcdKey string) ConfigKey {
+func getConfigKeyFrom(etcdKey string) ConfigKey {
 	_, result := filepath.Split(etcdKey)
 	return ConfigKey(result)
 }
