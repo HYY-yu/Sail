@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"github.com/HYY-yu/sail/internal/operator/internal/config_server"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,18 +33,17 @@ import (
 type ConfigMapRequestReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	ConfigServer config_server.ConfigServer
 }
 
 //+kubebuilder:rbac:groups=cmr.sail.hyy-yu.space,resources=configmaprequests,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cmr.sail.hyy-yu.space,resources=configmaprequests/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cmr.sail.hyy-yu.space,resources=configmaprequests/finalizers,verbs=update
-//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=secret,verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
 func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	L := log.FromContext(ctx)
 
@@ -57,17 +57,12 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Print the cmr
 	L.Info("ConfigMapRequest", "cmr", cmr.Name)
 
-	// Load all configMaps in namespace
-	configMaps := &corev1.ConfigMapList{}
-	err = r.List(ctx, configMaps, client.InNamespace(cmr.Namespace))
-	if err != nil {
-		L.Error(err, "Failed to list configMaps")
-		return ctrl.Result{}, err
-	}
+	// getSecret if it has .
+	r.Client.Get(ctx, , &corev1.Secret{})
 
-	// Print the configMaps
-	for _, e := range configMaps.Items {
-		L.Info("ConfigMapListBean", "ConfigMapName", e.Name)
+	err = r.ConfigServer.InitOrUpdate(ctx, req.NamespacedName.String(), "", &cmr.Spec)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

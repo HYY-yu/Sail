@@ -114,8 +114,9 @@ func main() {
 	)
 
 	if err = (&controller.ConfigMapRequestReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:       mgr.GetClient(),
+		Scheme:       mgr.GetScheme(),
+		ConfigServer: configServer,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ConfigMapRequest")
 		os.Exit(1)
