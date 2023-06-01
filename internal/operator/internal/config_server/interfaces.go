@@ -480,9 +480,11 @@ func tryDecryptConfigContent(content string, namespaceSecretKey string) string {
 	_, err := encrypt.NewBase64Encoding().DecodeString(content)
 	if err == nil {
 		// 能被 Base64 解码，却不能被解密，那就把 content 原样返回
-		decryptContent, err := decryptConfigContent(content, namespaceSecretKey)
-		if err == nil {
-			content = decryptContent
+		if len(namespaceSecretKey) != 0 {
+			decryptContent, err := decryptConfigContent(content, namespaceSecretKey)
+			if err == nil {
+				content = decryptContent
+			}
 		}
 	}
 	return content

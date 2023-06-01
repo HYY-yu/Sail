@@ -107,6 +107,7 @@ func main() {
 		mgr.GetLogger(),
 		mgr.GetConfig(),
 		config_server.MetaConfig{
+			Namespace:     namespace,
 			ETCDEndpoints: etcdEndpoints,
 			ETCDUsername:  etcdUsername,
 			ETCDPassword:  etcdPassword,
@@ -114,6 +115,7 @@ func main() {
 	)
 
 	if err = (&controller.ConfigMapRequestReconciler{
+		Namespace:    namespace,
 		Client:       mgr.GetClient(),
 		Scheme:       mgr.GetScheme(),
 		ConfigServer: configServer,

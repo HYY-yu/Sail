@@ -34,7 +34,8 @@ type ConfigMapRequestSpec struct {
 
 	// NamespaceKey 项目的命名空间秘钥
 	// 为了安全起见，NamespaceKey不能直接提供，需要提供一个 Secret 其中保存了NamespaceKey。
-	// 格式：namespaceKey: secret-namespace-key-name
+	// 格式：namespaceKey: secret-key-name
+	// 只能引用本命名空间的 Secret
 	// +optional
 	NamespaceKeyInSecret *v1.LocalObjectReference `json:"namespace_key_in_secret,omitempty"`
 
