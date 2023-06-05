@@ -23,10 +23,11 @@ import (
 	"fmt"
 	"github.com/HYY-yu/sail/internal/operator/internal/config_server"
 	corev1 "k8s.io/api/core/v1"
-
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	cmrv1beta1 "github.com/HYY-yu/sail/internal/operator/api/v1beta1"
@@ -51,8 +52,8 @@ type ConfigMapRequestReconciler struct {
 func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	L := log.FromContext(ctx)
 
-	var cmr cmrv1beta1.ConfigMapRequest
-	err := r.Get(ctx, req.NamespacedName, &cmr)
+	var cmr *cmrv1beta1.ConfigMapRequest
+	err := r.Get(ctx, req.NamespacedName, cmr)
 	if err != nil {
 		// We'll ignore not-found errors, since they can't be fixed by an immediate requeue
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -64,22 +65,73 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	// Print the cmr
 	L.Info("ConfigMapRequest", "cmr", cmr.Name)
 
+	// cmr finalizer
+	cmrFinalizerName := config_server.BaseAnnotations + "finalizer"
+	if cmr.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(cmr, cmrFinalizerName) {
+			controllerutil.AddFinalizer(cmr, cmrFinalizerName)
+			if err := r.Update(ctx, cmr); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		if controllerutil.ContainsFinalizer(cmr, cmrFinalizerName) {
+			if err := r.ConfigServer.Delete(ctx, req.NamespacedName.String(), &cmr.Spec); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(cmr, cmrFinalizerName)
+			if err := r.Update(ctx, cmr); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
 	// getSecret if it has .
 	var secretNamespaceKey string
 	if cmr.Spec.NamespaceKeyInSecret != nil {
-		secretNamespaceKey, err = r.getSecret(ctx, &cmr)
+		secretNamespaceKey, err = r.getSecret(ctx, cmr)
 		if err != nil {
+			L.Error(err, "get Secret fail. ")
 			return ctrl.Result{}, err
 		}
 	}
 
 	err = r.ConfigServer.InitOrUpdate(ctx, req.NamespacedName.String(), secretNamespaceKey, &cmr.Spec)
 	if err != nil {
+		L.Error(err, "InitOrUpdate fail. ")
+
 		return ctrl.Result{}, err
 	}
-	// TODO cmr status
+	// cmr status
+	watching, managedConfig, err := r.ConfigServer.Get(ctx, req.NamespacedName.String(), &cmr.Spec)
+	if err != nil {
+		L.Error(err, "get ConfigServer fail. ")
+		return ctrl.Result{}, err
+	}
 
-	// TODO cmr finalizer
+	cmr.Status.TotalConfig = len(managedConfig)
+	cmr.Status.Watching = watching
+	cmr.Status.LastUpdateTime = &metav1.Time{}
+
+	for k, v := range managedConfig {
+		t := metav1.NewTime(*v.LastUpdateTime)
+		mc := cmrv1beta1.ManagedConfig{
+			ConfigFileName: k.String(),
+			LastUpdateTime: &t,
+		}
+		cmr.Status.ManagedConfigList = append(cmr.Status.ManagedConfigList, mc)
+		if cmr.Status.LastUpdateTime.Before(mc.LastUpdateTime) {
+			cmr.Status.LastUpdateTime = mc.LastUpdateTime
+		}
+	}
+
+	if err := r.Status().Update(ctx, cmr); err != nil {
+		L.Error(err, "unable to update CMR status")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

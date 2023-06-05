@@ -131,7 +131,8 @@ func (c *configServer) Delete(ctx context.Context, cmrNamespacedName string, spe
 	defer c.rwLock.Unlock()
 
 	if _, ok := c.configCaches[specUniqueKey]; !ok {
-		return fmt.Errorf("not found the config of %s", cmrNamespacedName)
+		// not found the config, skip.
+		return nil
 	}
 
 	// stop watching
