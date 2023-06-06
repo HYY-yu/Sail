@@ -1,0 +1,63 @@
+# Login 模块接口测试
+# 需要一个测试账号和绑定测试项目组的 Owner 权限
+
+POST http://{{host}}:{{port}}/sail/v1/login
+Content-Type: application/json
+
+{
+  "user_name": "{{test_name}}",
+  "password": "{{test_pwd}}"
+}
+
+> {%
+    client.log(request.body())
+    client.global.set("access_token", response.body.data.access_token);
+    client.global.set("refresh_token", response.body.data.refresh_token);
+%}
+
+###
+
+POST http://{{host}}:{{port}}/sail/v1/login/refresh
+Content-Type: application/json
+
+{
+  "old_refresh_token": "{{refresh_token}}"
+}
+
+> {%
+    client.test("check", function () {
+        let oldToken = "{{refresh_token}}"
+        let newToken = response.body.data.refresh_token
+        client.assert(oldToken !== newToken, "newToken is equal to old. ");
+        client.assert(response.body.data.init_password === false, "must false. ")
+    })
+%}
+
+
+###
+
+GET http://{{host}}:{{port}}/sail/v1/login/login_out
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("status code 200", function () {
+        client.assert(response.status == 200)
+    })
+%}
+
+###
+
+# LoginOut，RefreshToken 失效
+
+POST http://{{host}}:{{port}}/sail/v1/login/refresh
+Content-Type: application/json
+
+{
+  "old_refresh_token": "{{refresh_token}}"
+}
+
+> {%
+    client.test("check", function () {
+        client.assert(response.status === 500);
+    })
+%}
