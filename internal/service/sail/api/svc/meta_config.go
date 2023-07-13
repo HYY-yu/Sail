@@ -27,6 +27,7 @@ type MetaConfig struct {
 	ConfigFilePath     string   // 本地配置文件存放路径，空代表不存储本都配置文件
 	LogLevel           string   // 日志级别(DEBUG\INFO\WARN\ERROR)，默认 WARN
 	MergeConfig        bool     // 是否合并配置，合并配置则会将同类型的配置合并到一个文件中，需要先设置ConfigFilePath
+	MergeConfigFile    string   // 仅用于 Kubernetes，当mergeConfig=true，传递给 CMR 的值
 }
 
 const flagTemplate = `
@@ -86,8 +87,8 @@ spec:
   namespace_key_in_secret:
     name: secret-{{.ProjectKey}}-{{.Namespace}}
 {{end}}
-  merged: {{.MergeConfig}}
-  merge_format: toml
+  merge: {{.MergeConfig}}
+  merge_config_file: {{.MergeConfigFile}}
   configs: 
 {{range .ConfigsInCMR}}
     - {{.}}
@@ -153,15 +154,16 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 	}
 
 	metaConfig := &MetaConfig{
-		ETCDEndpoints:  strings.Join(config.Get().ETCD.Endpoints, ","),
-		ETCDUsername:   config.Get().ETCD.Username,
-		ETCDPassword:   config.Get().ETCD.Password,
-		ProjectKey:     project.Key,
-		Namespace:      namespace.Name,
-		NamespaceKey:   namespace.SecretKey,
-		ConfigFilePath: config.Get().SDK.ConfigFilePath,
-		LogLevel:       config.Get().SDK.LogLevel,
-		MergeConfig:    config.Get().SDK.MergeConfig,
+		ETCDEndpoints:   strings.Join(config.Get().ETCD.Endpoints, ","),
+		ETCDUsername:    config.Get().ETCD.Username,
+		ETCDPassword:    config.Get().ETCD.Password,
+		ProjectKey:      project.Key,
+		Namespace:       namespace.Name,
+		NamespaceKey:    namespace.SecretKey,
+		ConfigFilePath:  config.Get().SDK.ConfigFilePath,
+		LogLevel:        config.Get().SDK.LogLevel,
+		MergeConfig:     config.Get().SDK.MergeConfig,
+		MergeConfigFile: config.Get().SDK.MergeConfigFile,
 	}
 	if len(metaConfig.NamespaceKey) > 0 {
 		metaConfig.NamespaceKeyBase64 = encrypt.NewBase64Encoding().EncodeToString([]byte(namespace.SecretKey))

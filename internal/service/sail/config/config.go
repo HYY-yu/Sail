@@ -59,9 +59,10 @@ type Config struct {
 	}
 
 	SDK struct {
-		ConfigFilePath string
-		LogLevel       string
-		MergeConfig    bool
+		ConfigFilePath  string
+		LogLevel        string
+		MergeConfig     bool
+		MergeConfigFile string
 	}
 }
 

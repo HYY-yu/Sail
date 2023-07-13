@@ -41,4 +41,5 @@ stdOut = false
 [sdk]
 configFilePath = "."
 logLevel = "WARN"
-MergeConfig = false
+mergeConfig = false
+mergeConfigFile = "config.toml" # For kubernetes only

@@ -44,11 +44,21 @@ var testEnv *envtest.Environment
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "Controller Suite")
+	RunSpecs(t, "`Controller Suite")
+
 }
+
+// 测试用例：
+// 1. 首先我们创建一个测试 CMR （从 获取元配置 接口获取）
+// 2. 检查是否正确创建了 ConfigMap
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+
+	// 要进行此集成测试，首先需要在管理后台添加一个测试项目组
+	// 和一个测试项目，并添加好测试配置文件
+	// Start() 检查测试环境是否正确
+	// api_sdk.Start()
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{

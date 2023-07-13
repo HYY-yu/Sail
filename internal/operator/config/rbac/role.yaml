@@ -6,6 +6,13 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - secret
+  verbs:
+  - get
+  - list
+- apiGroups:
   - cmr.sail.hyy-yu.space
   resources:
   - configmaprequests
@@ -31,15 +38,3 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch

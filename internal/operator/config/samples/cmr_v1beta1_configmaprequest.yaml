@@ -13,9 +13,10 @@ spec:
   namespace: BB
   namespace_key_in_secret:
     name: J_Secret
-  merged: false
+  merge: false
+  merge_config_file: config.toml
   configs:
     - A
     - B
     - C
-  merge_format: toml
+  watch: false
