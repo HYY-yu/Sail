@@ -44,6 +44,8 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 	indexHandler := handler.NewIndexHandler(projectGroupSvc, namespaceSvc, configSvc)
 	publishRepo := repo.NewPublishRepo()
 	publishSvc := svc_publish.NewPublishSvc(d, store, configSvc, publishRepo, publishConfigRepo)
-	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler, indexHandler, publishSvc, configSvc)
+	testDataSvc := svc.NewTestDataSvc(d, namespaceSvc, projectSvc, configSvc)
+	envTestHandler := handler.NewEnvTestHandler(testDataSvc)
+	handlers := NewHandlers(projectGroupHandler, staffHandler, loginHandler, projectHandler, namespaceHandler, configHandler, indexHandler, publishSvc, configSvc, envTestHandler)
 	return handlers, nil
 }
