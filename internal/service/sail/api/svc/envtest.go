@@ -417,7 +417,7 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 			ProjectGroupID: model_envtest.TestProjectGroupId,
 			ProjectID:      resultPj.ID,
 			NamespaceID:    resultNs.ID,
-			Name:           model_envtest.TestProjectConfigName,
+			Name:           model_envtest.TestProjectConfigLinkPublic,
 			IsLinkPublic:   true,
 			Type:           model_envtest.TestConfigType,
 			Content:        model_envtest.TestProjectConfigContent,

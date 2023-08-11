@@ -16,11 +16,12 @@ const (
 // 依赖默认的项目组
 // 没有以下数据，测试将无法进行。
 const (
-	TestAPIURL     = "http://127.0.0.1:8108/sail/v1"
-	TestCheckHeath = "/system/health"
+	TestAPIURL     = "http://127.0.0.1:8108"
+	TestCheckHeath = "/sail/system/health"
+	TestLogin      = "/sail/v1/login"
 
-	TestCreateTestData = "/create_test_data"
-	TestCleanTestData  = "/clean_test_data"
+	TestCreateTestData = "/sail/v1/create_test_data"
+	TestCleanTestData  = "/sail/v1/clean_test_data"
 
 	TestAccountName    = "Test"
 	TestAccountPass    = "Test123"
