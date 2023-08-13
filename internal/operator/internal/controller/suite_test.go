@@ -23,6 +23,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	envtestAPI "github.com/HYY-yu/sail/internal/service/sail/api/envtest"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,6 +41,7 @@ import (
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
+var apiEnvTest *envtestAPI.ApiEnvTest
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -48,25 +50,55 @@ func TestAPIs(t *testing.T) {
 
 }
 
-// 测试用例：
-// 1. 首先我们创建一个测试 CMR （从 获取元配置 接口获取）
+// 测试用例-更新测试：
+// 1. 首先我们创建一个测试 CMR (不关联公共配置)
 // 2. 检查是否正确创建了 ConfigMap
+// 3. 调用 API 更新这个配置
+// 4. 检查 ConfigMap 是否更新成功
+
+// 测试用例-关联配置更新测试
+// 1. 首先创建一个测试 CMR （关联公共配置）
+// 2. 检查是否正确创建 ConfigMap
+// 3. 调用 API 更新公共配置
+// 4. 检查 ConfigMap 是否更新成功
+
+// 测试用例-Merge 配置测试
+// 1. 创建测试 CMR （两个配置）
+// 2. 一个 CMR Merge True ，检查是否只生成了一个 ConfigMap
+// 3. 一个 CMR Merge False, 检查是否创建了两个 ConfigMap
+
+// 测试用例-CMR更新
+// 1. 创建测试 CMR (不关联公共配置)
+// 2. 关闭 Watch
+// 3. 调用 API 更新配置
+// 4. 检查 ConfigMap 是否不再更新
+// 5. 打开 Watch
+// 6. 调用 API 更新配置
+// 7. ConfigMap 更新了
+
+// 测试用例-CMR 删除
+// 1. 创建测试 CMR （不关联公共配置）
+// 2. 检查是否正确创建了 ConfigMap
+// 3. 删除 CMR
+// 4. ConfigMap 被删除
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	// 要进行此集成测试，首先需要在管理后台添加一个测试项目组
-	// 和一个测试项目，并添加好测试配置文件
+	// 要进行此集成测试，需要准备好 API 测试环境
 	// Start() 检查测试环境是否正确
-	// api_sdk.Start()
+	var err error
 
 	By("bootstrapping test environment")
+	apiEnvTest = new(envtestAPI.ApiEnvTest)
+	err = apiEnvTest.Start()
+	Expect(err).NotTo(HaveOccurred())
+
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
 	}
 
-	var err error
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
@@ -80,11 +112,13 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
-
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-	err := testEnv.Stop()
+	err := apiEnvTest.Stop()
+	Expect(err).NotTo(HaveOccurred())
+
+	err = testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
