@@ -152,7 +152,8 @@ func (*ApiEnvTest) Stop() error {
 }
 
 func getFiveSecondCtx() context.Context {
-	timeCtx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	timeCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	_ = cancel // 消除警告
 	return timeCtx
 }
 

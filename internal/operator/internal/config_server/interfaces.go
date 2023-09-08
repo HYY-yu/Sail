@@ -307,9 +307,9 @@ func mergeConfig(etcdConfigMap map[ConfigKey]ConfigValue, mergeConfigFile string
 	// merge viperMap
 	for k, v := range viperMap {
 		dataMap := v.AllSettings()
-
+		newk := strings.ReplaceAll(k, ".", "-") // yaml 不支持 key 是 config.yaml （不能包含点号）
 		err := mergedViper.MergeConfigMap(map[string]interface{}{
-			k: dataMap,
+			newk: dataMap,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("merge viper fail: %w ", err)

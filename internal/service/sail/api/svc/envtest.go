@@ -88,7 +88,7 @@ func (s *TestDataSvc) GetTestData(sctx core.SvcContext) (map[string]interface{},
 	}
 	result["namespace_id"] = testNamespaceId
 	// publicConfigId
-	testPublicConfigId, err := s.findTestPublicConfigId(sctx, testPjId)
+	testPublicConfigId, err := s.findTestPublicConfigId(sctx, testNamespaceId)
 	if err != nil {
 		return nil, response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
