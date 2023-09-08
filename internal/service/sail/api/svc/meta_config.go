@@ -2,6 +2,7 @@ package svc
 
 import (
 	"bytes"
+	"github.com/HYY-yu/seckill.pkg/pkg/encrypt"
 	"net/http"
 	"strings"
 	"text/template"
@@ -14,16 +15,19 @@ import (
 )
 
 type MetaConfig struct {
-	ETCDEndpoints  string // 逗号分隔的ETCD地址，0.0.0.0:2379,0.0.0.0:12379,0.0.0.0:22379
-	ETCDUsername   string
-	ETCDPassword   string
-	ProjectKey     string
-	Namespace      string
-	NamespaceKey   string
-	Configs        string // 逗号分隔的 config_name.config_type，如：mysql.toml,cfg.json,redis.yaml，空代表不下载任何配置
-	ConfigFilePath string // 本地配置文件存放路径，空代表不存储本都配置文件
-	LogLevel       string // 日志级别(DEBUG\INFO\WARN\ERROR)，默认 WARN
-	MergeConfig    bool   // 是否合并配置，合并配置则会将同类型的配置合并到一个文件中，需要先设置ConfigFilePath
+	ETCDEndpoints      string // 逗号分隔的ETCD地址，0.0.0.0:2379,0.0.0.0:12379,0.0.0.0:22379
+	ETCDUsername       string
+	ETCDPassword       string
+	ProjectKey         string
+	Namespace          string
+	NamespaceKey       string
+	NamespaceKeyBase64 string
+	Configs            string   // 逗号分隔的 config_name.config_type，如：mysql.toml,cfg.json,redis.yaml，空代表不下载任何配置
+	ConfigsInCMR       []string // 空代表下载所有配置
+	ConfigFilePath     string   // 本地配置文件存放路径，空代表不存储本都配置文件
+	LogLevel           string   // 日志级别(DEBUG\INFO\WARN\ERROR)，默认 WARN
+	MergeConfig        bool     // 是否合并配置，合并配置则会将同类型的配置合并到一个文件中，需要先设置ConfigFilePath
+	MergeConfigFile    string   // 仅用于 Kubernetes，当mergeConfig=true，传递给 CMR 的值
 }
 
 const flagTemplate = `
@@ -58,6 +62,36 @@ export SAIL_LOG_LEVEL={{.LogLevel}}
 {{end}}
 {{if .MergeConfig}}
 export SAIL_MERGE_CONFIG={{.MergeConfig}}
+{{end}}
+`
+
+const kubernetesYaml = `
+{{if .NamespaceKey}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-{{.ProjectKey}}-{{.Namespace}}
+type: Opaque
+data:
+  namespace_key: {{.NamespaceKey}}
+---
+{{end}}
+apiVersion: cmr.sail.hyy-yu.space/v1beta1
+kind: ConfigMapRequest
+metadata:
+  name: cmr-{{.ProjectKey}}-{{.Namespace}}
+spec:
+  project_key: {{.ProjectKey}}
+  namespace: {{.Namespace}}
+{{if .NamespaceKey}}
+  namespace_key_in_secret:
+    name: secret-{{.ProjectKey}}-{{.Namespace}}
+{{end}}
+  merge: {{.MergeConfig}}
+  merge_config_file: {{.MergeConfigFile}}
+  configs: 
+{{range .ConfigsInCMR}}
+    - {{.}}
 {{end}}
 `
 
@@ -120,15 +154,19 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 	}
 
 	metaConfig := &MetaConfig{
-		ETCDEndpoints:  strings.Join(config.Get().ETCD.Endpoints, ","),
-		ETCDUsername:   config.Get().ETCD.Username,
-		ETCDPassword:   config.Get().ETCD.Password,
-		ProjectKey:     project.Key,
-		Namespace:      namespace.Name,
-		NamespaceKey:   namespace.SecretKey,
-		ConfigFilePath: config.Get().SDK.ConfigFilePath,
-		LogLevel:       config.Get().SDK.LogLevel,
-		MergeConfig:    config.Get().SDK.MergeConfig,
+		ETCDEndpoints:   strings.Join(config.Get().ETCD.Endpoints, ","),
+		ETCDUsername:    config.Get().ETCD.Username,
+		ETCDPassword:    config.Get().ETCD.Password,
+		ProjectKey:      project.Key,
+		Namespace:       namespace.Name,
+		NamespaceKey:    namespace.SecretKey,
+		ConfigFilePath:  config.Get().SDK.ConfigFilePath,
+		LogLevel:        config.Get().SDK.LogLevel,
+		MergeConfig:     config.Get().SDK.MergeConfig,
+		MergeConfigFile: config.Get().SDK.MergeConfigFile,
+	}
+	if len(metaConfig.NamespaceKey) > 0 {
+		metaConfig.NamespaceKeyBase64 = encrypt.NewBase64Encoding().EncodeToString([]byte(namespace.SecretKey))
 	}
 	configList, err := mgr.WithOptions(
 		mgr.WithProjectID(projectID),
@@ -152,6 +190,7 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 		configs[i] = m.Name + "." + m.ConfigType
 	}
 
+	metaConfig.ConfigsInCMR = configs
 	metaConfig.Configs = strings.Join(configs, ",")
 
 	tempStr := ""
@@ -162,6 +201,8 @@ func (s *ConfigSvc) GetTemplate(sctx core.SvcContext, temp string, projectID int
 		tempStr = envTemplate
 	case "TOML":
 		tempStr = tomlTemplate
+	case "K8S":
+		tempStr = kubernetesYaml
 	default:
 		return "", nil
 	}

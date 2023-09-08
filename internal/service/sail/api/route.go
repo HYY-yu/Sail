@@ -103,6 +103,15 @@ func (s *Server) Route(c *Handlers, engine core.Engine) {
 			g.POST("/new_pass", c.loginHandler.ChangePassword)
 		}
 
+		{
+			g := v1Group.Group("/env_test")
+			g.Use(core.WrapAuthHandler(s.HTTPMiddles.Jwt))
+
+			g.GET("/create", c.envTestHandler.CreateData)
+			g.GET("/clean", c.envTestHandler.CleanData)
+			g.GET("/get", c.envTestHandler.GetData)
+		}
+
 		v1Group.POST("/login", c.loginHandler.Login)
 		v1Group.POST("/login/refresh", c.loginHandler.RefreshToken)
 	}

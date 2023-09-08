@@ -127,9 +127,19 @@ CREATE TABLE IF NOT EXISTS `sail`.`publish_strategy`
     INDEX (`publish_id`)
 );
 
-INSERT INTO `sail`.staff (id, name, password, create_time, create_by) VALUE (1, 'Admin',
-                                                                             '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
-                                                                             NOW(), 1);
+INSERT INTO `sail`.staff (id, name, password, create_time, create_by)
+    VALUE (1, 'Admin',
+           '$2a$10$9QsXUNwjuYBdSlNA4zX/OucUcVJ/MdyqyOarzE/qdJRyw2qOjhFLS',
+           NOW(), 1);
+INSERT INTO sail.staff (id, name, password, create_time, create_by)
+    VALUE (2, 'Test', '$2a$10$lEiBXzw2D.aHio67dlJCd.KBBy9lWuFTI7Wbhh2FnCvwg4RvyWRYi', NOW(), 1);
 
-INSERT INTO `sail`.staff_group_rel (project_group_id, staff_id, role_type) VALUE (0, 1, 1);
+INSERT INTO sail.project_group (id, name, create_time, create_by, delete_time)
+VALUES (1, 'TEST_GROUP', '2023-03-25 12:44:47', 1, 0);
 
+
+INSERT INTO `sail`.staff_group_rel (project_group_id, staff_id, role_type)
+    VALUE (0, 1, 1);
+
+INSERT INTO sail.staff_group_rel (project_group_id, staff_id, role_type)
+    VALUE (1, 2, 2);

@@ -28,6 +28,8 @@ func (h *StaffHandler) MiddlewareStaffGroup(c core.Context) {
 	c.AbortWithError(err)
 
 	ctx := c.RequestContext().Request.Context()
+	// 获取 Token 中 user_id 下的所有 ProjectGroup 权限
+	// 并放到 context
 	ctx = context.WithValue(ctx, model.StaffGroupRelKey, data)
 	c.RequestContext().Request = c.RequestContext().Request.WithContext(ctx)
 }

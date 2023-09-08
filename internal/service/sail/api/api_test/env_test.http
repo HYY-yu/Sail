@@ -1,0 +1,50 @@
+# Login 模块接口测试
+# 需要一个测试账号和绑定测试项目组的 Owner 权限
+
+POST http://{{host}}:{{port}}/sail/v1/login
+Content-Type: application/json
+
+{
+  "user_name": "{{test_name}}",
+  "password": "{{test_pwd}}"
+}
+
+> {%
+    client.log(request.body())
+    client.global.set("access_token", response.body.data.access_token);
+    client.global.set("refresh_token", response.body.data.refresh_token);
+%}
+
+###
+
+GET http://{{host}}:{{port}}/sail/v1/env_test/create
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("status code 200", function () {
+        client.assert(response.status == 200)
+    })
+%}
+
+###
+
+
+GET http://{{host}}:{{port}}/sail/v1/env_test/clean
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("status code 200", function () {
+        client.assert(response.status == 200)
+    })
+%}
+
+###
+
+GET http://{{host}}:{{port}}/sail/v1/env_test/get
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("status code 200", function () {
+        client.assert(response.status == 200)
+    })
+%}

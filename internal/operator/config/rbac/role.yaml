@@ -1,0 +1,40 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secret
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - cmr.sail.hyy-yu.space
+  resources:
+  - configmaprequests
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cmr.sail.hyy-yu.space
+  resources:
+  - configmaprequests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cmr.sail.hyy-yu.space
+  resources:
+  - configmaprequests/status
+  verbs:
+  - get
+  - patch
+  - update

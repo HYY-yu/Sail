@@ -34,6 +34,7 @@ type Handlers struct {
 	namespaceHandler    *handler.NamespaceHandler
 	configHandler       *handler.ConfigHandler
 	indexHandler        *handler.IndexHandler
+	envTestHandler      *handler.EnvTestHandler
 }
 
 func NewHandlers(
@@ -46,6 +47,7 @@ func NewHandlers(
 	indexHandler *handler.IndexHandler,
 	publishSystem svc_interface.PublishSystem,
 	configSvc *svc.ConfigSvc,
+	envTestHandler *handler.EnvTestHandler,
 ) *Handlers {
 	configSvc.SetPublishSystem(publishSystem)
 	return &Handlers{
@@ -56,6 +58,7 @@ func NewHandlers(
 		namespaceHandler:    namespaceHandler,
 		configHandler:       configHandler,
 		indexHandler:        indexHandler,
+		envTestHandler:      envTestHandler,
 	}
 }
 

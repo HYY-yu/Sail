@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- cmr_v1beta1_configmaprequest.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

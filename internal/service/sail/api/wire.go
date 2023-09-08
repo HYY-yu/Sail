@@ -35,6 +35,7 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 		svc.NewLoginSvc,
 		svc.NewProjectSvc,
 		svc.NewNamespaceSvc,
+		svc.NewTestDataSvc,
 		svc.NewConfigSvc,
 		svc_publish.NewPublishSvc,
 		wire.Bind(new(svc_interface.PublishSystem), new(*svc_publish.PublishSvc)),
@@ -46,6 +47,7 @@ func initHandlers(d db.Repo, c cache.Repo, store storage.Repo) (*Handlers, error
 		handler.NewNamespaceHandler,
 		handler.NewConfigHandler,
 		handler.NewIndexHandler,
+		handler.NewEnvTestHandler,
 		NewHandlers,
 	))
 }

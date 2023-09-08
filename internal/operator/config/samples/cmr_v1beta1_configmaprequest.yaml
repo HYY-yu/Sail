@@ -1,0 +1,22 @@
+apiVersion: cmr.sail.hyy-yu.space/v1beta1
+kind: ConfigMapRequest
+metadata:
+  labels:
+    app.kubernetes.io/name: configmaprequest
+    app.kubernetes.io/instance: configmaprequest-sample
+    app.kubernetes.io/part-of: operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: operator
+  name: configmaprequest-sample
+spec:
+  project_key: CA
+  namespace: BB
+  namespace_key_in_secret:
+    name: J_Secret
+  merge: false
+  merge_config_file: config.toml
+  configs:
+    - A
+    - B
+    - C
+  watch: false
