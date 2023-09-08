@@ -17,7 +17,6 @@ import (
 	"k8s.io/client-go/rest"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -171,12 +170,14 @@ func (c *configServer) InitOrUpdate(ctx context.Context, cmrNamespacedName strin
 
 	c.rwLock.RLock()
 	if v, ok := c.configCaches[specUniqueKey]; ok {
-		c.rwLock.Unlock()
-		if *spec.Watch != v.Watching() {
+		c.rwLock.RUnlock()
+		if spec.Watch != nil && *spec.Watch != v.Watching() {
 			v.ShouldWatch(*spec.Watch)
 		}
 
-		if !reflect.DeepEqual(spec.Configs, v.ManagedConfigKeys()) {
+		if !IsEqualConfigKey(v.ManagedConfigKeys(), spec.Configs) {
+			c.l.V(1).Info("config is changed.", "SpecConfig", spec.Configs,
+				"oldConfig", v.ManagedConfigKeys())
 			// 如果 spec.Configs 变动过，则重新拉取这个 spec
 			c.rwLock.Lock()
 			v.ShouldWatch(false) // 关闭 Watch
@@ -186,7 +187,7 @@ func (c *configServer) InitOrUpdate(ctx context.Context, cmrNamespacedName strin
 		}
 		return nil
 	}
-	c.rwLock.Unlock()
+	c.rwLock.RUnlock()
 
 	etcdConfigMap, err := c.pullETCDConfig(ctx, namespaceSecretKey, spec)
 	if err != nil {
@@ -244,9 +245,9 @@ func generateConfigMap(spec *v1beta1.ConfigMapRequestSpec, cmrNamespacedName str
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName,
 			Annotations: map[string]string{
-				BaseAnnotations + ManagedByAnnotation:      "sail",
-				BaseAnnotations + CreateFromCMRAnnotation:  cmrNamespacedName,
-				BaseAnnotations + LastUpdateTimeAnnotation: time.Now().Format(time.RFC3339),
+				BaseHost + ManagedByAnnotation:      "sail",
+				BaseHost + CreateFromCMRAnnotation:  cmrNamespacedName,
+				BaseHost + LastUpdateTimeAnnotation: time.Now().Format(time.RFC3339),
 			},
 		},
 		Data: configMapData,
@@ -276,6 +277,18 @@ type ConfigValue []byte
 
 func (v ConfigValue) String() string {
 	return string(v)
+}
+
+func IsEqualConfigKey(a []ConfigKey, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].String() != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func mergeConfig(etcdConfigMap map[ConfigKey]ConfigValue, mergeConfigFile string) (map[string]string, error) {
@@ -480,7 +493,6 @@ func intersectionSortStringArr(a []ConfigKey, b []ConfigKey) []ConfigKey {
 func tryDecryptConfigContent(content string, namespaceSecretKey string) string {
 	_, err := encrypt.NewBase64Encoding().DecodeString(content)
 	if err == nil {
-		// 能被 Base64 解码，却不能被解密，那就把 content 原样返回
 		if len(namespaceSecretKey) != 0 {
 			decryptContent, err := decryptConfigContent(content, namespaceSecretKey)
 			if err == nil {
@@ -488,6 +500,7 @@ func tryDecryptConfigContent(content string, namespaceSecretKey string) string {
 			}
 		}
 	}
+	// 能被 Base64 解码，却不能被解密，那就把 content 原样返回
 	return content
 }
 

@@ -5,16 +5,85 @@ package envtest
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/HYY-yu/sail/internal/service/sail/api/envtest/model"
 	"github.com/carlmjohnson/requests"
 	"time"
 )
 
-type ApiEnvTest struct {
+type TestDataId struct {
+	ProjectId      int `json:"project_id"`
+	NamespaceId    int `json:"namespace_id"`
+	PublicConfigId int `json:"public_config_id"`
+	ConfigId       int `json:"config_id"`
+	ConfigLinkId   int `json:"config_link_id"`
 }
 
-func (*ApiEnvTest) Start() error {
+type ApiEnvTest struct {
+	LoginToken string
+	Data       *TestDataId
+}
+
+func (a *ApiEnvTest) UpdateTestConfig(isPublic bool, newValue string) error {
+	configId := a.Data.ConfigId
+	if isPublic {
+		configId = a.Data.PublicConfigId
+	}
+
+	param := map[string]interface{}{
+		"config_id": configId,
+		"content":   newValue,
+	}
+
+	type ApiResponse struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	resp := &ApiResponse{}
+	err := requests.URL(model.TestAPIURL).
+		Path(model.TestUpdateConfig).
+		Bearer(a.LoginToken).
+		BodyJSON(param).
+		ToJSON(resp).
+		Fetch(getFiveSecondCtx())
+	if err != nil {
+		return err
+	}
+	if resp.Code != 0 {
+		return errors.New(resp.Message)
+	}
+	return nil
+}
+
+func (a *ApiEnvTest) MetaConfigYaml() (string, error) {
+	type ApiResponse struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    string `json:"data"`
+	}
+	resp := &ApiResponse{}
+
+	err := requests.URL(model.TestAPIURL).
+		Path(model.TestMetaConfig).
+		Bearer(a.LoginToken).
+		ToJSON(resp).
+		Param("temp", "K8S").
+		ParamInt("project_id", a.Data.ProjectId).
+		ParamInt("project_group_id", model.TestProjectGroupId).
+		ParamInt("namespace_id", a.Data.NamespaceId).
+		Fetch(getFiveSecondCtx())
+	if err != nil {
+		return "", err
+	}
+	if resp.Code != 0 {
+		return "", errors.New(resp.Message)
+	}
+
+	return resp.Data, nil
+}
+
+func (a *ApiEnvTest) Start() error {
 	err := requests.URL(model.TestAPIURL).
 		Path(model.TestCheckHeath).
 		CheckStatus(200).
@@ -27,6 +96,7 @@ func (*ApiEnvTest) Start() error {
 	if err != nil {
 		return err
 	}
+	a.LoginToken = token
 
 	// 2. 调用接口 CreateData
 	err = requests.URL(model.TestAPIURL).
@@ -37,6 +107,29 @@ func (*ApiEnvTest) Start() error {
 	if err != nil {
 		return err
 	}
+
+	// 3. 缓存测试数据ID
+	type ApiResponse struct {
+		Code    int         `json:"code"`
+		Message string      `json:"message"`
+		Data    *TestDataId `json:"data"`
+	}
+	resp := &ApiResponse{}
+
+	err = requests.URL(model.TestAPIURL).
+		Path(model.TestGetTestData).
+		Bearer(token).
+		ToJSON(resp).
+		CheckStatus(200).
+		Fetch(getFiveSecondCtx())
+	if err != nil {
+		return err
+	}
+	if resp.Code != 0 {
+		return errors.New(resp.Message)
+	}
+
+	a.Data = resp.Data
 	return nil
 }
 

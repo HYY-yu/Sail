@@ -20,8 +20,12 @@ const (
 	TestCheckHeath = "/sail/system/health"
 	TestLogin      = "/sail/v1/login"
 
-	TestCreateTestData = "/sail/v1/create_test_data"
-	TestCleanTestData  = "/sail/v1/clean_test_data"
+	TestCreateTestData = "/sail/v1/env_test/create"
+	TestCleanTestData  = "/sail/v1/env_test/clean"
+	TestGetTestData    = "/sail/v1/env_test/get"
+
+	TestMetaConfig   = "/sail/v1/config/meta"
+	TestUpdateConfig = "/sail/v1/config/edit"
 
 	TestAccountName    = "Test"
 	TestAccountPass    = "Test123"

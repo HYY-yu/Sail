@@ -17,7 +17,10 @@ limitations under the License.
 package controller
 
 import (
-	"path/filepath"
+	"context"
+	"github.com/HYY-yu/sail/internal/operator/internal/config_server"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -43,44 +46,19 @@ var k8sClient client.Client
 var testEnv *envtest.Environment
 var apiEnvTest *envtestAPI.ApiEnvTest
 
+var ctx context.Context
+var cancel context.CancelFunc
+
+const namespace = "default"
+const (
+	etcd_endpoint = "127.0.0.1:2379"
+)
+
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecs(t, "`Controller Suite")
-
 }
-
-// 测试用例-更新测试：
-// 1. 首先我们创建一个测试 CMR (不关联公共配置)
-// 2. 检查是否正确创建了 ConfigMap
-// 3. 调用 API 更新这个配置
-// 4. 检查 ConfigMap 是否更新成功
-
-// 测试用例-关联配置更新测试
-// 1. 首先创建一个测试 CMR （关联公共配置）
-// 2. 检查是否正确创建 ConfigMap
-// 3. 调用 API 更新公共配置
-// 4. 检查 ConfigMap 是否更新成功
-
-// 测试用例-Merge 配置测试
-// 1. 创建测试 CMR （两个配置）
-// 2. 一个 CMR Merge True ，检查是否只生成了一个 ConfigMap
-// 3. 一个 CMR Merge False, 检查是否创建了两个 ConfigMap
-
-// 测试用例-CMR更新
-// 1. 创建测试 CMR (不关联公共配置)
-// 2. 关闭 Watch
-// 3. 调用 API 更新配置
-// 4. 检查 ConfigMap 是否不再更新
-// 5. 打开 Watch
-// 6. 调用 API 更新配置
-// 7. ConfigMap 更新了
-
-// 测试用例-CMR 删除
-// 1. 创建测试 CMR （不关联公共配置）
-// 2. 检查是否正确创建了 ConfigMap
-// 3. 删除 CMR
-// 4. ConfigMap 被删除
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
@@ -88,15 +66,18 @@ var _ = BeforeSuite(func() {
 	// 要进行此集成测试，需要准备好 API 测试环境
 	// Start() 检查测试环境是否正确
 	var err error
+	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
 	apiEnvTest = new(envtestAPI.ApiEnvTest)
 	err = apiEnvTest.Start()
 	Expect(err).NotTo(HaveOccurred())
 
+	t := true
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		ErrorIfCRDPathMissing: true,
+		//CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		//ErrorIfCRDPathMissing: true,
+		UseExistingCluster: &t,
 	}
 
 	// cfg is defined in this file globally.
@@ -109,13 +90,44 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme:             scheme.Scheme,
+		MetricsBindAddress: "0",
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	configServer := config_server.NewConfigServer(
+		k8sManager.GetLogger(),
+		k8sManager.GetConfig(),
+		config_server.MetaConfig{
+			Namespace:     namespace,
+			ETCDEndpoints: etcd_endpoint,
+		},
+	)
+
+	err = k8sManager.Add(configServer.(manager.Runnable))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&ConfigMapRequestReconciler{
+		Client:       k8sManager.GetClient(),
+		Scheme:       k8sManager.GetScheme(),
+		Namespace:    namespace,
+		ConfigServer: configServer,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		err = k8sManager.Start(ctrl.SetupSignalHandler())
+		Expect(err).ToNot(HaveOccurred())
+	}()
+
+	k8sClient = k8sManager.GetClient()
+	Expect(k8sClient).ToNot(BeNil())
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	cancel()
 	err := apiEnvTest.Stop()
 	Expect(err).NotTo(HaveOccurred())
 

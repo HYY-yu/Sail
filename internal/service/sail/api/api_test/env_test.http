@@ -37,3 +37,14 @@ Authorization: Bearer {{access_token}}
         client.assert(response.status == 200)
     })
 %}
+
+###
+
+GET http://{{host}}:{{port}}/sail/v1/env_test/get
+Authorization: Bearer {{access_token}}
+
+> {%
+    client.test("status code 200", function () {
+        client.assert(response.status == 200)
+    })
+%}

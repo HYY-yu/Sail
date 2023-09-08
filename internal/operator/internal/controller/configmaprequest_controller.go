@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/HYY-yu/sail/internal/operator/internal/config_server"
@@ -52,7 +51,7 @@ type ConfigMapRequestReconciler struct {
 func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	L := log.FromContext(ctx)
 
-	var cmr *cmrv1beta1.ConfigMapRequest
+	cmr := &cmrv1beta1.ConfigMapRequest{}
 	err := r.Get(ctx, req.NamespacedName, cmr)
 	if err != nil {
 		// We'll ignore not-found errors, since they can't be fixed by an immediate requeue
@@ -66,7 +65,7 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	L.Info("ConfigMapRequest", "cmr", cmr.Name)
 
 	// cmr finalizer
-	cmrFinalizerName := config_server.BaseAnnotations + "finalizer"
+	cmrFinalizerName := config_server.BaseHost + "finalizer"
 	if cmr.ObjectMeta.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(cmr, cmrFinalizerName) {
 			controllerutil.AddFinalizer(cmr, cmrFinalizerName)
@@ -76,6 +75,7 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		}
 	} else {
 		if controllerutil.ContainsFinalizer(cmr, cmrFinalizerName) {
+			L.V(1).Info("Finalizer configMapRequest And ConfigMap .")
 			if err := r.ConfigServer.Delete(ctx, req.NamespacedName.String(), &cmr.Spec); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -102,7 +102,6 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	err = r.ConfigServer.InitOrUpdate(ctx, req.NamespacedName.String(), secretNamespaceKey, &cmr.Spec)
 	if err != nil {
 		L.Error(err, "InitOrUpdate fail. ")
-
 		return ctrl.Result{}, err
 	}
 	// cmr status
@@ -122,7 +121,19 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			ConfigFileName: k.String(),
 			LastUpdateTime: &t,
 		}
-		cmr.Status.ManagedConfigList = append(cmr.Status.ManagedConfigList, mc)
+
+		found := false
+		for i, e := range cmr.Status.ManagedConfigList {
+			if e.ConfigFileName == k.String() {
+				cmr.Status.ManagedConfigList[i].LastUpdateTime = mc.LastUpdateTime
+				found = true
+				break
+			}
+		}
+		if !found {
+			cmr.Status.ManagedConfigList = append(cmr.Status.ManagedConfigList, mc)
+		}
+
 		if cmr.Status.LastUpdateTime.Before(mc.LastUpdateTime) {
 			cmr.Status.LastUpdateTime = mc.LastUpdateTime
 		}
@@ -137,7 +148,7 @@ func (r *ConfigMapRequestReconciler) Reconcile(ctx context.Context, req ctrl.Req
 }
 
 func (r *ConfigMapRequestReconciler) getSecret(ctx context.Context, cmr *cmrv1beta1.ConfigMapRequest) (string, error) {
-	var secret *corev1.Secret
+	secret := &corev1.Secret{}
 
 	err := r.Get(ctx, client.ObjectKey{
 		Namespace: cmr.Namespace,
@@ -147,12 +158,7 @@ func (r *ConfigMapRequestReconciler) getSecret(ctx context.Context, cmr *cmrv1be
 		return "", fmt.Errorf("get secret error: %w", err)
 	}
 	if data, ok := secret.Data["namespace_key"]; ok {
-		var buffers []byte
-		_, err := base64.StdEncoding.Decode(buffers, data)
-		if err != nil {
-			return "", fmt.Errorf("decode base64 error: %w", err)
-		}
-		return string(buffers), nil
+		return string(data), nil
 	}
 	return "", fmt.Errorf("you secret must has key: 'namespace_key' in secret: %s", cmr.Spec.NamespaceKeyInSecret.Name)
 }

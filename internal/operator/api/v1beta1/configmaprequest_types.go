@@ -49,8 +49,6 @@ type ConfigMapRequestSpec struct {
 	// +optional
 	Merge *bool `json:"merge,omitempty"`
 
-	// +kubebuilder:validation:Enum=toml;yaml;json;ini;properties;custom
-
 	// MergeFormat 可选配置，默认聚合到一个格式为 config.toml 的 ConfigMap，可以在这里配置其它格式：(xx.yaml\cfg.json等)
 	// 支持 json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "dotenv", "env", "ini"
 	// +optional

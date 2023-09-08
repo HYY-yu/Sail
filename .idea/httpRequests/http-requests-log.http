@@ -1,3 +1,189 @@
+GET http://127.0.0.1:8108/sail/v1/env_test/clean
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5NDE4NjE0NSwiaWF0IjoxNjk0MTQyOTQ1LCJuYmYiOjE2OTQxNDI5NDV9.uZ_i1Fv8-zZ2aBoaFMQ_SvgyZxBwet_L_DgWhNG519c
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-09-08T154313.200.json
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/get
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5NDE4NjE0NSwiaWF0IjoxNjk0MTQyOTQ1LCJuYmYiOjE2OTQxNDI5NDV9.uZ_i1Fv8-zZ2aBoaFMQ_SvgyZxBwet_L_DgWhNG519c
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-09-08T111718.200.json
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/create
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5NDE4NjE0NSwiaWF0IjoxNjk0MTQyOTQ1LCJuYmYiOjE2OTQxNDI5NDV9.uZ_i1Fv8-zZ2aBoaFMQ_SvgyZxBwet_L_DgWhNG519c
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-09-08T111548.200.json
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+<> 2023-09-08T111545.200.json
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/create
+Authorization: Bearer {{access_token}}
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/get
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5MzM0NTA4NCwiaWF0IjoxNjkzMzAxODg0LCJuYmYiOjE2OTMzMDE4ODR9.Krz3o-OtC_AcOZ4mnjAq0nLC5XUbkKg6QMyWzXpOUxo
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-08-29T183045.200.json
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/create
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5MzM0NTA4NCwiaWF0IjoxNjkzMzAxODg0LCJuYmYiOjE2OTMzMDE4ODR9.Krz3o-OtC_AcOZ4mnjAq0nLC5XUbkKg6QMyWzXpOUxo
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-08-29T173825.200.json
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/clean
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5MzM0NTA4NCwiaWF0IjoxNjkzMzAxODg0LCJuYmYiOjE2OTMzMDE4ODR9.Krz3o-OtC_AcOZ4mnjAq0nLC5XUbkKg6QMyWzXpOUxo
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+<> 2023-08-29T173809.200.json
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+<> 2023-08-29T173804.200.json
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/clean
+Authorization: Bearer {{access_token}}
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+###
+
+POST http://127.0.0.1:8108/sail/v1/login
+Content-Type: application/json
+Content-Length: 50
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+{
+  "user_name": "Test",
+  "password": "Test123"
+}
+
+###
+
+GET http://127.0.0.1:8108/sail/v1/env_test/clean
+Authorization: Bearer {{access_token}}
+Proxy-Connection: Keep-Alive
+User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
+Accept-Encoding: br,deflate,gzip,x-gzip
+
+###
+
 GET http://127.0.0.1:8108/sail/v1/env_test/create
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY5MTgwODM2MSwiaWF0IjoxNjkxNzY1MTYxLCJuYmYiOjE2OTE3NjUxNjF9.QjY_Zp3W058PHj2FzWYzdQ9MOCmmvnCsRtEqjHYyVQA
 Connection: Keep-Alive
@@ -439,236 +625,6 @@ Accept-Encoding: br,deflate,gzip,x-gzip
 }
 
 <> 2023-06-07T000445.500.txt
-
-###
-
-GET http://127.0.0.1:8108/sail/v1/login/login_out
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjExMDY4NCwiaWF0IjoxNjg2MDY3NDg0LCJuYmYiOjE2ODYwNjc0ODR9.UZ3CmzLUEUSAGOFxYL6S2G12lSvhGHgv0R8zXLDKHp4
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-<> 2023-06-07T000445-1.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MjI4NCwiaWF0IjoxNjg2MDY3NDg0LCJuYmYiOjE2ODYwNjc0ODR9.phNE5xpY94FOITkWuC1TjgZT62ZmATUPSCP1i7DfcVE"
-}
-
-<> 2023-06-07T000445.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login
-Content-Type: application/json
-Content-Length: 50
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "user_name": "Test",
-  "password": "Test123"
-}
-
-<> 2023-06-07T000444.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MjIzOSwiaWF0IjoxNjg2MDY3NDM5LCJuYmYiOjE2ODYwNjc0Mzl9.2McVrZxNtcVJNMH5zoEuZpu0PwXeGWEPP0HmF48_3bo"
-}
-
-<> 2023-06-07T000359.500.txt
-
-###
-
-GET http://127.0.0.1:8108/sail/v1/login/login_out
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjExMDYzOSwiaWF0IjoxNjg2MDY3NDM5LCJuYmYiOjE2ODYwNjc0Mzl9.AE39Dfz4nbTPP-F0AUQ8NY1cWPpp0LOFDZy4_x4PlrE
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-<> 2023-06-07T000359-2.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MjIzOSwiaWF0IjoxNjg2MDY3NDM5LCJuYmYiOjE2ODYwNjc0Mzl9.2McVrZxNtcVJNMH5zoEuZpu0PwXeGWEPP0HmF48_3bo"
-}
-
-<> 2023-06-07T000359-1.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login
-Content-Type: application/json
-Content-Length: 50
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "user_name": "Test",
-  "password": "Test123"
-}
-
-<> 2023-06-07T000359.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MjEyMSwiaWF0IjoxNjg2MDY3MzIxLCJuYmYiOjE2ODYwNjczMjF9.Pe5ajhEAXdbEq5E5RLPpC1dbLjsXFot22xCjQ7uvn3w"
-}
-
-<> 2023-06-07T000201.500.txt
-
-###
-
-GET http://127.0.0.1:8108/sail/v1/login/login_out
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjExMDUyMSwiaWF0IjoxNjg2MDY3MzIxLCJuYmYiOjE2ODYwNjczMjF9.hCybKV43JXKXqQrRfkxJDK8icJ1CaVIazbGlFBMbnb8
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-<> 2023-06-07T000201-2.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MjEyMSwiaWF0IjoxNjg2MDY3MzIxLCJuYmYiOjE2ODYwNjczMjF9.Pe5ajhEAXdbEq5E5RLPpC1dbLjsXFot22xCjQ7uvn3w"
-}
-
-<> 2023-06-07T000201-1.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login
-Content-Type: application/json
-Content-Length: 50
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "user_name": "Test",
-  "password": "Test123"
-}
-
-<> 2023-06-07T000201.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MTc3MiwiaWF0IjoxNjg2MDY2OTcyLCJuYmYiOjE2ODYwNjY5NzJ9.lyT06dr62j_0_3V9r9eP5yp2Gj0__I14lma2K1iJpbc"
-}
-
-<> 2023-06-06T235612-1.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login
-Content-Type: application/json
-Content-Length: 50
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "user_name": "Test",
-  "password": "Test123"
-}
-
-<> 2023-06-06T235612.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login/refresh
-Content-Type: application/json
-Content-Length: 218
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "old_refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjIsIlVzZXJOYW1lIjoiVGVzdCIsImV4cCI6MTY4NjY3MTc1MywiaWF0IjoxNjg2MDY2OTUzLCJuYmYiOjE2ODYwNjY5NTN9.g1GazZaLiXcuAaa5al2uc2JWRwPV-TvqgtXJmAQhP3c"
-}
-
-<> 2023-06-06T235553-1.200.json
-
-###
-
-POST http://127.0.0.1:8108/sail/v1/login
-Content-Type: application/json
-Content-Length: 50
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "user_name": "Test",
-  "password": "Test123"
-}
-
-<> 2023-06-06T235553.200.json
-
-###
-
-POST https://httpbin.org/post
-Content-Type: application/json
-Content-Length: 32
-Connection: Keep-Alive
-User-Agent: Apache-HttpClient/4.5.14 (Java/17.0.6)
-Accept-Encoding: br,deflate,gzip,x-gzip
-
-{
-  "token": "my-secret-token"
-}
-
-<> 2023-06-06T235443.200.json
 
 ###
 

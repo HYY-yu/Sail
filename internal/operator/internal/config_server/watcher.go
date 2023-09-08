@@ -54,7 +54,7 @@ func NewWatcher(
 		etcdW.managedConfigLastUpdateTime[k] = &nowTime
 	}
 
-	if *spec.Watch {
+	if spec.Watch != nil && *spec.Watch {
 		etcdW.Run()
 	}
 	return etcdW
@@ -63,7 +63,7 @@ func NewWatcher(
 func (e *EtcdWatcher) ManagedConfigKeys() []ConfigKey {
 	result := make([]ConfigKey, 0)
 	e.rwLock.RLock()
-	defer e.rwLock.Unlock()
+	defer e.rwLock.RUnlock()
 
 	for k := range e.managedConfigMap {
 		result = append(result, k)
@@ -84,7 +84,7 @@ func (e *EtcdWatcher) ManagedConfig() map[ConfigKey]ConfigManagedInfo {
 	result := make(map[ConfigKey]ConfigManagedInfo)
 
 	e.rwLock.RLock()
-	defer e.rwLock.Unlock()
+	defer e.rwLock.RUnlock()
 	for k, v := range e.managedConfigMap {
 		result[k] = ConfigManagedInfo{
 			Value:          v,
@@ -154,7 +154,7 @@ func (e *EtcdWatcher) Run() {
 						if _, ok := e.managedConfigMap[configFileKey]; !ok {
 							return
 						}
-						e.rwLock.Unlock()
+						e.rwLock.RUnlock()
 
 						isPublish, _ := checkPublish(ev.Kv.Value)
 						if isPublish {

@@ -109,6 +109,7 @@ func (s *Server) Route(c *Handlers, engine core.Engine) {
 
 			g.GET("/create", c.envTestHandler.CreateData)
 			g.GET("/clean", c.envTestHandler.CleanData)
+			g.GET("/get", c.envTestHandler.GetData)
 		}
 
 		v1Group.POST("/login", c.loginHandler.Login)

@@ -57,6 +57,67 @@ func NewTestDataSvc(
 	return svc
 }
 
+func (s *TestDataSvc) GetTestData(sctx core.SvcContext) (map[string]interface{}, error) {
+	ctx := sctx.Context()
+
+	_, role := s.CheckStaffGroup(ctx, model_envtest.TestProjectGroupId)
+	if role > model.RoleManager {
+		return nil, response.NewErrorWithStatusOk(
+			response.AuthorizationError,
+			"没有权限访问此接口",
+		)
+	}
+
+	result := make(map[string]interface{})
+	// ProjectId
+	testPjId, err := s.findTestProjectId(sctx)
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	result["project_id"] = testPjId
+	// namespaceId
+	testNamespaceId, err := s.findTestNamespaceId(sctx)
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	result["namespace_id"] = testNamespaceId
+	// publicConfigId
+	testPublicConfigId, err := s.findTestPublicConfigId(sctx, testPjId)
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	result["public_config_id"] = testPublicConfigId
+	// config_link_id
+	testConfigLinkId, err := s.findTestLinkPublicConfigId(sctx, testPjId, testNamespaceId)
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	result["config_link_id"] = testConfigLinkId
+	// config_id
+	testConfigId, err := s.findTestConfigId(sctx, testPjId, testNamespaceId)
+	if err != nil {
+		return nil, response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+	result["config_id"] = testConfigId
+
+	return result, nil
+}
+
 func (s *TestDataSvc) CreateTestData(sctx core.SvcContext) error {
 	ctx := sctx.Context()
 
@@ -126,10 +187,8 @@ func (s *TestDataSvc) createOrClean(r ResourceType, sctx core.SvcContext, isClea
 	}
 }
 
-func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
+func (s *TestDataSvc) findTestProjectId(sctx core.SvcContext) (int, error) {
 	ctx := sctx.Context()
-	configMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
-	namespaceMgr := s.NamespaceSvc.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 	projectMgr := s.ProjectSvc.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 
 	resultPj, err := projectMgr.WithSelects(
@@ -138,12 +197,12 @@ func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
 		projectMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
 		projectMgr.WithName(model_envtest.TestProjectName),
 	).Catch()
-	if err != nil {
-		return response.NewErrorAutoMsg(
-			http.StatusInternalServerError,
-			response.ServerError,
-		).WithErr(err)
-	}
+	return resultPj.ID, err
+}
+
+func (s *TestDataSvc) findTestNamespaceId(sctx core.SvcContext) (int, error) {
+	ctx := sctx.Context()
+	namespaceMgr := s.NamespaceSvc.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
 	resultNs, err := namespaceMgr.WithSelects(
 		model.NamespaceColumns.ID,
@@ -151,6 +210,68 @@ func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
 		namespaceMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
 		namespaceMgr.WithName(model_envtest.TestNamespaceName),
 	).Catch()
+
+	return resultNs.ID, err
+}
+
+func (s *TestDataSvc) findTestLinkPublicConfigId(sctx core.SvcContext, testProjectId, testNamespaceId int) (int, error) {
+	ctx := sctx.Context()
+	configMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	resultCfgNotLink, err := configMgr.WithSelects(
+		model.ConfigColumns.ID,
+	).WithOptions(
+		configMgr.WithProjectID(testProjectId),
+		configMgr.WithNamespaceID(testNamespaceId),
+		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
+		configMgr.WithName(model_envtest.TestProjectConfigLinkPublic),
+		configMgr.WithIsLinkPublic(true),
+	).Get()
+	return resultCfgNotLink.ID, err
+}
+
+func (s *TestDataSvc) findTestConfigId(sctx core.SvcContext, testProjectId, testNamespaceId int) (int, error) {
+	ctx := sctx.Context()
+	configMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	resultCfgNotLink, err := configMgr.WithSelects(
+		model.ConfigColumns.ID,
+	).WithOptions(
+		configMgr.WithProjectID(testProjectId),
+		configMgr.WithNamespaceID(testNamespaceId),
+		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
+		configMgr.WithName(model_envtest.TestProjectConfigName),
+		configMgr.WithIsPublic(false),
+	).Get()
+	return resultCfgNotLink.ID, err
+}
+
+func (s *TestDataSvc) findTestPublicConfigId(sctx core.SvcContext, testNamespaceId int) (int, error) {
+	ctx := sctx.Context()
+	configMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
+
+	resultPublicCfg, err := configMgr.WithSelects(
+		model.ConfigColumns.ID,
+	).WithOptions(
+		configMgr.WithProjectID(0),
+		configMgr.WithNamespaceID(testNamespaceId),
+		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
+		configMgr.WithName(model_envtest.TestPublicConfigName),
+		configMgr.WithIsPublic(true),
+	).Get()
+	return resultPublicCfg.ID, err
+}
+
+func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
+	resultPj, err := s.findTestProjectId(sctx)
+	if err != nil {
+		return response.NewErrorAutoMsg(
+			http.StatusInternalServerError,
+			response.ServerError,
+		).WithErr(err)
+	}
+
+	resultNs, err := s.findTestNamespaceId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -159,23 +280,15 @@ func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
 	}
 
 	// 不关联公共配置
-	resultCfgNotLink, err := configMgr.WithSelects(
-		model.ConfigColumns.ID,
-	).WithOptions(
-		configMgr.WithProjectID(resultPj.ID),
-		configMgr.WithNamespaceID(resultNs.ID),
-		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		configMgr.WithName(model_envtest.TestProjectConfigName),
-		configMgr.WithIsPublic(false),
-	).Get()
+	resultCfgNotLinkID, err := s.findTestConfigId(sctx, resultPj, resultNs)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,
 		).WithErr(err)
 	}
-	if resultCfgNotLink.ID > 0 {
-		err := s.ConfigSvc.Del(sctx, resultCfgNotLink.ID)
+	if resultCfgNotLinkID > 0 {
+		err := s.ConfigSvc.Del(sctx, resultCfgNotLinkID)
 		if err != nil {
 			return response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -184,29 +297,15 @@ func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
 		}
 	}
 	// 关联公共配置
+	resultLinkCfgID, err := s.findTestLinkPublicConfigId(sctx, resultPj, resultNs)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,
 		).WithErr(err)
 	}
-	resultLinkCfg, err := configMgr.WithSelects(
-		model.ConfigColumns.ID,
-	).WithOptions(
-		configMgr.WithProjectID(resultPj.ID),
-		configMgr.WithNamespaceID(resultNs.ID),
-		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		configMgr.WithIsLinkPublic(true),
-		configMgr.WithName(model_envtest.TestProjectConfigLinkPublic),
-	).Get()
-	if err != nil {
-		return response.NewErrorAutoMsg(
-			http.StatusInternalServerError,
-			response.ServerError,
-		).WithErr(err)
-	}
-	if resultLinkCfg.ID > 0 {
-		err := s.ConfigSvc.Del(sctx, resultLinkCfg.ID)
+	if resultLinkCfgID > 0 {
+		err := s.ConfigSvc.Del(sctx, resultLinkCfgID)
 		if err != nil {
 			return response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -218,16 +317,7 @@ func (s *TestDataSvc) cleanConfig(sctx core.SvcContext) error {
 }
 
 func (s *TestDataSvc) cleanPublicConfig(sctx core.SvcContext) error {
-	ctx := sctx.Context()
-	configMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
-	namespaceMgr := s.NamespaceSvc.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
-
-	resultNs, err := namespaceMgr.WithSelects(
-		model.NamespaceColumns.ID,
-	).WithOptions(
-		namespaceMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		namespaceMgr.WithName(model_envtest.TestNamespaceName),
-	).Catch()
+	resultNsID, err := s.findTestNamespaceId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -235,15 +325,7 @@ func (s *TestDataSvc) cleanPublicConfig(sctx core.SvcContext) error {
 		).WithErr(err)
 	}
 
-	resultPublicCfg, err := configMgr.WithSelects(
-		model.ConfigColumns.ID,
-	).WithOptions(
-		configMgr.WithProjectID(0),
-		configMgr.WithNamespaceID(resultNs.ID),
-		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		configMgr.WithName(model_envtest.TestPublicConfigName),
-		configMgr.WithIsPublic(true),
-	).Get()
+	resultPublicCfgId, err := s.findTestPublicConfigId(sctx, resultNsID)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -251,8 +333,8 @@ func (s *TestDataSvc) cleanPublicConfig(sctx core.SvcContext) error {
 		).WithErr(err)
 	}
 
-	if resultPublicCfg.ID > 0 {
-		err = s.ConfigSvc.Del(sctx, resultPublicCfg.ID)
+	if resultPublicCfgId > 0 {
+		err = s.ConfigSvc.Del(sctx, resultPublicCfgId)
 		if err != nil {
 			return response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -267,20 +349,15 @@ func (s *TestDataSvc) cleanProject(sctx core.SvcContext) error {
 	ctx := sctx.Context()
 	projectMgr := s.ProjectSvc.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 
-	resultPj, err := projectMgr.WithSelects(
-		model.NamespaceColumns.ID,
-	).WithOptions(
-		projectMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		projectMgr.WithName(model_envtest.TestProjectName),
-	).Get()
+	resultPjId, err := s.findTestProjectId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
 			response.ServerError,
 		).WithErr(err)
 	}
-	if resultPj.ID > 0 {
-		err = projectMgr.DeleteProject(&resultPj)
+	if resultPjId > 0 {
+		err = projectMgr.DeleteProject(&model.Project{ID: resultPjId})
 		if err != nil {
 			return response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -295,12 +372,7 @@ func (s *TestDataSvc) cleanNamespace(sctx core.SvcContext) error {
 	ctx := sctx.Context()
 	namespaceMgr := s.NamespaceSvc.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
-	resultNs, err := namespaceMgr.WithSelects(
-		model.NamespaceColumns.ID,
-	).WithOptions(
-		namespaceMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		namespaceMgr.WithName(model_envtest.TestNamespaceName),
-	).Get()
+	resultNsId, err := s.findTestNamespaceId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -308,8 +380,8 @@ func (s *TestDataSvc) cleanNamespace(sctx core.SvcContext) error {
 		).WithErr(err)
 	}
 
-	if resultNs.ID > 0 {
-		err = namespaceMgr.DeleteNamespace(&resultNs)
+	if resultNsId > 0 {
+		err = namespaceMgr.DeleteNamespace(&model.Namespace{ID: resultNsId})
 		if err != nil {
 			return response.NewErrorAutoMsg(
 				http.StatusInternalServerError,
@@ -323,15 +395,8 @@ func (s *TestDataSvc) cleanNamespace(sctx core.SvcContext) error {
 func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 	ctx := sctx.Context()
 	configMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
-	namespaceMgr := s.NamespaceSvc.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
-	projectMgr := s.ProjectSvc.ProjectRepo.Mgr(ctx, s.DB.GetDb())
 
-	resultPj, err := projectMgr.WithSelects(
-		model.ProjectColumns.ID,
-	).WithOptions(
-		projectMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		projectMgr.WithName(model_envtest.TestProjectName),
-	).Catch()
+	resultPjId, err := s.findTestProjectId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -339,12 +404,7 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 		).WithErr(err)
 	}
 
-	resultNs, err := namespaceMgr.WithSelects(
-		model.NamespaceColumns.ID,
-	).WithOptions(
-		namespaceMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		namespaceMgr.WithName(model_envtest.TestNamespaceName),
-	).Catch()
+	resultNsId, err := s.findTestNamespaceId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -354,8 +414,8 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 
 	// 不关联公共配置
 	has, err := configMgr.WithOptions(
-		configMgr.WithProjectID(resultPj.ID),
-		configMgr.WithNamespaceID(resultNs.ID),
+		configMgr.WithProjectID(resultPjId),
+		configMgr.WithNamespaceID(resultNsId),
 		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
 		configMgr.WithName(model_envtest.TestProjectConfigName),
 		configMgr.WithIsPublic(false),
@@ -369,8 +429,8 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 	if !has {
 		err := s.ConfigSvc.Add(sctx, &model.AddConfig{
 			ProjectGroupID: model_envtest.TestProjectGroupId,
-			ProjectID:      resultPj.ID,
-			NamespaceID:    resultNs.ID,
+			ProjectID:      resultPjId,
+			NamespaceID:    resultNsId,
 			Name:           model_envtest.TestProjectConfigName,
 			IsPublic:       false,
 			Type:           model_envtest.TestConfigType,
@@ -384,15 +444,7 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 		}
 	}
 	// 关联公共配置
-	resultPublicCfg, err := configMgr.WithSelects(
-		model.ConfigColumns.ID,
-	).WithOptions(
-		configMgr.WithProjectID(0),
-		configMgr.WithNamespaceID(resultNs.ID),
-		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		configMgr.WithName(model_envtest.TestPublicConfigName),
-		configMgr.WithIsPublic(true),
-	).Catch()
+	resultPublicCfgId, err := s.findTestPublicConfigId(sctx, resultNsId)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -400,8 +452,8 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 		).WithErr(err)
 	}
 	has, err = configMgr.WithOptions(
-		configMgr.WithProjectID(resultPj.ID),
-		configMgr.WithNamespaceID(resultNs.ID),
+		configMgr.WithProjectID(resultPjId),
+		configMgr.WithNamespaceID(resultNsId),
 		configMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
 		configMgr.WithIsLinkPublic(true),
 		configMgr.WithName(model_envtest.TestProjectConfigLinkPublic),
@@ -415,13 +467,13 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 	if !has {
 		err := s.ConfigSvc.Add(sctx, &model.AddConfig{
 			ProjectGroupID: model_envtest.TestProjectGroupId,
-			ProjectID:      resultPj.ID,
-			NamespaceID:    resultNs.ID,
+			ProjectID:      resultPjId,
+			NamespaceID:    resultNsId,
 			Name:           model_envtest.TestProjectConfigLinkPublic,
 			IsLinkPublic:   true,
 			Type:           model_envtest.TestConfigType,
 			Content:        model_envtest.TestProjectConfigContent,
-			PublicConfigID: resultPublicCfg.ID,
+			PublicConfigID: resultPublicCfgId,
 		})
 		if err != nil {
 			return response.NewErrorAutoMsg(
@@ -436,14 +488,8 @@ func (s *TestDataSvc) checkConfigExistOrNew(sctx core.SvcContext) error {
 func (s *TestDataSvc) checkPublicConfigExistOrNew(sctx core.SvcContext) error {
 	ctx := sctx.Context()
 	publicConfigMgr := s.ConfigSvc.ConfigRepo.Mgr(ctx, s.DB.GetDb())
-	namespaceMgr := s.NamespaceSvc.NamespaceRepo.Mgr(ctx, s.DB.GetDb())
 
-	resultNs, err := namespaceMgr.WithSelects(
-		model.NamespaceColumns.ID,
-	).WithOptions(
-		namespaceMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
-		namespaceMgr.WithName(model_envtest.TestNamespaceName),
-	).Catch()
+	resultNsId, err := s.findTestNamespaceId(sctx)
 	if err != nil {
 		return response.NewErrorAutoMsg(
 			http.StatusInternalServerError,
@@ -453,7 +499,7 @@ func (s *TestDataSvc) checkPublicConfigExistOrNew(sctx core.SvcContext) error {
 
 	has, err := publicConfigMgr.WithOptions(
 		publicConfigMgr.WithProjectID(0),
-		publicConfigMgr.WithNamespaceID(resultNs.ID),
+		publicConfigMgr.WithNamespaceID(resultNsId),
 		publicConfigMgr.WithProjectGroupID(model_envtest.TestProjectGroupId),
 		publicConfigMgr.WithName(model_envtest.TestPublicConfigName),
 		publicConfigMgr.WithIsPublic(true),
@@ -468,7 +514,7 @@ func (s *TestDataSvc) checkPublicConfigExistOrNew(sctx core.SvcContext) error {
 		err := s.ConfigSvc.Add(sctx, &model.AddConfig{
 			ProjectGroupID: model_envtest.TestProjectGroupId,
 			ProjectID:      0,
-			NamespaceID:    resultNs.ID,
+			NamespaceID:    resultNsId,
 			Name:           model_envtest.TestPublicConfigName,
 			IsEncrypt:      true,
 			IsPublic:       true,

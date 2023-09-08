@@ -1,7 +1,7 @@
 package config_server
 
 const (
-	BaseAnnotations = "sail.hyy-yu.space/cm/"
+	BaseHost = "cmr.sail.hyy-yu.space/"
 
 	ManagedByAnnotation      = "managed-by"
 	CreateFromCMRAnnotation  = "create-from-cmr"
