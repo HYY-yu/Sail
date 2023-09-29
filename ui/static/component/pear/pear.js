@@ -44,6 +44,11 @@ layui.config({
     watermark: "watermark/watermark", //水印
     fullscreen: "fullscreen",  //全屏组件
     sail: "sail",
-}).use(['layer', 'theme'], function () {
+    translate:"translate"	//多语言翻译组件
+}).use(['layer', 'theme','translate'], function () {
     layui.theme.changeTheme(window, false);
+
+    // 全局翻译
+    // layui.translate.translate();
+
 });

@@ -1,0 +1,24 @@
+{
+	"token": {
+		"SAIL": "SAIL",
+		"请先登录": "please login first",
+		"注销登录": "logout",
+		"注销成功": "logout successfully",
+		"登 录": "LOGIN",
+		"账 户  ": "ACCOUNT",
+		"密 码  ": "PASSWORD",
+		"配置中心": "Config Center",
+		"登录成功": "Login successfully",
+		"成员权限管理": "Staff Management",
+		"项目管理": "Project Management",
+		"命名空间管理": "Namespace",
+		"公共配置管理": "Public Config",
+		"项目组列表": "Project Group",
+		"项目组管理": "Project Group Management",
+		"关闭所有": "Close All",
+		"关闭全部": "Close All",
+		"关闭当前": "Close This",
+		"关闭其他": "Close Other",
+		"首页": "Index"
+	}
+}

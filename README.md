@@ -13,6 +13,7 @@ Sail 是一款企业级的配置中心，在基本的配置文件管理的基础
 - [x] 多种配置格式支持
 - [x] 细粒度的权限管控
 - [x] 配置加密和解密
+- [x] **支持 Kubernetes 原生 ConfigMap 方式，无需接入 sdk。**
 - [ ] 发布管理
 
 
@@ -30,3 +31,12 @@ Sail 是一款企业级的配置中心，在基本的配置文件管理的基础
 ### 快速上手
 
 请至 [官方文档页/快速上手](https://sail.hyy-yu.space/docs/prologue/quick/)
+
+### 问题反馈
+
+email: hyy-yu@foxmail.com  
+issue: https://github.com/HYY-yu/sail/issues
+
+### LICENCE
+
+MIT License
