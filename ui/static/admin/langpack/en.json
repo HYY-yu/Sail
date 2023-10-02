@@ -1,9 +1,9 @@
 {
   "token": {
     "SAIL": "SAIL",
-    "请先登录": "please login first",
-    "注销登录": "logout",
-    "注销成功": "logout successfully",
+    "请先登录": "Please login first",
+    "注销登录": "Logout",
+    "注销成功": "Logout successfully",
     "登 录": "LOGIN",
     "账 户  ": "ACCOUNT",
     "密 码  ": "PASSWORD",
@@ -13,15 +13,16 @@
     "项目管理": "Project Management",
     "命名空间管理": "Namespace",
     "公共配置管理": "Public Config",
-    "项目组列表": "Project Group",
-    "项目组管理": "Base Management",
+    "项目组列表": "Group List",
+    "项目组": "Group",
+    "项目组管理": "Group Management",
     "关闭所有": "Close All",
     "关闭全部": "Close All",
     "关闭当前": "Close This",
     "关闭其他": "Close Other",
     "首页": "Index",
     "#": "#",
-    "项目组名": "Group Name",
+    "项目组名称": "Name",
     "项目组ID": "Group ID",
     "操作": "Operation",
     "创建时间": "Create Time",
@@ -34,9 +35,25 @@
     "确定要删除": "Are you sure you want to delete?",
     "提示": "Tips",
     "提交": "Submit",
-    "修改项目组": "Modify Project Group",
+    "名称": "Name",
     "新增项目组": "Add Project Group",
-    "项目组名称": "Name",
+    "修改项目组": "Modify Project Group",
+    "修改命名空间": "Modify Namespace",
+    "新增命名空间": "Add Namespace",
+    "请选择项目组": "Please select a project group",
+    "所属项目组": "Group",
+    "空间密钥": "Secret Key",
+    "空间属性": "Properties",
+    "实时生效": "Realtime",
+    "需要发布": "Need Publish",
+    "支持加密": "Encryption",
+    "命名空间名称": "Name",
     "请输入3-10位的中文或英文": "Please enter 3-10 characters"
-  }
+  },
+  "regex": [
+    [
+      "支持格式.+?",
+      "Format"
+    ]
+  ]
 }

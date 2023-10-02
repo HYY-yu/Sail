@@ -123,7 +123,9 @@
                 var childWindow = iframe.contentWindow;
 
                 childWindow.layui.lang.change('zh');
-                childWindow.layui.table.reload();
+                if (childWindow.tableReload) {
+                    childWindow.tableReload('zh');
+                }
             }
         })
         $('#en').click(function () {
@@ -136,7 +138,9 @@
                 var childWindow = iframe.contentWindow;
 
                 childWindow.layui.lang.change('en');
-                childWindow.layui.table.reload();
+                if (childWindow.tableReload) {
+                    childWindow.tableReload('en');
+                }
             }
         })
 

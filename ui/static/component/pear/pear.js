@@ -45,6 +45,7 @@ layui.config({
     fullscreen: "fullscreen",  //全屏组件
     sail: "sail",
     lang: "lang",
+    jcookie: "jcookie",
 }).use(['layer', 'theme','lang'], function () {
     layui.theme.changeTheme(window, false);
 
@@ -56,5 +57,6 @@ layui.config({
     lang.init({
         defaultLang: 'zh',
         disableLog: false,
+        allowCookieOverride: true,
     });
 });
