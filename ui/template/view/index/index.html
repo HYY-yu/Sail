@@ -104,14 +104,6 @@
         let sail = layui.sail;
         let lang = layui.lang;
 
-        lang.dynamic('en', '/static/admin/langpack/en.json');
-        lang.dynamic('zh', '/static/admin/langpack/zh.json');
-
-        lang.init({
-            defaultLang: 'zh',
-            disableLog: false,
-        });
-
         admin.setConfigType("yml");
         admin.setConfigPath("/static/config/pear.config.yml");
 
@@ -124,9 +116,28 @@
 
         $('#zh').click(function () {
             lang.change('zh');
+            var iframes = document.getElementsByTagName('iframe');
+
+            for (var i = 0; i < iframes.length; i++) {
+                var iframe = iframes[i];
+                var childWindow = iframe.contentWindow;
+
+                childWindow.layui.lang.change('zh');
+                childWindow.layui.table.reload();
+            }
         })
         $('#en').click(function () {
             lang.change('en');
+
+            var iframes = document.getElementsByTagName('iframe');
+
+            for (var i = 0; i < iframes.length; i++) {
+                var iframe = iframes[i];
+                var childWindow = iframe.contentWindow;
+
+                childWindow.layui.lang.change('en');
+                childWindow.layui.table.reload();
+            }
         })
 
         if (!accessToken) {

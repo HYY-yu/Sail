@@ -44,11 +44,17 @@ layui.config({
     watermark: "watermark/watermark", //水印
     fullscreen: "fullscreen",  //全屏组件
     sail: "sail",
-    translate:"translate"	//多语言翻译组件
-}).use(['layer', 'theme','translate'], function () {
+    lang: "lang",
+}).use(['layer', 'theme','lang'], function () {
     layui.theme.changeTheme(window, false);
 
-    // 全局翻译
-    // layui.translate.translate();
+    let lang = layui.lang;
 
+    lang.dynamic('en', '/static/admin/langpack/en.json');
+    lang.dynamic('zh', '/static/admin/langpack/zh.json');
+
+    lang.init({
+        defaultLang: 'zh',
+        disableLog: false,
+    });
 });

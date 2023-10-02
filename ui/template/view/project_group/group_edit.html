@@ -10,7 +10,7 @@
     <div class="mainBox">
         <div class="main-container">
             <div class="layui-form-item">
-                <label class="layui-form-label">项目组名称</label>
+                <label lang="zh" class="layui-form-label">项目组名称</label>
                 <div class="layui-input-block">
                     <input type="text" name="name" value="{{.Name}}" lay-verify="required" autocomplete="off"
                            class="layui-input">
@@ -23,12 +23,11 @@
         <div class="button-container">
             <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" id="group-submit-button" lay-submit=""
                     lay-filter="group-save">
-                <i class="layui-icon layui-icon-ok"></i>
-                提交
+                <i lang="zh" class="layui-icon layui-icon-ok">提交</i>
+
             </button>
             <button type="reset" class="pear-btn pear-btn-sm">
-                <i class="layui-icon layui-icon-refresh"></i>
-                重置
+                <i lang="zh" class="layui-icon layui-icon-refresh">重置</i>
             </button>
         </div>
     </div>
@@ -36,7 +35,7 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['form', 'jquery', 'sail'], function () {
+    layui.use(['form', 'jquery', 'sail', 'lang'], function () {
         let form = layui.form;
         let $ = layui.jquery;
         let sail = layui.sail;
@@ -58,7 +57,7 @@
                 type: 'post',
                 success: function (result) {
                     sail.checkSuccess(result, function (resp) {
-                        layer.msg("成功", {icon: 1, time: 1000}, function () {
+                        layer.msg("OK", {icon: 1, time: 1000}, function () {
                             parent.layer.close(parent.layer.getFrameIndex(window.name));//关闭当前页
                             parent.layui.table.reload("user-table");
                         });

@@ -46,14 +46,6 @@
         let sail = layui.sail;
         let lang = layui.lang;
 
-        lang.dynamic('en', '/static/admin/langpack/en.json');
-        lang.dynamic('zh', '/static/admin/langpack/zh.json');
-
-        lang.init({
-            defaultLang: 'zh',
-            disableLog: false,
-        });
-
         // 登 录 提 交
         form.on('submit(login)', function (data) {
             /// 登录
