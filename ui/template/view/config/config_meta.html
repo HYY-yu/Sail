@@ -10,12 +10,10 @@
     <div class="mainBox">
         <div class="main-container">
             <div class="layui-form-item">
-                <label class="layui-form-label">命名空间</label>
+                <label lang="zh" class="layui-form-label">命名空间</label>
                 <div class="layui-input-block">
                     <select name="namespace_id" lay-filter="namespace-query-select" lay-verify="required"
                             lay-search="">
-                        <option value="">请选择命名空间</option>
-
                         {{range $id,$val := .NSArr}}
                         <option value="{{$val.ID}}">{{$val.Name}}</option>
                         {{end}}
@@ -23,7 +21,7 @@
                 </div>
             </div>
             <div class="layui-form-item">
-                <label class="layui-form-label">配置类型</label>
+                <label lang="zh" class="layui-form-label">配置类型</label>
                 <div class="layui-input-block">
                     <input type="radio" lay-filter="radio_temp" name="temp" value="TOML" title="TOML" checked>
                     <input type="radio" lay-filter="radio_temp" name="temp" value="ENV" title="ENV">
@@ -32,7 +30,7 @@
                 </div>
             </div>
             <div class="layui-form-item">
-                <label class="layui-form-label">内容</label>
+                <label lang="zh" class="layui-form-label">配置内容</label>
                 <div class="layui-input-block">
                     <pre class="layui-code" id="metaConfigContent"></pre>
                 </div>
@@ -53,6 +51,7 @@
         let sail = layui.sail;
         const accessToken = localStorage.getItem("accessToken");
         sail.prefilterAjax();
+
         layui.code();
         let refreshContent = function (formData) {
             $.ajax({
@@ -76,15 +75,17 @@
                 error: sail.ajaxError
             });
         }
-
-        form.on('select(namespace-query-select)', function (data) {
+        $(function(){
+            form.render();
+        });
+        form.on('select(namespace-query-select)', function () {
             let formData = form.val('group-add');
             if (!formData.namespace_id) {
                 return
             }
             refreshContent(formData)
         });
-        form.on('radio(radio_temp)', function (data) {
+        form.on('radio(radio_temp)', function () {
             let formData = form.val('group-add');
             if (!formData.namespace_id) {
                 return

@@ -14,7 +14,7 @@
 <div class="layui-card">
     <div class="layui-card-body">
         <button id="go-back" class="layui-btn  layui-btn-normal"><i
-                class="layui-icon layui-icon-return layui-font-12"></i>
+                    class="layui-icon layui-icon-return layui-font-12"></i>
         </button>
         <p style="display: inline-block;vertical-align:middle;height:38px;line-height:38px;text-align:center;font-size:12px;padding-left: 10px">
             <span class="layui-breadcrumb">
@@ -23,15 +23,15 @@
         </span>
         </p>
         <div class="layui-layout-right" style="top: 10px;right: 15px;bottom: 15px">
-            <button id="configAdd"
+            <button lang="zh" id="configAdd"
                     class="layui-btn  layui-btn-normal">
                 新增配置
             </button>
-            <button id="configMeta"
+            <button lang="zh" id="configMeta"
                     class="layui-btn  layui-btn-normal">
                 获取元配置
             </button>
-            <button id="configPublish"
+            <button lang="zh" id="configPublish"
                     class="layui-btn  layui-btn-normal">
                 📣发布配置
             </button>
@@ -53,10 +53,15 @@
             <div class="layui-card-body" id="divConfigContent" style="overflow: auto">
                 <div style="margin-top:12px;margin-bottom: 24px">
                     <div class="layui-btn-group">
-                        <button type="button" id="editConfigID" class="layui-btn layui-btn-normal">编辑</button>
-                        <button type="button" id="delConfigID" class="layui-btn layui-btn-normal">删除</button>
-                        <button type="button" id="historyConfigID" class="layui-btn layui-btn-normal">历史版本</button>
-                        <button type="button" id="changeCopy" class="layui-btn layui-btn-normal">转为副本</button>
+                        <button lang="zh" type="button" id="editConfigID" class="layui-btn layui-btn-normal">编辑
+                        </button>
+                        <button lang="zh" type="button" id="delConfigID" class="layui-btn layui-btn-normal">删除
+                        </button>
+                        <button lang="zh" type="button" id="historyConfigID" class="layui-btn layui-btn-normal">
+                            历史版本
+                        </button>
+                        <button lang="zh" type="button" id="changeCopy" class="layui-btn layui-btn-normal">转为副本
+                        </button>
                     </div>
                     <p id="textConfigID" class="layui-word-aux layui-layout-right"
                        style="display: inline-block;top: 20px;right: 15px;height: 38px;vertical-align: middle;line-height: 38px;font-weight: bold;font-size: large">
@@ -99,12 +104,13 @@
         window.onresize = auto_height;
     }
 
-    layui.use(['jquery', 'popup', 'sail', 'tree', 'layer'], function () {
+    layui.use(['lang', 'jquery', 'popup', 'sail', 'tree', 'layer'], function () {
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
         let tree = layui.tree;
         let layer = layui.layer;
+        let lang = layui.lang;
         sail.prefilterAjax();
 
         let cm = new CodeMirror(document.getElementById("configContent"), {
@@ -142,17 +148,20 @@
                 success: function (result) {
                     sail.checkSuccess(result, function (resp) {
                         let ckstr = resp.data.name + '.' + resp.data.type
+                        let changeButton = $('#changeCopy')
                         if (resp.data.is_link_public) {
                             ckstr += '🔗'
-                            $('#changeCopy').html('转为副本');
+                            changeButton.html(lang.translate('转为副本'));
+                            changeButton.data('status', "COPY")
                         } else {
-                            $('#changeCopy').html('重新链接到公共配置');
+                            changeButton.html(lang.translate('重新链接到公共配置'));
+                            changeButton.data('status', "RELINK")
                         }
                         if (resp.data.is_encrypt) {
                             ckstr += ' 🔐'
                         }
-                        if (resp.data.publish_status){
-                            ckstr += ' '+ resp.data.publish_status;
+                        if (resp.data.publish_status) {
+                            ckstr += ' ' + resp.data.publish_status;
                         }
                         $('#textConfigID').html(ckstr);
 
@@ -166,14 +175,16 @@
             })
         }
 
-        $('#editConfigID').click(function () {
+        let editButton = $('#editConfigID')
+        editButton.data('status', 'EDIT') // 初始化状态
+        editButton.click(function () {
             let configID = sessionStorage.getItem("treeClickConfigID")
             if (!configID) {
                 return
             }
 
-            let buttonText = $('#editConfigID').text()
-            if (buttonText === '保存') {
+            let currentStatus = $(this).data('status')
+            if (currentStatus === 'SAVE') {
                 let content = cm.getValue();
                 $.ajax({
                     url: '/sail/v1/config/edit',
@@ -186,10 +197,12 @@
                     dataType: 'json',
                     type: 'post',
                     success: function (result) {
-                        sail.checkSuccess(result, function (resp) {
-                            popup.success("保存成功");
+                        sail.checkSuccess(result, function () {
+                            popup.success(lang.translate("保存成功"));
                             renderConfigDetail();
-                            $('#editConfigID').text('编辑');
+                            let editButton = $('#editConfigID')
+                            editButton.text(lang.translate('编辑'));
+                            editButton.data('status', 'EDIT');
                             cm.setOption('readOnly', true);
                         });
                     },
@@ -201,7 +214,9 @@
             // 打开编辑框
             cm.setOption('readOnly', false);
             cm.focus();
-            $('#editConfigID').text('保存');
+            let editButton = $('#editConfigID')
+            editButton.text(lang.translate('保存'))
+            editButton.data('status', 'SAVE')
         })
 
         $('#delConfigID').click(function () {
@@ -210,9 +225,9 @@
                 return
             }
 
-            layer.confirm('确定要删除吗？', {
+            layer.confirm(lang.translate('确定要删除？'), {
                 icon: 3,
-                title: '提示'
+                title: lang.translate('提示')
             }, function (index) {
                 sessionStorage.removeItem("treeClickConfigID");
                 $.ajax({
@@ -225,8 +240,8 @@
                     dataType: 'json',
                     type: 'post',
                     success: function (result) {
-                        sail.checkSuccess(result, function (resp) {
-                            popup.success("删除成功");
+                        sail.checkSuccess(result, function () {
+                            popup.success(lang.translate("删除成功"));
 
                             renderTree(jumpData.project_group_id, jumpData.project_id);
                             renderConfigDetail();
@@ -246,7 +261,7 @@
 
             layer.open({
                 type: 2,
-                title: "配置历史",
+                title: lang.translate("配置历史"),
                 shade: 0.1,
                 area: ['900px', '500px'],
                 content: '/ui/public/history?' + 'config_id=' + configID,
@@ -259,20 +274,21 @@
                 return
             }
 
-            let msg = ''
+            let msg
             let op = 0
-            let buttonText = $('#changeCopy').text()
-            if (buttonText === '转为副本') {
-                msg = '确定要取消与公共配置的链接吗？'
+            let changeButton = $(this)
+            let status = changeButton.data('status')
+            if (status === 'COPY') {
+                msg = lang.translate('确定要取消与公共配置的链接吗？')
                 op = 1
             } else {
-                msg = '配置内容将会被覆盖，确定要重新关联到相应的公共配置吗？'
+                msg = lang.translate('配置内容将会被覆盖，确定要重新关联到相应的公共配置吗？')
                 op = 2
             }
 
             layer.confirm(msg, {
                 icon: 3,
-                title: '提示'
+                title: lang.translate('提示')
             }, function (index) {
                 $.ajax({
                     url: '/sail/v1/config/copy',
@@ -285,13 +301,30 @@
                     dataType: 'json',
                     type: 'post',
                     success: function (result) {
-                        sail.checkSuccess(result, function (resp) {
-                            popup.success("操作成功");
+                        sail.checkSuccess(result, function () {
+                            popup.success(lang.translate("成功"));
                             sessionStorage.removeItem("treeClickConfigID");
                             renderConfigDetail();
                         });
                     },
-                    error: sail.ajaxError,
+                    error: function (jqXHR, textStatus) {
+                        if (jqXHR.status === 401) {
+                            return
+                        }
+
+                        let sjson = jqXHR.responseJSON;
+                        if (sjson.hasOwnProperty("message")) {
+                            layer.msg(lang.translate(sjson.message), {
+                                icon: 2,
+                                time: 1000
+                            });
+                        } else {
+                            layer.msg(textStatus.toString(), {
+                                icon: 2,
+                                time: 1000
+                            });
+                        }
+                    },
                 })
                 layer.close(index);
             })
@@ -349,7 +382,7 @@
         $('#configAdd').click(function () {
             layer.open({
                 type: 2,
-                title: "新增配置",
+                title: lang.translate("新增配置"),
                 shade: 0.1,
                 area: ['400px', '400px'],
                 content: '/ui/config/add?' + 'project_id=' + jumpData.project_id + '&project_group_id=' + jumpData.project_group_id,
@@ -358,18 +391,18 @@
         $('#configMeta').click(function () {
             layer.open({
                 type: 2,
-                title: "获取元配置",
+                title: lang.translate("获取元配置"),
                 shade: 0.1,
                 area: ['700px', '600px'],
                 content: '/ui/config/meta?' + 'project_id=' + jumpData.project_id + '&project_group_id=' + jumpData.project_group_id,
             })
         });
         $('#configPublish').click(function () {
-            layer.msg('正在开发中，敬请期待');
+            layer.msg(lang.translate('正在开发中，敬请期待'));
         });
 
-        $('#go-info-project').text('项目名：' + jumpData.project_name);
-        $('#go-info-project-group').text('所属项目组：' + jumpData.project_group_name);
+        $('#go-info-project').text(lang.translate('项目名：') + jumpData.project_name);
+        $('#go-info-project-group').text(lang.translate('所属项目组：') + jumpData.project_group_name);
     })
 </script>
 </body>

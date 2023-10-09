@@ -45,7 +45,11 @@
     "保存成功": "Save successfully",
     "成功": "Successfully",
     "历史版本": "History",
+    "转为副本": "Copy",
+    "重新链接到公共配置": "Re-link",
+    "链接到公共配置": "Link",
     "新增配置": "AddConfig",
+    "获取元配置": "MetaConfig",
     "配置名称": "Name",
     "配置类型": "Type",
     "配置内容": "Content",
@@ -86,7 +90,17 @@
     "回滚": "Rollback",
     "对比": "Compare",
     "版本号": "Version",
-    "操作类型": "Operation Type"
+    "操作类型": "Operation Type",
+    "\uD83D\uDCE3发布配置": "Publish",
+    "正在开发中，敬请期待": "Development in progress, please wait",
+    "项目名：": "Project name:",
+    "所属项目组：": "Group:",
+    "确定要取消与公共配置的链接吗？": "Are you sure you want to cancel the link with the public configuration?",
+    "配置内容将会被覆盖，确定要重新关联到相应的公共配置吗？": "The configuration content will be overwritten, are you sure you want to re-link to the corresponding public configuration?",
+    "加密": "Encryption",
+    "公共配置": "Public Config",
+    "关联": "Link",
+    "此记录没有关联过公共配置": "This record has not been linked to the public configuration"
   },
   "regex": [
     [
