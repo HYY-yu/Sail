@@ -1,4 +1,4 @@
-layui.define(['jquery', 'element'], function(exports) {
+layui.define(['lang', 'jquery', 'element'], function(exports) {
 	"use strict";
 
 	var MOD_NAME = 'tab',
@@ -72,9 +72,9 @@ layui.define(['jquery', 'element'], function(exports) {
 				var left = e.clientX;
 				var menuWidth = 100;
 				var currentId = $(this).attr("lay-id");
-				var menu = "<ul><li class='item' id='" + option.elem +
-					"closeThis'>关闭当前</li><li class='item' id='" + option.elem +
-					"closeOther'>关闭其他</li><li class='item' id='" + option.elem +
+				var menu = "<ul><li lang='zh' class='item' id='" + option.elem +
+					"closeThis'>关闭当前</li><li lang='zh' class='item' id='" + option.elem +
+					"closeOther'>关闭其他</li><li lang='zh' class='item' id='" + option.elem +
 					"closeAll'>关闭所有</li></ul>";
 
 				contextTabDOM = $(this);
@@ -172,10 +172,10 @@ layui.define(['jquery', 'element'], function(exports) {
 	pearTab.prototype.addTab = function(opt) {
 		var title = '';
 		if (opt.close) {
-			title += '<span class="pear-tab-active"></span><span class="able-close title">' + opt.title +
+			title += '<span class="pear-tab-active"></span><span lang="zh" class="able-close title">' + opt.title +
 				'</span><i class="layui-icon layui-unselect layui-tab-close">ဆ</i>';
 		} else {
-			title += '<span class="pear-tab-active"></span><span class="disable-close title">' + opt.title +
+			title += '<span class="pear-tab-active"></span><span lang="zh" class="disable-close title">' + opt.title +
 				'</span><i class="layui-icon layui-unselect layui-tab-close">ဆ</i>';
 		}
 		element.tabAdd(this.option.elem, {
@@ -244,10 +244,10 @@ layui.define(['jquery', 'element'], function(exports) {
 	pearTab.prototype.addTabOnlyByElem = function(elem, opt, time) {
 		var title = '';
 		if (opt.close) {
-			title += '<span class="pear-tab-active"></span><span class="able-close title">' + opt.title +
+			title += '<span class="pear-tab-active"></span><span lang="zh" class="able-close title">' + opt.title +
 				'</span><i class="layui-icon layui-unselect layui-tab-close">ဆ</i>'
 		} else {
-			title += '<span class="pear-tab-active"></span><span class="disable-close title">' + opt.title +
+			title += '<span class="pear-tab-active"></span><span lang="zh" class="disable-close title">' + opt.title +
 				'</span><i class="layui-icon layui-unselect layui-tab-close">ဆ</i>'
 		}
 		if ($(".layui-tab[lay-filter='" + elem + "'] .layui-tab-title li[lay-id]").length <= 0) {
@@ -295,10 +295,10 @@ layui.define(['jquery', 'element'], function(exports) {
 	pearTab.prototype.addTabOnly = function(opt, time) {
 		var title = '';
 		if (opt.close) {
-			title += '<span class="pear-tab-active"></span><span class="able-close title">' + opt.title +
+			title += '<span class="pear-tab-active"></span><span lang="zh" class="able-close title">' + opt.title +
 				'</span><i class="layui-icon layui-unselect layui-tab-close">ဆ</i>';
 		} else {
-			title += '<span class="pear-tab-active"></span><span class="disable-close title">' + opt.title +
+			title += '<span class="pear-tab-active"></span><span lang="zh" class="disable-close title">' + opt.title +
 				'</span><i class="layui-icon layui-unselect layui-tab-close">ဆ</i>';
 		}
 		if ($(".layui-tab[lay-filter='" + this.option.elem + "'] .layui-tab-title li[lay-id]").length <=
@@ -474,10 +474,10 @@ layui.define(['jquery', 'element'], function(exports) {
 
 			if (item.close) {
 				// 当 前 选 项 卡 可 以 关 闭
-				TitleItem += '<span class="able-close title">' + item.title + '</span>';
+				TitleItem += '<span lang="zh" class="able-close title">' + item.title + '</span>';
 			} else {
 				// 当 前 选 项 卡 不 允 许 关 闭
-				TitleItem += '<span class="disable-close title">' + item.title + '</span>';
+				TitleItem += '<span lang="zh" class="disable-close title">' + item.title + '</span>';
 			}
 			TitleItem += '<i class="layui-icon layui-unselect layui-tab-close">ဆ</i></li>';
 			title += TitleItem;
@@ -503,9 +503,9 @@ layui.define(['jquery', 'element'], function(exports) {
 
 		title += '</ul>';
 		content += '</div>';
-		control += '<dd id="closeThis"><a href="#">关 闭 当 前</a></dd>'
-		control += '<dd id="closeOther"><a href="#">关 闭 其 他</a></dd>'
-		control += '<dd id="closeAll"><a href="#">关 闭 全 部</a></dd>'
+		control += '<dd id="closeThis"><a lang="zh" href="#">关闭当前</a></dd>'
+		control += '<dd id="closeOther"><a lang="zh" href="#">关闭其他</a></dd>'
+		control += '<dd id="closeAll"><a lang="zh" href="#">关闭全部</a></dd>'
 		control += '</dl></li></ul></li></div>';
 
 		tab += title;

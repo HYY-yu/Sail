@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>项目组管理</title>
+    <title lang="zh">项目组管理</title>
     <link rel="stylesheet" href="../../../static/component/pear/css/pear.css"/>
 </head>
 
@@ -13,25 +13,23 @@
         <form class="layui-form" action="">
             <div class="layui-form-item">
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">项目组ID</label>
+                    <label lang="zh" class="layui-form-label">项目组ID</label>
                     <div class="layui-input-inline">
                         <input type="text" name="project_group_id" placeholder="" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">项目组名</label>
+                    <label lang="zh" class="layui-form-label">项目组名称</label>
                     <div class="layui-input-inline">
                         <input type="text" name="project_group_name" placeholder="" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
                     <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
-                        <i class="layui-icon layui-icon-search"></i>
-                        查询
+                        <i lang="zh" class="layui-icon layui-icon-search"> 查询</i>
                     </button>
                     <button type="reset" class="pear-btn pear-btn-md">
-                        <i class="layui-icon layui-icon-refresh"></i>
-                        重置
+                        <i lang="zh" class="layui-icon layui-icon-refresh"> 重置</i>
                     </button>
                 </div>
             </div>
@@ -46,24 +44,60 @@
 
 <script type="text/html" id="user-toolbar">
     <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
-        <i class="layui-icon layui-icon-add-1"></i>
-        新增
+        <i lang="zh" class="layui-icon layui-icon-add-1">新增</i>
     </button>
 </script>
 
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['table', 'admin', 'form', 'jquery', 'popup', 'util', 'sail'], function () {
+    layui.use(['table', 'admin', 'form', 'jquery', 'popup', 'util', 'sail', 'lang'], function () {
         let table = layui.table;
         let form = layui.form;
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
         let util = layui.util;
+        let lang = layui.lang;
+
         sail.prefilterAjax();
 
         let accessToken = localStorage.getItem("accessToken");
+        let tableCols = [
+            [{
+                title: 'ID',
+                field: 'project_group_id',
+                align: 'center',
+            }, {
+                title: lang.translate('项目组名称'),
+                field: 'name',
+                align: 'center',
+            }, {
+                title: lang.translate('创建人'),
+                field: 'create_by_name',
+                align: 'center',
+            }, {
+                title: lang.translate('创建时间'),
+                field: 'create_time',
+                align: 'center',
+                templet: function (res) {
+                    return util.toDateString(res.create_time * 1000);
+                },
+            }, {
+                title: lang.translate('操作'),
+                align: 'center',
+                minWidth: 400,
+                templet: function (res) {
+                    if (res.managed) {
+                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
+                            '<button lang="zh" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="public">管理公共配置</button>\n' +
+                            '<button lang="zh" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="namespace">管理命名空间</button>'
+                    }
+                    return ' '
+                }
+            }]
+        ];
         table.render({
             elem: '#user-table',
             url: '/sail/v1/project_group/list',
@@ -88,46 +122,52 @@
                     }
                 }
             },
-            cols: [
-                [{
-                    title: 'ID',
-                    field: 'project_group_id',
-                    align: 'center',
-                }, {
-                    title: '项目组名',
-                    field: 'name',
-                    align: 'center',
-                }, {
-                    title: '创建人',
-                    field: 'create_by_name',
-                    align: 'center',
-                }, {
-                    title: '创建时间',
-                    field: 'create_time',
-                    align: 'center',
-                    templet: function (res) {
-                        return util.toDateString(res.create_time * 1000);
-                    },
-                }, {
-                    title: '操作',
-                    align: 'center',
-                    minWidth: 400,
-                    templet: function (res) {
-                        if (res.managed) {
-                            return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
-                                '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
-                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="public">管理公共配置</button>\n' +
-                                '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="namespace">管理命名空间</button>'
-                        }
-                        return ' '
-                    }
-                }]
-            ],
+            cols: tableCols,
             skin: 'line',
             toolbar: '#user-toolbar',
             defaultToolbar: [],
             error: sail.ajaxError,
         });
+
+        window.tableReload = function (cuLang) {
+            table.reload('user-table', {
+                cols: [
+                    [{
+                        title: 'ID',
+                        field: 'project_group_id',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('项目组名称',cuLang),
+                        field: 'name',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('创建人',cuLang),
+                        field: 'create_by_name',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('创建时间',cuLang),
+                        field: 'create_time',
+                        align: 'center',
+                        templet: function (res) {
+                            return util.toDateString(res.create_time * 1000);
+                        },
+                    }, {
+                        title: lang.translate('操作',cuLang),
+                        align: 'center',
+                        minWidth: 400,
+                        templet: function (res) {
+                            if (res.managed) {
+                                return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                                    '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n' +
+                                    '<button lang="zh" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="public">管理公共配置</button>\n' +
+                                    '<button lang="zh" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="namespace">管理命名空间</button>'
+                            }
+                            return ' '
+                        }
+                    }]
+                ],
+            }, true);
+        }
 
         table.on('tool(user-table)', function (obj) {
             if (obj.event === 'remove') {
@@ -157,7 +197,7 @@
         window.add = function () {
             layer.open({
                 type: 2,
-                title: "新增项目组",
+                title: lang.translate("新增项目组"),
                 shade: 0.1,
                 content: '/ui/group/add',
             })
@@ -178,16 +218,16 @@
         window.edit = function (obj) {
             layer.open({
                 type: 2,
-                title: '修改项目组',
+                title: lang.translate('修改项目组'),
                 shade: 0.1,
                 content: '/ui/group/edit/?id=' + obj.data.project_group_id + '&name=' + obj.data.name,
             });
         }
 
         window.remove = function (obj) {
-            layer.confirm('确定要删除', {
+            layer.confirm(lang.translate('确定要删除？'), {
                 icon: 3,
-                title: '提示'
+                title: lang.translate('提示')
             }, function (index) {
                 layer.close(index);
                 let loading = layer.load();
@@ -201,7 +241,7 @@
                     type: 'post',
                     success: function (result) {
                         layer.close(loading);
-                        sail.checkSuccess(result, function (resp) {
+                        sail.checkSuccess(result, function () {
                             table.reload("user-table");
                         });
                     },

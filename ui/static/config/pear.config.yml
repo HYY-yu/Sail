@@ -80,3 +80,13 @@ other:
 header:
   ## 站内消息，通过 false 设置关闭
   message: false
+## (废弃)多语言翻译配置
+#translate:
+#  ## 当前语种，有： chinese_simplified 简体中文 、chinese_traditional 繁体中文、english 英语、korean 韩语  ,默认是 chinese_simplified 简体中文
+#  localLanguage: "chinese_simplified"
+#  ## 设置用户第一次用时，自动识别其所在国家的语种进行切换，true：使用。 默认为false不使用。
+#  autoDiscriminateLocalLanguage: false
+#  ## 翻译时忽略指定的 class name，多个 class name 之间用逗号分割
+#  ignoreClass: "ignore,test1,layui-logo"
+#  ## 翻译时忽略指定的tag标签，多个标签之间用逗号分割
+#  ignoreTag: "script,pre,code"

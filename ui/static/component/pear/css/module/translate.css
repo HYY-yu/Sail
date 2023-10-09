@@ -1,0 +1,7 @@
+/* 将所有内页的切换语言都隐藏掉，只留顶部右上角一个切换语言入口 */
+#translate{
+    display: none;
+}
+.layui-header>ul>#translate{
+    display: inline;
+}

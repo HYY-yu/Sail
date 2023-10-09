@@ -1,4 +1,4 @@
-layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'menu', 'frame', 'theme', 'convert','fullscreen'],
+layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'menu', 'frame', 'theme', 'convert','fullscreen', 'translate'],
 	function(exports) {
 		"use strict";
 
@@ -13,6 +13,7 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 			pearTheme = layui.theme,
 			message = layui.message,
 			fullscreen=layui.fullscreen;
+			// translate = layui.translate;
 
 		var bodyFrame;
 		var sideMenu;
@@ -361,7 +362,7 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 					return;
 				}
 			}
-			
+
 			this.closeOtherTab = function() {
 				if (isMuiltTab(config) === "true" || isMuiltTab(config) === true) {
 					pearTab.delOtherTabByElem('content', function(id){
@@ -371,7 +372,7 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 					return;
 				}
 			}
-			
+
 			this.closeAllTab = function() {
 				if (isMuiltTab(config) === "true" || isMuiltTab(config) === true) {
 					pearTab.delAllTabByElem('content', function(id){
@@ -385,7 +386,7 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 			this.changeTabTitle = function(id, title) {
 				pearTab.changeTabTitleById('content', id ,title);
 			}
-			
+
 			this.changeIframe = function(id, title, url) {
 				if (isMuiltTab(config) === "true" || isMuiltTab(config) === true) {
 					return;
@@ -402,7 +403,7 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 					pearAdmin.changeIframe(id, title, url)
 				}
 			}
-			
+
 			this.fullScreen = function() {
 				if ($(".fullScreen").hasClass("layui-icon-screen-restore")) {
 					screenFun(2).then(function() {
@@ -414,6 +415,12 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 					});
 				}
 			}
+            // this.translate = function(option){
+            //     if(typeof(option.translate) == 'undefined'){
+            //         return;
+            //     }
+            //     window.pearTranslateConfig = option.translate; //暴露 pear.config.yml 中的 translate 配置出来，以便子页面在pear中获取配置信息。
+            // }
 		};
 
 		function refresh() {
@@ -895,6 +902,7 @@ layui.define(['message', 'table', 'jquery', 'element', 'yaml', 'form', 'tab', 'm
 			if (param.header.message != false) {
 				pearAdmin.messageRender(param);
 			}
+            // pearAdmin.translate(param);
 		}
 
 		function getColorById(id) {

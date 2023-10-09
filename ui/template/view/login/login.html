@@ -13,13 +13,13 @@
 <form class="layui-form" lay-filter="formLogin" action="javascript:void(0);">
     <div class="layui-form-item">
         <img class="logo" alt="" src="../../../static/admin/images/logo.svg"/>
-        <div class="title">配置中心</div>
+        <div lang="zh" class="title">配置中心</div>
     </div>
     <div class="layui-form-item">
-        <input placeholder="账 户  " name="username" lay-verify="required" class="layui-input"/>
+        <input lang="zh" placeholder="账 户  " name="username" lay-verify="required" class="layui-input"/>
     </div>
     <div class="layui-form-item">
-        <input placeholder="密 码  " name="password" type="password" lay-verify="required" class="layui-input"/>
+        <input lang="zh" placeholder="密 码  " name="password" type="password" lay-verify="required" class="layui-input"/>
     </div>
     <!--			<div class="layui-form-item">-->
     <!--				<input placeholder="验证码 : "  hover  lay-verify="required" class="code layui-input layui-input-inline"  />-->
@@ -27,7 +27,7 @@
     <!--			</div>-->
 
     <div class="layui-form-item">
-        <button type="button" class="pear-btn pear-btn-success login" lay-submit lay-filter="login">
+        <button lang="zh" type="button" class="pear-btn pear-btn-success login" lay-submit lay-filter="login">
             登 录
         </button>
     </div>
@@ -36,7 +36,7 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['form', 'jquery', 'button', 'popup', 'context', 'sail'], function () {
+    layui.use(['form', 'jquery', 'button', 'popup', 'context', 'sail', 'lang'], function () {
         let form = layui.form;
         let button = layui.button;
         let popup = layui.popup;
@@ -44,6 +44,7 @@
         let context = layui.context;
         let $ = layui.jquery;
         let sail = layui.sail;
+        let lang = layui.lang;
 
         // 登 录 提 交
         form.on('submit(login)', function (data) {
@@ -76,7 +77,7 @@
                                 // 重新设置密码
                                 layer.prompt({
                                     formType: 1,
-                                    title: "请重新设置您的密码",
+                                    title: lang.translate("请重新设置您的密码"),
                                     maxlength: 30,
                                 }, function (value, index, elem) {
                                     let newPassData = {
@@ -97,7 +98,7 @@
                                                         "username": "",
                                                         "password": "",
                                                     });
-                                                    popup.success("设置成功，请重新登录");
+                                                    popup.success(lang.translate("设置成功，请重新登录"));
                                                 })
                                             },
                                             error: sail.ajaxError,
@@ -111,7 +112,7 @@
                                 context.put("refreshToken", refreshToken);
                                 context.put('userName', postdata.user_name);
 
-                                popup.success("登录成功", function () {
+                                popup.success(lang.translate("登录成功"), function () {
                                     location.href = "/ui/index";
                                 }, 1000);
                             }

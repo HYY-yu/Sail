@@ -13,7 +13,7 @@
         <form class="layui-form" lay-filter="namespace-query-form" action="">
             <div class="layui-form-item">
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">项目组</label>
+                    <label lang="zh" class="layui-form-label">项目组</label>
                     <div class="layui-input-inline">
                         <select id="user-query-select" lay-filter="user-query-select" name="project_group_id"
                                 lay-search="">
@@ -24,19 +24,17 @@
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
-                    <label class="layui-form-label">名称</label>
+                    <label lang="zh" class="layui-form-label">名称</label>
                     <div class="layui-input-inline">
                         <input type="text" name="namespace_name" placeholder="" class="layui-input">
                     </div>
                 </div>
                 <div class="layui-form-item layui-inline">
                     <button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
-                        <i class="layui-icon layui-icon-search"></i>
-                        查询
+                        <i lang="zh" class="layui-icon layui-icon-search">查询</i>
                     </button>
                     <button type="reset" class="pear-btn pear-btn-md">
-                        <i class="layui-icon layui-icon-refresh"></i>
-                        重置
+                        <i lang="zh" class="layui-icon layui-icon-refresh">重置</i>
                     </button>
                 </div>
             </div>
@@ -51,21 +49,22 @@
 
 <script type="text/html" id="user-toolbar">
     <button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
-        <i class="layui-icon layui-icon-add-1"></i>
-        新增
+        <i lang="zh" class="layui-icon layui-icon-add-1">新增</i>
     </button>
 </script>
 
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['table', 'form', 'jquery', 'popup', 'sail', 'util'], function () {
+    layui.use(['lang', 'table', 'form', 'jquery', 'popup', 'sail', 'util'], function () {
         let table = layui.table;
         let form = layui.form;
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
         let util = layui.util;
+        let lang = layui.lang;
+
         sail.prefilterAjax();
 
         let projectGroupId = sessionStorage.getItem("jumpNamespaceWith");
@@ -73,7 +72,7 @@
         if (projectGroupId) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
-                if ($(elem).val() == projectGroupId) {
+                if ($(elem).val() === projectGroupId) {
                     $(elem).attr('selected', "true");
                 }
             })
@@ -82,6 +81,64 @@
 
         let data = form.val("namespace-query-form");
         let accessToken = localStorage.getItem("accessToken");
+
+        let tableCols = [
+            [{
+                title: 'ID',
+                field: 'namespace_id',
+                align: 'center',
+            }, {
+                title: lang.translate('名称'),
+                field: 'name',
+                align: 'center',
+            }, {
+                title: lang.translate('所属项目组'),
+                field: 'project_group_name',
+                align: 'center',
+            }, {
+                title: lang.translate('空间密钥'),
+                field: 'secret_key',
+                align: 'center',
+                templet: function (res) {
+                    if (res.secret_key) {
+                        return res.secret_key
+                    }
+                    return ' - '
+                }
+            }, {
+                title: lang.translate('空间属性'),
+                field: 'project_group_name',
+                align: 'center',
+                templet: function (res) {
+                    let qq = '';
+                    if (res.real_time) {
+                        qq += '<button lang="zh" lay-id="1" type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">实时生效</button>'
+                    } else {
+                        qq += '<button lang="zh" lay-id="2" type="button" class="tag-item tag-item-warm layui-btn layui-btn-primary layui-btn-sm">需要发布</button>'
+                    }
+                    return '<div class="layui-btn-container tag">' + qq + ' </div>'
+                },
+            }, {
+                title: lang.translate('创建人'),
+                field: 'create_by_name',
+                align: 'center',
+            }, {
+                title: lang.translate('创建时间'),
+                field: 'create_time',
+                align: 'left',
+                templet: function (res) {
+                    return util.toDateString(res.create_time * 1000);
+                },
+            }, {
+                title: lang.translate('操作'),
+                align: 'center',
+                minWidth: 400,
+                templet: function () {
+                    return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                        '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
+                }
+            }]
+        ];
         table.render({
             elem: '#user-table',
             url: '/sail/v1/namespace/list',
@@ -107,68 +164,74 @@
                     }
                 }
             },
-            cols: [
-                [{
-                    title: 'ID',
-                    field: 'namespace_id',
-                    align: 'center',
-                }, {
-                    title: '名称',
-                    field: 'name',
-                    align: 'center',
-                }, {
-                    title: '所属项目组',
-                    field: 'project_group_name',
-                    align: 'center',
-                }, {
-                    title: '空间密钥',
-                    field: 'secret_key',
-                    align: 'center',
-                    templet: function (res) {
-                        if (res.secret_key) {
-                            return res.secret_key
-                        }
-                        return ' - '
-                    }
-                }, {
-                    title: '空间属性',
-                    field: 'project_group_name',
-                    align: 'center',
-                    templet: function (res) {
-                        let qq = '';
-                        if (res.real_time) {
-                            qq += '<button lay-id="1" type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">实时生效</button>'
-                        } else {
-                            qq += '<button lay-id="2" type="button" class="tag-item tag-item-warm layui-btn layui-btn-primary layui-btn-sm">需要发布</button>'
-                        }
-                        return '<div class="layui-btn-container tag">' + qq + ' </div>'
-                    },
-                }, {
-                    title: '创建人',
-                    field: 'create_by_name',
-                    align: 'center',
-                }, {
-                    title: '创建时间',
-                    field: 'create_time',
-                    align: 'left',
-                    templet: function (res) {
-                        return util.toDateString(res.create_time * 1000);
-                    },
-                }, {
-                    title: '操作',
-                    align: 'center',
-                    minWidth: 400,
-                    templet: function (res) {
-                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
-                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
-                    }
-                }]
-            ],
+            cols: tableCols,
             skin: 'line',
             toolbar: '#user-toolbar',
             defaultToolbar: [],
             error: sail.ajaxError,
         });
+
+        window.tableReload = function (cuLang) {
+            table.reload('user-table', {
+                cols: [
+                    [{
+                        title: 'ID',
+                        field: 'namespace_id',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('名称', cuLang),
+                        field: 'name',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('所属项目组', cuLang),
+                        field: 'project_group_name',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('空间密钥', cuLang),
+                        field: 'secret_key',
+                        align: 'center',
+                        templet: function (res) {
+                            if (res.secret_key) {
+                                return res.secret_key
+                            }
+                            return ' - '
+                        }
+                    }, {
+                        title: lang.translate('空间属性', cuLang),
+                        field: 'project_group_name',
+                        align: 'center',
+                        templet: function (res) {
+                            let qq = '';
+                            if (res.real_time) {
+                                qq += '<button lang ="zh" lay-id="1" type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">实时生效</button>'
+                            } else {
+                                qq += '<button lang="zh" lay-id="2" type="button" class="tag-item tag-item-warm layui-btn layui-btn-primary layui-btn-sm">需要发布</button>'
+                            }
+                            return '<div class="layui-btn-container tag">' + qq + ' </div>'
+                        },
+                    }, {
+                        title: lang.translate('创建人', cuLang),
+                        field: 'create_by_name',
+                        align: 'center',
+                    }, {
+                        title: lang.translate('创建时间', cuLang),
+                        field: 'create_time',
+                        align: 'left',
+                        templet: function (res) {
+                            return util.toDateString(res.create_time * 1000);
+                        },
+                    }, {
+                        title: lang.translate('操作', cuLang),
+                        align: 'center',
+                        minWidth: 400,
+                        templet: function () {
+                            return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
+                                '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
+                        }
+                    }]
+                ],
+            }, true)
+        }
 
         table.on('tool(user-table)', function (obj) {
             if (obj.event === 'remove') {
@@ -203,17 +266,17 @@
         window.add = function () {
             layer.open({
                 type: 2,
-                title: "新增命名空间",
+                title: lang.translate("新增命名空间"),
                 shade: 0.1,
                 area: ['400px', '400px'],
                 content: '/ui/namespace/add',
-            })
+            });
         }
 
         window.edit = function (obj) {
             layer.open({
                 type: 2,
-                title: '修改命名空间',
+                title: lang.translate('修改命名空间'),
                 shade: 0.1,
                 area: ['400px', '400px'],
                 content: '/ui/namespace/edit/?id=' + obj.data.namespace_id + '&name=' + obj.data.name + '&real_time=' + obj.data.real_time,
@@ -221,9 +284,9 @@
         }
 
         window.remove = function (obj) {
-            layer.confirm('确定要删除', {
+            layer.confirm(lang.translate('确定要删除？'), {
                 icon: 3,
-                title: '提示'
+                title: lang.translate('提示')
             }, function (index) {
                 layer.close(index);
                 let loading = layer.load();
@@ -237,7 +300,7 @@
                     type: 'post',
                     success: function (result) {
                         layer.close(loading);
-                        sail.checkSuccess(result, function (resp) {
+                        sail.checkSuccess(result, function () {
                             table.reload("user-table");
                         });
                     },

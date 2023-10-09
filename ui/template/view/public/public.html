@@ -15,12 +15,12 @@
     <div class="layui-card-body">
         <form class="layui-form layui-inline" style="margin: 0" lay-filter="public-query-form" action="">
             <div class="layui-form-item layui-inline" style="margin: 0">
-                <label class="layui-form-label">项目组</label>
+                <label lang="zh" class="layui-form-label">项目组</label>
                 <div class="layui-input-inline">
                     <select id="user-query-select" lay-filter="user-query-select" name="project_group_id"
                             lay-search="">
                         {{range $id,$val := .PGArr}}
-                        <option value="{{$val.ID}}">{{$val.Name}}</option>
+                            <option value="{{$val.ID}}">{{$val.Name}}</option>
                         {{end}}
                     </select>
                 </div>
@@ -29,7 +29,7 @@
         <div class="layui-layout-right" style="top: 10px;right: 15px;bottom: 15px">
             <button id="configAdd"
                     class="layui-btn  layui-btn-normal">
-                新增配置
+                <i lang="zh" class="layui-icon layui-icon-add-1">新增配置</i>
             </button>
         </div>
     </div>
@@ -49,9 +49,13 @@
             <div class="layui-card-body" id="divConfigContent" style="overflow: auto">
                 <div style="margin-top:12px;margin-bottom: 24px">
                     <div class="layui-btn-group">
-                        <button type="button" id="editConfigID" class="layui-btn layui-btn-normal">编辑</button>
-                        <button type="button" id="delConfigID" class="layui-btn layui-btn-normal">删除</button>
-                        <button type="button" id="historyConfigID" class="layui-btn layui-btn-normal">历史版本</button>
+                        <button lang="zh" type="button" id="editConfigID" class="layui-btn layui-btn-normal">编辑
+                        </button>
+                        <button lang="zh" type="button" id="delConfigID" class="layui-btn layui-btn-normal">删除
+                        </button>
+                        <button lang="zh" type="button" id="historyConfigID" class="layui-btn layui-btn-normal">
+                            历史版本
+                        </button>
                     </div>
                     <p id="textConfigID" class="layui-word-aux layui-layout-right"
                        style="display: inline-block;top: 20px;right: 15px;height: 38px;vertical-align: middle;line-height: 38px;font-weight: bold;font-size: large">
@@ -93,13 +97,15 @@
         window.onresize = auto_height;
     }
 
-    layui.use(['jquery', 'form', 'popup', 'sail', 'tree', 'layer'], function () {
+    layui.use(['lang', 'jquery', 'form', 'popup', 'sail', 'tree', 'layer'], function () {
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
         let tree = layui.tree;
         let layer = layui.layer;
         let form = layui.form;
+        let lang = layui.lang;
+
         sail.prefilterAjax();
 
         let projectGroupId = sessionStorage.getItem("jumpPublicWith");
@@ -108,7 +114,7 @@
         if (projectGroupId) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
-                if ($(elem).val() == projectGroupId) {
+                if ($(elem).val() === projectGroupId) {
                     $(elem).attr('selected', "true");
                 }
             })
@@ -164,14 +170,16 @@
             })
         }
 
-        $('#editConfigID').click(function () {
+        let editButton = $('#editConfigID')
+        editButton.data('status', 'EDIT') // 初始化状态
+        editButton.click(function () {
             let configID = sessionStorage.getItem("treePublicClickConfigID")
             if (!configID) {
                 return
             }
 
-            let buttonText = $('#editConfigID').text()
-            if (buttonText === '保存') {
+            let currentStatus = $(this).data('status')
+            if (currentStatus === 'SAVE') {
                 let content = cm.getValue();
                 $.ajax({
                     url: '/sail/v1/config/edit',
@@ -184,10 +192,12 @@
                     dataType: 'json',
                     type: 'post',
                     success: function (result) {
-                        sail.checkSuccess(result, function (resp) {
-                            popup.success("保存成功");
+                        sail.checkSuccess(result, function () {
+                            popup.success(lang.translate("保存成功"));
                             renderConfigDetail();
-                            $('#editConfigID').text('编辑');
+                            let editButton = $('#editConfigID')
+                            editButton.text(lang.translate('编辑'));
+                            editButton.data('status','EDIT');
                             cm.setOption('readOnly', true);
                         });
                     },
@@ -199,7 +209,9 @@
             // 打开编辑框
             cm.setOption('readOnly', false);
             cm.focus();
-            $('#editConfigID').text('保存');
+            let editButton = $('#editConfigID')
+            editButton.text(lang.translate('保存'))
+            editButton.data('status','SAVE')
         })
 
         $('#delConfigID').click(function () {
@@ -208,9 +220,9 @@
                 return
             }
 
-            layer.confirm('确定要删除吗？', {
+            layer.confirm(lang.translate('确定要删除？'), {
                 icon: 3,
-                title: '提示'
+                title: lang.translate('提示')
             }, function (index) {
                 sessionStorage.removeItem("treePublicClickConfigID");
                 $.ajax({
@@ -223,8 +235,8 @@
                     dataType: 'json',
                     type: 'post',
                     success: function (result) {
-                        sail.checkSuccess(result, function (resp) {
-                            popup.success("删除成功");
+                        sail.checkSuccess(result, function () {
+                            popup.success(lang.translate("删除成功"));
 
                             renderTree(jumpData.project_group_id);
                             renderConfigDetail();
@@ -244,7 +256,7 @@
 
             layer.open({
                 type: 2,
-                title: "配置历史",
+                title: lang.translate("配置历史"),
                 shade: 0.1,
                 area: ['900px', '500px'],
                 content: '/ui/public/history?' + 'config_id=' + configID,
@@ -304,7 +316,7 @@
         $('#configAdd').click(function () {
             layer.open({
                 type: 2,
-                title: "新增配置",
+                title: lang.translate("新增配置"),
                 shade: 0.1,
                 area: ['400px', '400px'],
                 content: '/ui/public/add?' + 'project_group_id=' + jumpData.project_group_id,

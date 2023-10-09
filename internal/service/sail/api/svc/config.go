@@ -590,7 +590,8 @@ func (s *ConfigSvc) Copy(sctx core.SvcContext, param *model.ConfigCopy) error {
 	}
 	if link.ID == 0 {
 		// 没有公共配置关联记录
-		return response.NewErrorWithStatusOk(
+		return response.NewError(
+			http.StatusInternalServerError,
 			response.ServerError,
 			"此记录没有关联过公共配置",
 		)

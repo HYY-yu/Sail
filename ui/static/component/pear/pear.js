@@ -44,6 +44,19 @@ layui.config({
     watermark: "watermark/watermark", //水印
     fullscreen: "fullscreen",  //全屏组件
     sail: "sail",
-}).use(['layer', 'theme'], function () {
+    lang: "lang",
+    jcookie: "jcookie",
+}).use(['layer', 'theme','lang'], function () {
     layui.theme.changeTheme(window, false);
+
+    let lang = layui.lang;
+
+    lang.dynamic('en', '/static/admin/langpack/en.json');
+    lang.dynamic('zh', '/static/admin/langpack/zh.json');
+
+    lang.init({
+        defaultLang: 'zh',
+        disableLog: false,
+        allowCookieOverride: true,
+    });
 });

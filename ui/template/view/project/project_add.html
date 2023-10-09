@@ -10,10 +10,10 @@
     <div class="mainBox">
         <div class="main-container">
             <div class="layui-form-item">
-                <label class="layui-form-label">项目组</label>
+                <label lang="zh" class="layui-form-label">项目组</label>
                 <div class="layui-input-block">
                     <select name="project_group_id" lay-verify="required" lay-search="">
-                        <option value="">请选择项目组</option>
+                        <option lang="zh" value="">请选择项目组</option>
 
                         {{range $id,$val := .PGArr}}
                         <option value="{{$val.ID}}">{{$val.Name}}</option>
@@ -22,9 +22,9 @@
                 </div>
             </div>
             <div class="layui-form-item">
-                <label class="layui-form-label">项目名称</label>
+                <label lang="zh" class="layui-form-label">项目名称</label>
                 <div class="layui-input-block">
-                    <input type="text" name="name" placeholder="请输入3-10位的中文或英文"  lay-verify="required" autocomplete="off" class="layui-input">
+                    <input lang="zh" type="text" name="name" placeholder="请输入3-10位的中文或英文"  lay-verify="required" autocomplete="off" class="layui-input">
                 </div>
             </div>
         </div>
@@ -33,12 +33,11 @@
         <div class="button-container">
             <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" id="group-submit-button" lay-submit=""
                     lay-filter="group-save">
-                <i class="layui-icon layui-icon-ok"></i>
-                提交
+                <i lang="zh" class="layui-icon layui-icon-ok">提交</i>
+
             </button>
             <button type="reset" class="pear-btn pear-btn-sm">
-                <i class="layui-icon layui-icon-refresh"></i>
-                重置
+                <i lang="zh" class="layui-icon layui-icon-refresh">重置</i>
             </button>
         </div>
     </div>
@@ -46,13 +45,16 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['form', 'jquery', 'sail'], function () {
+    layui.use(['lang','form', 'jquery', 'sail'], function () {
         let form = layui.form;
         let $ = layui.jquery;
         let sail = layui.sail;
+        let lang = layui.lang;
         const accessToken = localStorage.getItem("accessToken");
         sail.prefilterAjax();
-
+        $(function(){
+            form.render();
+        });
         form.on('submit(group-save)', function (data) {
             $('#group-submit-button').attr('disabled', 'true');
             $.ajax({
@@ -67,8 +69,8 @@
                 cache: false,
                 type: 'post',
                 success: function (result) {
-                    sail.checkSuccess(result, function (resp) {
-                        layer.msg("成功", {icon: 1, time: 1000}, function () {
+                    sail.checkSuccess(result, function () {
+                        layer.msg(lang.translate("成功"), {icon: 1, time: 1000}, function () {
                             parent.layer.close(parent.layer.getFrameIndex(window.name));//关闭当前页
                             parent.layui.table.reload("user-table");
                         });

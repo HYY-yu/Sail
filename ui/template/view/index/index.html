@@ -31,14 +31,20 @@
         <!-- 多 系 统 菜 单 -->
         <div id="control" class="layui-layout-control"></div>
         <!-- 顶 部 右 侧 菜 单 -->
-        <ul class="layui-nav layui-layout-right">
+        <ul class="layui-nav layui-layout-right" style="display: flex;">
+            <li class="layui-nav-item user">
+                <a class="layui-icon layui-icon-website" href="javascript:;"></a>
+                <dl class="layui-nav-child">
+                    <dd><a id="zh">简体中文</a></dd>
+                    <dd><a id="en">English</a></dd>
+                </dl>
+            </li>
             <li class="layui-nav-item user">
                 <!-- 头 像 -->
                 <a class="layui-icon layui-icon-username" id="userName" href="javascript:;"></a>
                 <!-- 功 能 菜 单 -->
                 <dl class="layui-nav-child">
-                    <!--							<dd><a user-menu-url="view/system/person.html" user-menu-id="5555" user-menu-title="基本资料">基本资料</a></dd>-->
-                    <dd><a href="javascript:void(0)" class="logout">注销登录</a></dd>
+                    <dd><a lang="zh" class="logout">注销登录</a></dd>
                 </dl>
             </li>
             <!-- 主 题 配 置 -->
@@ -50,7 +56,7 @@
         <!-- 菜 单 顶 部 -->
         <div class="layui-logo">
             <!-- 标 题 -->
-            <span class="title"></span>
+            <span lang="zh" class="title"></span>
         </div>
         <!-- 菜 单 内 容 -->
         <div class="layui-side-scroll">
@@ -90,12 +96,13 @@
 
 <!-- 框 架 初 始 化 -->
 <script>
-    layui.use(['admin', 'jquery', 'popup', 'context', 'sail'], function () {
+    layui.use(['lang', 'admin', 'jquery', 'popup', 'context', 'sail'], function () {
         let $ = layui.jquery;
         let admin = layui.admin;
         let popup = layui.popup;
         let context = layui.context;
         let sail = layui.sail;
+        let lang = layui.lang;
 
         admin.setConfigType("yml");
         admin.setConfigPath("/static/config/pear.config.yml");
@@ -107,8 +114,38 @@
 
         $('#userName').html(userName);
 
+        $('#zh').click(function () {
+            lang.change('zh');
+            var iframes = document.getElementsByTagName('iframe');
+
+            for (var i = 0; i < iframes.length; i++) {
+                var iframe = iframes[i];
+                var childWindow = iframe.contentWindow;
+
+                childWindow.layui.lang.change('zh');
+                if (childWindow.tableReload) {
+                    childWindow.tableReload('zh');
+                }
+            }
+        })
+        $('#en').click(function () {
+            lang.change('en');
+
+            var iframes = document.getElementsByTagName('iframe');
+
+            for (var i = 0; i < iframes.length; i++) {
+                var iframe = iframes[i];
+                var childWindow = iframe.contentWindow;
+
+                childWindow.layui.lang.change('en');
+                if (childWindow.tableReload) {
+                    childWindow.tableReload('en');
+                }
+            }
+        })
+
         if (!accessToken) {
-            popup.warning("请先登录");
+            popup.warning(lang.translate("请先登录"));
             location.href = "/ui/login";
         }
 
@@ -125,7 +162,7 @@
                         localStorage.removeItem("accessToken");
                         localStorage.removeItem("refreshToken");
 
-                        popup.success("注销成功", function () {
+                        popup.success(lang.translate("注销成功"), function () {
                             location.href = "/ui/login";
                         });
                     })

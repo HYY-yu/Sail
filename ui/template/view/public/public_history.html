@@ -17,12 +17,13 @@
 <script src="../../../static/component/layui/layui.js"></script>
 <script src="../../../static/component/pear/pear.js"></script>
 <script>
-    layui.use(['table', 'jquery', 'popup', 'sail', 'util'], function () {
+    layui.use(['lang', 'table', 'jquery', 'popup', 'sail', 'util'], function () {
         let table = layui.table;
         let popup = layui.popup;
         let $ = layui.jquery;
         let sail = layui.sail;
         let util = layui.util;
+        let lang = layui.lang;
         sail.prefilterAjax();
 
         let configID = parseInt('{{.configID}}');
@@ -52,35 +53,35 @@
             },
             cols: [
                 [{
-                    title: '版本号',
+                    title: lang.translate('版本号'),
                     field: 'reversion',
                     align: 'center',
                 }, {
-                    title: '操作类型',
+                    title: lang.translate('操作类型'),
                     field: 'project_group_name',
                     align: 'center',
                     templet: function (res) {
                         let qq = '';
-                        qq += '<button type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">' + res.op_type_str + '</button>'
+                        qq += '<button type="button" class="tag-item layui-btn layui-btn-primary layui-btn-sm">' + lang.translate(res.op_type_str) + '</button>'
                         return '<div class="layui-btn-container tag">' + qq + ' </div>'
                     },
                 }, {
-                    title: '创建人',
+                    title: lang.translate('创建人'),
                     field: 'create_by_name',
                     align: 'center',
                 }, {
-                    title: '创建时间',
+                    title: lang.translate('创建时间'),
                     field: 'create_time',
                     align: 'left',
                     templet: function (res) {
                         return util.toDateString(res.create_time * 1000);
                     },
                 }, {
-                    title: '操作',
+                    title: lang.translate('操作'),
                     align: 'center',
-                    templet: function (res) {
-                        return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="compare">对比</button> \n' +
-                            '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="rollback">回滚</button>\n'
+                    templet: function () {
+                        return '<button lang="zh" class="pear-btn pear-btn-primary pear-btn-sm" lay-event="compare">对比</button> \n' +
+                            '<button lang="zh" class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="rollback">回滚</button>\n'
                     }
                 }]
             ],
@@ -100,7 +101,7 @@
         window.compare = function (obj) {
             layer.open({
                 type: 2,
-                title: "历史对比（当前值 vs 历史值）",
+                title: lang.translate("历史对比（当前值 vs 历史值）"),
                 shade: 0.1,
                 area: ['600px', '400px'],
                 content: '/ui/public/history_diff?' + 'config_id=' + obj.data.config_id + '&reversion=' + obj.data.reversion,
@@ -108,9 +109,9 @@
         }
 
         window.rollback = function (obj) {
-            layer.confirm('确定要回滚?', {
+            layer.confirm(lang.translate('确定要回滚?'), {
                 icon: 3,
-                title: '提示'
+                title: lang.translate('提示'),
             }, function (index) {
                 layer.close(index);
                 let loading = layer.load();
@@ -125,8 +126,8 @@
                     type: 'post',
                     success: function (result) {
                         layer.close(loading);
-                        sail.checkSuccess(result, function (resp) {
-                            popup.success("回滚成功");
+                        sail.checkSuccess(result, function () {
+                            popup.success(lang.translate("成功"));
                             //关闭此弹窗
                             parent.window.refreshConfigDetail();
                             let index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
