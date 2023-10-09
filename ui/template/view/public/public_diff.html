@@ -37,7 +37,6 @@
         let reversion = parseInt('{{.reversion}}')
 
         let accessToken = localStorage.getItem("accessToken");
-        // 当前内容
         let lcontent = parent.parent.window.getConfigDetail();
 
         $.ajax({
@@ -53,8 +52,9 @@
                 sail.checkSuccess(result, function (resp) {
                     let rcontent = resp.data
 
-                    $('#mergely').mergely('lhs', lcontent);
-                    $('#mergely').mergely('rhs', rcontent);
+                    let merge = $('#mergely')
+                    merge.mergely('lhs', lcontent);
+                    merge.mergely('rhs', rcontent);
                 });
             },
             error: sail.ajaxError,

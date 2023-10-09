@@ -225,7 +225,7 @@
         }
 
         window.remove = function (obj) {
-            layer.confirm(lang.translate('确定要删除'), {
+            layer.confirm(lang.translate('确定要删除？'), {
                 icon: 3,
                 title: lang.translate('提示')
             }, function (index) {
@@ -241,7 +241,7 @@
                     type: 'post',
                     success: function (result) {
                         layer.close(loading);
-                        sail.checkSuccess(result, function (resp) {
+                        sail.checkSuccess(result, function () {
                             table.reload("user-table");
                         });
                     },

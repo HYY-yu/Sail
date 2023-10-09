@@ -72,7 +72,7 @@
         if (projectGroupId) {
             let options = $('#user-query-select').children();
             options.each(function (index, elem) {
-                if ($(elem).val() == projectGroupId) {
+                if ($(elem).val() === projectGroupId) {
                     $(elem).attr('selected', "true");
                 }
             })
@@ -133,7 +133,7 @@
                 title: lang.translate('操作'),
                 align: 'center',
                 minWidth: 400,
-                templet: function (res) {
+                templet: function () {
                     return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
                         '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
                 }
@@ -224,7 +224,7 @@
                         title: lang.translate('操作', cuLang),
                         align: 'center',
                         minWidth: 400,
-                        templet: function (res) {
+                        templet: function () {
                             return '<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button> \n' +
                                 '<button class="pear-btn  pear-btn-danger pear-btn-sm" lay-event="remove"><i class="layui-icon layui-icon-delete"></i></button>\n'
                         }
@@ -284,7 +284,7 @@
         }
 
         window.remove = function (obj) {
-            layer.confirm(lang.translate('确定要删除'), {
+            layer.confirm(lang.translate('确定要删除？'), {
                 icon: 3,
                 title: lang.translate('提示')
             }, function (index) {
@@ -300,7 +300,7 @@
                     type: 'post',
                     success: function (result) {
                         layer.close(loading);
-                        sail.checkSuccess(result, function (resp) {
+                        sail.checkSuccess(result, function () {
                             table.reload("user-table");
                         });
                     },
