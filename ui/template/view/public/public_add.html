@@ -14,7 +14,7 @@
             <div class="layui-form-item">
                 <label lang="zh" class="layui-form-label">配置名称</label>
                 <div class="layui-input-block">
-                    <input type="text" name="name" placeholder="支持格式：^[a-zA-Z][\\w_\\-.]{1,9}" lay-verify="required"
+                    <input lang="zh" type="text" name="name" placeholder="支持格式：^[a-zA-Z][\\w_\\-.]{1,9}" lay-verify="required"
                            autocomplete="off" class="layui-input">
                     <label lang="zh" class="layui-inline layui-word-aux "
                            style="margin-top: 5px">配置名称在命名空间内唯一</label>
@@ -104,7 +104,9 @@
             secret: '{{$val.SecretKey}}'
         }
         '{{end}}'
-
+        $(function(){
+            form.render();
+        });
         form.on('select(namespace-query-select)', function (data) {
             for (let i = 0; i < nsarr.length; i++) {
                 if (nsarr[i].id === data.value) {

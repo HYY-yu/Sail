@@ -41,7 +41,9 @@
         let sail = layui.sail;
         const accessToken = localStorage.getItem("accessToken");
         sail.prefilterAjax();
-
+        $(function(){
+            form.render();
+        });
         form.on('submit(group-save)', function (data) {
             $('#group-submit-button').attr('disabled', 'true');
             $.ajax({
