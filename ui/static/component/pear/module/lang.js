@@ -1,4 +1,4 @@
-layui.define(['jquery','jcookie'], function (exports) {
+layui.define(['jquery', 'jcookie'], function (exports) {
     "use strict";
     var MOD_NAME = 'lang',
         $ = layui.jquery;
@@ -95,6 +95,9 @@ layui.define(['jquery','jcookie'], function (exports) {
             // Check if the current language is not the same as our default
             //if (currentLang && currentLang !== self.defaultLang) {
             // Switch to the current language
+            if (currentLang === "undefined") {
+                currentLang = "zh";
+            }
             self.change(currentLang);
             //}
         });
