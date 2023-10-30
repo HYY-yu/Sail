@@ -1,6 +1,6 @@
 module github.com/HYY-yu/sail
 
-go 1.18
+go 1.20
 
 require (
 	github.com/HYY-yu/seckill.pkg v1.3.6
