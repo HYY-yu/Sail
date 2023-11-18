@@ -70,9 +70,7 @@ func main() {
 	flag.StringVar(&etcdEndpoints, "etcd-endpoints", "http://127.0.0.1:2379", "etcd endpoints")
 	flag.StringVar(&etcdUsername, "etcd-username", "", "etcd username")
 	flag.StringVar(&etcdPassword, "etcd-password", "", "etcd password")
-	opts := zap.Options{
-		Development: true,
-	}
+	opts := zap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 

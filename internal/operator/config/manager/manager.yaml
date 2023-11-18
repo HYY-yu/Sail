@@ -70,6 +70,8 @@ spec:
         - /manager
         args:
         - --leader-elect
+        - --etcd-endpoints=infra-etcd-cluster-0.infra-etcd-cluster.etcd.svc.cluster.local:2379
+        - --zap-devel=false
         image: controller:latest
         name: manager
         securityContext:
