@@ -4,7 +4,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.3
-  creationTimestamp: null
   name: configmaprequests.cmr.sail.hyy-yu.space
 spec:
   group: cmr.sail.hyy-yu.space
@@ -122,4 +121,4 @@ spec:
     served: true
     storage: true
     subresources:
-      status: {}
+
