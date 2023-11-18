@@ -7,6 +7,7 @@ namespace: operator-system
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
 namePrefix: operator-
+# TODO NamePrefix 必须改为 sail
 
 # Labels to add to all resources and selectors.
 #labels:
