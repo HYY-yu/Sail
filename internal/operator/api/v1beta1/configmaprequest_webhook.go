@@ -22,6 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -66,38 +67,38 @@ func (r *ConfigMapRequest) Default() {
 var _ webhook.Validator = &ConfigMapRequest{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *ConfigMapRequest) ValidateCreate() error {
+func (r *ConfigMapRequest) ValidateCreate() (warnings admission.Warnings, err error) {
 	configmaprequestlog.Info("validate create", "name", r.Name)
 
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *ConfigMapRequest) ValidateUpdate(old runtime.Object) error {
+func (r *ConfigMapRequest) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	configmaprequestlog.Info("validate update", "name", r.Name)
 
 	// 不允许修改，因为这涉及到 ConfigMapRequest 下的所有 ConfigMap
 	if r.Spec.ProjectKey != old.(*ConfigMapRequest).Spec.ProjectKey {
-		return errors.New("you can't update the project key, please create a new one. ")
+		return nil, errors.New("you can't update the project key, please create a new one. ")
 	}
 	if r.Spec.Namespace != old.(*ConfigMapRequest).Spec.Namespace {
-		return errors.New("you can't update the namespace, please create a new one. ")
+		return nil, errors.New("you can't update the namespace, please create a new one. ")
 	}
 
 	// 不能修改 merged 后的配置，对已创建的 ConfigMap 合并或者拆分，可能会影响到使用它的 Pod。
 	if r.Spec.Merge != old.(*ConfigMapRequest).Spec.Merge {
-		return errors.New("merge config can't update, because it's hard to split. ")
+		return nil, errors.New("merge config can't update, because it's hard to split. ")
 	}
 	if r.Spec.MergeConfigFile != old.(*ConfigMapRequest).Spec.MergeConfigFile {
-		return errors.New("merge format can't update, because it's hard to split. ")
+		return nil, errors.New("merge format can't update, because it's hard to split. ")
 	}
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *ConfigMapRequest) ValidateDelete() error {
+func (r *ConfigMapRequest) ValidateDelete() (admission.Warnings, error) {
 	configmaprequestlog.Info("validate delete", "name", r.Name)
 
 	configmaprequestlog.Info("Delete the CMR will delete it corresponding ConfigMap, Please careful!")
-	return nil
+	return nil, nil
 }

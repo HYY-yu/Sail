@@ -17,8 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/HYY-yu/sail/internal/operator/internal/config_server"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -33,6 +36,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	cmrv1beta1 "github.com/HYY-yu/sail/internal/operator/api/v1beta1"
 	"github.com/HYY-yu/sail/internal/operator/internal/controller"
@@ -61,6 +65,9 @@ func main() {
 	var etcdUsername string
 	var etcdPassword string
 
+	var secureMetrics bool
+	var enableHTTP2 bool
+
 	flag.StringVar(&namespace, "namespace", "default", "The namespace for manager to managed. ")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -70,16 +77,45 @@ func main() {
 	flag.StringVar(&etcdEndpoints, "etcd-endpoints", "http://127.0.0.1:2379", "etcd endpoints")
 	flag.StringVar(&etcdUsername, "etcd-username", "", "etcd username")
 	flag.StringVar(&etcdPassword, "etcd-password", "", "etcd password")
+	flag.BoolVar(&secureMetrics, "metrics-secure", false,
+		"If set the metrics endpoint is served securely")
+	flag.BoolVar(&enableHTTP2, "enable-http2", false,
+		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
+
 	opts := zap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	disableHTTP2 := func(c *tls.Config) {
+		setupLog.Info("disabling http/2")
+		c.NextProtos = []string{"http/1.1"}
+	}
+
+	tlsOpts := []func(*tls.Config){}
+	if !enableHTTP2 {
+		tlsOpts = append(tlsOpts, disableHTTP2)
+	}
+
+	webhookServer := webhook.NewServer(webhook.Options{
+		TLSOpts: tlsOpts,
+		Port:    9443,
+	})
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Scheme: scheme,
+		Cache: cache.Options{
+			DefaultNamespaces: map[string]cache.Config{
+				namespace: {},
+			},
+		},
+		Metrics: metricsserver.Options{
+			BindAddress:   metricsAddr,
+			SecureServing: secureMetrics,
+			TLSOpts:       tlsOpts,
+		},
+		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "c9604204.sail.hyy-yu.space",
@@ -94,7 +130,6 @@ func main() {
 		// if you are doing or is intended to do any operation such as perform cleanups
 		// after the manager stops then its usage might be unsafe.
 		// LeaderElectionReleaseOnCancel: true,
-		Namespace: namespace, // 限制 Controller-manager 在 namespace 下运行，这样可以降低它的管理压力。
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -122,6 +157,13 @@ func main() {
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
+
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&cmrv1beta1.ConfigMapRequest{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "CMR")
+			os.Exit(1)
+		}
+	}
 
 	if err := mgr.Add(configServer.(manager.Runnable)); err != nil {
 		setupLog.Error(err, "unable to add controller to manager")

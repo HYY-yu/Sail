@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.3
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: configmaprequests.cmr.sail.hyy-yu.space
 spec:
   group: cmr.sail.hyy-yu.space
@@ -32,14 +32,19 @@ spec:
         description: ConfigMapRequest is the Schema for the configmaprequests API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -52,25 +57,31 @@ spec:
                   type: string
                 type: array
               merge:
-                description: 'Merge 可选配置，默认为 False，当 True 时，会把所有配置文件聚合成一个配置 配置文件的名称将成为新
-                  Key，如：mysql.toml: {data: } 注意：如果 Merge 是 True，则无法再更改为 False，反之亦然。'
+                description: |-
+                  Merge 可选配置，默认为 False，当 True 时，会把所有配置文件聚合成一个配置
+                  配置文件的名称将成为新 Key，如：mysql.toml: {data: }
+                  注意：如果 Merge 是 True，则无法再更改为 False，反之亦然。
                 type: boolean
               merge_config_file:
-                description: MergeFormat 可选配置，默认聚合到一个格式为 config.toml 的 ConfigMap，可以在这里配置其它格式：(xx.yaml\cfg.json等)
-                  支持 json", "toml", "yaml", "yml", "properties", "props", "prop",
-                  "hcl", "dotenv", "env", "ini"
+                description: |-
+                  MergeFormat 可选配置，默认聚合到一个格式为 config.toml 的 ConfigMap，可以在这里配置其它格式：(xx.yaml\cfg.json等)
+                  支持 json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "dotenv", "env", "ini"
                 type: string
               namespace:
                 description: Namespace 项目的命名空间，指定获取哪一个命名空间
                 type: string
               namespace_key_in_secret:
-                description: 'NamespaceKey 项目的命名空间秘钥 为了安全起见，NamespaceKey不能直接提供，需要提供一个
-                  Secret 其中保存了NamespaceKey。 格式：namespaceKey: secret-key-name 只能引用本命名空间的
-                  Secret'
+                description: |-
+                  NamespaceKey 项目的命名空间秘钥
+                  为了安全起见，NamespaceKey不能直接提供，需要提供一个 Secret 其中保存了NamespaceKey。
+                  格式：namespaceKey: secret-key-name
+                  只能引用本命名空间的 Secret
                 properties:
                   name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    description: |-
+                      Name of the referent.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -121,4 +132,4 @@ spec:
     served: true
     storage: true
     subresources:
-
+      status: {}
